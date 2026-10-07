@@ -1,6 +1,7 @@
 'use client'
 import {useEffect,useRef,useState} from 'react'
 import {supabase} from '../lib/supabase'
+import {colorOf} from '../lib/provider'
 import Editor from '../components/Editor'
 import Board from '../components/Board'
 
@@ -29,6 +30,16 @@ function ShareDlg({code,onNew,close}){
   <div className="btns"><button className="ghost" onClick={async()=>setC(await onNew())}>Nouveau code</button>
    <button onClick={()=>{navigator.clipboard.writeText(c);setOk(true)}}>{ok?'Copié ✓':'Copier'}</button><button className="on" onClick={close}>Fermer</button></div></div></div>
 }
+function Settings({user,close}){
+ const [n,setN]=useState(user.user_metadata?.name||''),[st,setSt]=useState('')
+ const save=async()=>{const {error}=await supabase.auth.updateUser({data:{name:n.trim()}});setSt(error?error.message:'✓ Enregistré')}
+ return <div className="ov" onClick={close}><div className="dlg" onClick={e=>e.stopPropagation()}>
+  <h3>⚙️ Paramètres</h3>
+  <label className="muted">Nom d'utilisateur (affiché sur ton curseur et dans « en ligne »)</label>
+  <input autoFocus autoComplete="off" name="nom-utilisateur" value={n} placeholder={user.email.split('@')[0]} onChange={e=>setN(e.target.value)} onKeyDown={e=>e.key==='Enter'&&save()}/>
+  <p className="muted" style={{margin:0}}>Compte : {user.email}</p>{st&&<p style={{margin:0}}>{st}</p>}
+  <div className="btns"><button className="ghost" onClick={close}>Fermer</button><button className="on" onClick={save}>Enregistrer</button></div></div></div>
+}
 function PdfView({path,title}){
  const [u,setU]=useState('')
  useEffect(()=>{let x;supabase.storage.from('pdfs').download(path).then(({data})=>{if(data){x=URL.createObjectURL(data);setU(x)}});return()=>x&&URL.revokeObjectURL(x)},[path])
@@ -46,7 +57,7 @@ export default function App(){
 function Login(){
  const [e,setE]=useState(''),[p,setP]=useState('')
  const go=async up=>{const a={email:e,password:p};const {error}=await(up?supabase.auth.signUp(a):supabase.auth.signInWithPassword(a));if(error)alert(error.message)}
- return <div className="login" style={{maxWidth:320}}><h1>📝 Notes</h1>
+ return <div className="login" style={{maxWidth:320}}><h1 style={{display:'flex',alignItems:'center',gap:10}}><img src="/logo-192.png" width="48" height="48" alt=""/> Notes</h1>
   <input placeholder="Email" value={e} onChange={x=>setE(x.target.value)}/>
   <input type="password" placeholder="Mot de passe" value={p} onChange={x=>setP(x.target.value)} onKeyDown={x=>x.key==='Enter'&&go(0)}/>
   <button className="on" onClick={()=>go(0)}>Connexion</button><button className="ghost" onClick={()=>go(1)}>Créer un compte</button></div>
@@ -54,8 +65,8 @@ function Login(){
 
 function Main({user}){
  const [projs,setProjs]=useState([]),[pid,setPid]=useState(null),[items,setItems]=useState([]),[sel,setSel]=useState(null)
- const [dlg,setDlg]=useState(null),[menu,setMenu]=useState(null),[tabs,setTabs]=useState([]),[open,setOpen]=useState(true),[drop,setDrop]=useState(null),[share,setShare]=useState(null)
- const fi=useRef(),pp=useRef(null),drag=useRef(null)
+ const [dlg,setDlg]=useState(null),[menu,setMenu]=useState(null),[tabs,setTabs]=useState([]),[open,setOpen]=useState(true),[drop,setDrop]=useState(null),[share,setShare]=useState(null),[settings,setSettings]=useState(false),[online,setOnline]=useState([]),[w,setW]=useState(290)
+ const fi=useRef(),pp=useRef(null),drag=useRef(null),pch=useRef(null)
  const loadP=async()=>{const {data}=await supabase.from('projects').select('*');setProjs(data||[]);if(!pid&&data?.[0])setPid(data[0].id)}
  const loadI=async()=>{if(!pid)return;const {data}=await supabase.from('items').select('id,parent_id,type,title,color,closed,icon,pos,created_at').eq('project_id',pid).order('created_at');setItems(data||[])}
  useEffect(()=>{loadP()},[])
@@ -63,6 +74,16 @@ function Main({user}){
   const ch=supabase.channel('items:'+pid).on('postgres_changes',{event:'*',schema:'public',table:'items',filter:'project_id=eq.'+pid},loadI).subscribe()
   return()=>supabase.removeChannel(ch)},[pid])
 
+ const name=user.user_metadata?.name||user.email.split('@')[0]
+ useEffect(()=>{const v=+localStorage.getItem('sbw');if(v)setW(v)},[])
+ useEffect(()=>{if(!pid)return
+  const ch=supabase.channel('presence:'+pid,{config:{presence:{key:user.id}}})
+  ch.on('presence',{event:'sync'},()=>setOnline(Object.values(ch.presenceState()).map(a=>a[0])))
+   .subscribe(st=>{if(st==='SUBSCRIBED'){pch.current=ch;ch.track({id:user.id,name,color:colorOf(user.email),item:null})}})
+  return()=>{pch.current=null;setOnline([]);supabase.removeChannel(ch)}},[pid])
+ useEffect(()=>{pch.current?.track({id:user.id,name,color:colorOf(user.email),item:sel})},[sel,name])
+ const startRz=e=>{e.preventDefault();const mv=ev=>{const n=Math.max(200,Math.min(560,ev.clientX));setW(n);localStorage.setItem('sbw',n)}
+  const up=()=>{removeEventListener('mousemove',mv);removeEventListener('mouseup',up)};addEventListener('mousemove',mv);addEventListener('mouseup',up)}
  const ask=(label,value,ok)=>setDlg({label,value,ok,k:Math.random()})
  const insert=async row=>{const {data,error}=await supabase.from('items').insert({project_id:pid,pos:Date.now(),...row}).select().single();if(error)alert(error.message);return data}
  const patch=(id,p)=>{setItems(l=>l.map(x=>x.id===id?{...x,...p}:x));supabase.from('items').update(p).eq('id',id).then(err)}
@@ -113,21 +134,25 @@ function Main({user}){
   {f&&!i.closed&&<div className="kids">{tree(i.id)}</div>}</div>})
  const news=p=>[['📄 Nouvelle page',()=>add('page',p)],['🗂️ Nouveau kanban',()=>add('board',p)],['📁 Nouveau dossier',()=>add('folder',p)],['📎 Importer un PDF',()=>pick(p)]]
  const m=menu&&menu.i&&items.find(x=>x.id===menu.i.id)
- return <div className="app" style={{gridTemplateColumns:open?'290px 1fr':'1fr'}}
+ const titleOf=id=>items.find(x=>x.id===id)?.title
+ const pres=<div className="pres">{online.map(u=><i key={u.id} style={{background:u.color}} title={u.name+(u.id===user.id?' (toi)':'')+(u.item&&titleOf(u.item)?' · '+titleOf(u.item):'')}>{(u.name||'?')[0].toUpperCase()}</i>)}{online.length>0&&<small className="muted">{online.length} en ligne</small>}</div>
+ return <div className="app" style={{gridTemplateColumns:open?w+'px 1fr':'1fr'}}
   onDragOver={e=>{if(pid&&[...e.dataTransfer.types].includes('Files'))e.preventDefault()}}
   onDrop={e=>{const f=[...e.dataTransfer.files].find(x=>x.type==='application/pdf');if(f&&pid){e.preventDefault();readPdf(f,null)}}}>
   {open&&<aside>
-   <div className="head"><select value={pid||''} onChange={e=>setPid(e.target.value)} style={{flex:1,minWidth:0}}>{projs.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select>
+   <div className="rz" onMouseDown={startRz}/>
+   <div className="head"><img src="/logo-192.png" width="24" height="24" alt="" style={{borderRadius:6}}/><select value={pid||''} onChange={e=>setPid(e.target.value)} style={{flex:1,minWidth:0}}>{projs.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select>
     <button onClick={e=>show(e,null,'proj')} title="Nouveau projet ou rejoindre">＋</button>{pid&&<button onClick={invite} title="Partager (code)">👥</button>}
     <button className="ghost" onClick={()=>setOpen(false)} title="Masquer le menu">«</button></div>
    {pid&&<button className="on" onClick={e=>show(e,null,'new')}>＋ Nouveau</button>}
+   {pres}
    <div className="tree" onContextMenu={e=>pid&&show(e,null,'new')} onDragOver={e=>drag.current&&e.preventDefault()}
     onDrop={e=>{if(drag.current){e.preventDefault();move(drag.current,null);drag.current=null;setDrop(null)}}}>{tree(null)}</div>
-   <button className="ghost" onClick={()=>supabase.auth.signOut()}>Déconnexion</button></aside>}
+   <div className="head"><button className="ghost" onClick={()=>setSettings(true)}>⚙️ Paramètres</button><button className="ghost" onClick={()=>supabase.auth.signOut()}>Déconnexion</button></div></aside>}
   <section className="mainc">
    {!open&&<div className="tabs"><button className="ghost" onClick={()=>setOpen(true)} title="Afficher le menu">☰</button>
     {tabItems.map(t=><div key={t.id} className={'tab'+(sel===t.id?' on':'')} onClick={()=>setSel(t.id)}><Ic i={t}/><span>{t.title}</span>
-     <b onClick={e=>{e.stopPropagation();closeTab(t.id)}}>✕</b></div>)}</div>}
+     <b onClick={e=>{e.stopPropagation();closeTab(t.id)}}>✕</b></div>)}<span style={{marginLeft:'auto'}}>{pres}</span></div>}
    <main>{!pid?<p className="muted">Crée un projet, ou rejoins-en un avec un code, via « ＋ » en haut à gauche.</p>:!cur?<p className="muted">Choisis un élément, ou crée-en un avec « ＋ Nouveau ». Glisse-dépose pour réorganiser.</p>
     :<><h2><span className="ic" onClick={e=>show(e,cur,'icon')} title="Choisir une icône">{cur.icon||<span className="muted">☺</span>}</span> {cur.title}</h2>
      {cur.type==='board'?<Board key={cur.id} id={cur.id} pid={pid} ask={ask}/>
@@ -153,5 +178,6 @@ function Main({user}){
       <div className="mi red" onClick={()=>{setMenu(null);del(m)}}>🗑️ Supprimer</div></>}</>}
    </div></div>}
   {dlg&&<Dlg key={dlg.k} d={dlg} close={()=>setDlg(null)}/>}
-  {share&&<ShareDlg code={share} onNew={newCode} close={()=>setShare(null)}/>}</div>
+  {share&&<ShareDlg code={share} onNew={newCode} close={()=>setShare(null)}/>}
+  {settings&&<Settings user={user} close={()=>setSettings(false)}/>}</div>
 }
