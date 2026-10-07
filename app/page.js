@@ -20,6 +20,15 @@ function Dlg({d,close}){
   {!d.confirm&&<input autoFocus autoComplete="off" name="nom-note" value={v} onChange={e=>setV(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')ok();if(e.key==='Escape')close()}}/>}
   <div className="btns"><button className="ghost" onClick={close}>Annuler</button><button className="on" onClick={ok}>{d.confirm?'Supprimer':'OK'}</button></div></div></div>
 }
+function ShareDlg({code,onNew,close}){
+ const [c,setC]=useState(code),[ok,setOk]=useState(false)
+ return <div className="ov" onClick={close}><div className="dlg" onClick={e=>e.stopPropagation()}>
+  <h3>Code du projet</h3>
+  <input readOnly value={c} onFocus={e=>e.target.select()} style={{fontSize:22,letterSpacing:3,textAlign:'center'}}/>
+  <p className="muted" style={{margin:0}}>La personne crée son compte, clique sur ＋ puis « Rejoindre avec un code » et saisit ce code.</p>
+  <div className="btns"><button className="ghost" onClick={async()=>setC(await onNew())}>Nouveau code</button>
+   <button onClick={()=>{navigator.clipboard.writeText(c);setOk(true)}}>{ok?'Copié ✓':'Copier'}</button><button className="on" onClick={close}>Fermer</button></div></div></div>
+}
 function PdfView({path,title}){
  const [u,setU]=useState('')
  useEffect(()=>{let x;supabase.storage.from('pdfs').download(path).then(({data})=>{if(data){x=URL.createObjectURL(data);setU(x)}});return()=>x&&URL.revokeObjectURL(x)},[path])
@@ -45,7 +54,7 @@ function Login(){
 
 function Main({user}){
  const [projs,setProjs]=useState([]),[pid,setPid]=useState(null),[items,setItems]=useState([]),[sel,setSel]=useState(null)
- const [dlg,setDlg]=useState(null),[menu,setMenu]=useState(null),[tabs,setTabs]=useState([]),[open,setOpen]=useState(true),[drop,setDrop]=useState(null)
+ const [dlg,setDlg]=useState(null),[menu,setMenu]=useState(null),[tabs,setTabs]=useState([]),[open,setOpen]=useState(true),[drop,setDrop]=useState(null),[share,setShare]=useState(null)
  const fi=useRef(),pp=useRef(null),drag=useRef(null)
  const loadP=async()=>{const {data}=await supabase.from('projects').select('*');setProjs(data||[]);if(!pid&&data?.[0])setPid(data[0].id)}
  const loadI=async()=>{if(!pid)return;const {data}=await supabase.from('items').select('id,parent_id,type,title,color,closed,icon,pos,created_at').eq('project_id',pid).order('created_at');setItems(data||[])}
@@ -58,7 +67,10 @@ function Main({user}){
  const insert=async row=>{const {data,error}=await supabase.from('items').insert({project_id:pid,pos:Date.now(),...row}).select().single();if(error)alert(error.message);return data}
  const patch=(id,p)=>{setItems(l=>l.map(x=>x.id===id?{...x,...p}:x));supabase.from('items').update(p).eq('id',id).then(err)}
  const newProj=()=>ask('Nom du projet','',async name=>{const {data,error}=await supabase.from('projects').insert({name}).select().single();if(error)return alert(error.message);await loadP();setPid(data.id)})
- const invite=()=>ask("Email de la personne (elle doit déjà avoir un compte)",'',async p_mail=>{const {error}=await supabase.rpc('invite',{p_pid:pid,p_mail});alert(error?error.message:'Invité !')})
+ const code=projs.find(p=>p.id===pid)?.code
+ const invite=()=>code?setShare(code):alert("Code introuvable : lance d'abord update2.sql dans Supabase.")
+ const newCode=async()=>{const {data,error}=await supabase.rpc('new_code',{p_pid:pid});if(error){alert(error.message);return code}await loadP();return data}
+ const joinProj=()=>ask('Code du projet','',async p_code=>{const {data,error}=await supabase.rpc('join_project',{p_code});if(error)return alert(error.message);await loadP();setPid(data)})
  const add=(type,parent_id)=>ask(NAMES[type],'',async title=>{await insert({type,title,parent_id});if(parent_id)patch(parent_id,{closed:false})})
  const ren=i=>ask('Renommer',i.title,title=>patch(i.id,{title}))
  const del=i=>setDlg({label:`Supprimer « ${i.title} » et son contenu ?`,confirm:true,k:Math.random(),ok:async()=>{
@@ -106,7 +118,7 @@ function Main({user}){
   onDrop={e=>{const f=[...e.dataTransfer.files].find(x=>x.type==='application/pdf');if(f&&pid){e.preventDefault();readPdf(f,null)}}}>
   {open&&<aside>
    <div className="head"><select value={pid||''} onChange={e=>setPid(e.target.value)} style={{flex:1,minWidth:0}}>{projs.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select>
-    <button onClick={newProj} title="Nouveau projet">＋</button>{pid&&<button onClick={invite} title="Inviter">👥</button>}
+    <button onClick={e=>show(e,null,'proj')} title="Nouveau projet ou rejoindre">＋</button>{pid&&<button onClick={invite} title="Partager (code)">👥</button>}
     <button className="ghost" onClick={()=>setOpen(false)} title="Masquer le menu">«</button></div>
    {pid&&<button className="on" onClick={e=>show(e,null,'new')}>＋ Nouveau</button>}
    <div className="tree" onContextMenu={e=>pid&&show(e,null,'new')} onDragOver={e=>drag.current&&e.preventDefault()}
@@ -116,7 +128,7 @@ function Main({user}){
    {!open&&<div className="tabs"><button className="ghost" onClick={()=>setOpen(true)} title="Afficher le menu">☰</button>
     {tabItems.map(t=><div key={t.id} className={'tab'+(sel===t.id?' on':'')} onClick={()=>setSel(t.id)}><Ic i={t}/><span>{t.title}</span>
      <b onClick={e=>{e.stopPropagation();closeTab(t.id)}}>✕</b></div>)}</div>}
-   <main>{!pid?<p className="muted">Crée ton premier projet avec « ＋ » en haut à gauche.</p>:!cur?<p className="muted">Choisis un élément, ou crée-en un avec « ＋ Nouveau ». Glisse-dépose pour réorganiser.</p>
+   <main>{!pid?<p className="muted">Crée un projet, ou rejoins-en un avec un code, via « ＋ » en haut à gauche.</p>:!cur?<p className="muted">Choisis un élément, ou crée-en un avec « ＋ Nouveau ». Glisse-dépose pour réorganiser.</p>
     :<><h2><span className="ic" onClick={e=>show(e,cur,'icon')} title="Choisir une icône">{cur.icon||<span className="muted">☺</span>}</span> {cur.title}</h2>
      {cur.type==='board'?<Board key={cur.id} id={cur.id} pid={pid} ask={ask}/>
      :cur.type==='pdf'?<PdfView key={cur.id} path={pid+'/'+cur.id+'.pdf'} title={cur.title}/>
@@ -124,7 +136,10 @@ function Main({user}){
   <input ref={fi} type="file" accept="application/pdf" hidden onChange={onPdf}/>
   {menu&&<div className="ov" onClick={()=>setMenu(null)} onContextMenu={e=>{e.preventDefault();setMenu(null)}}>
    <div className="menu" style={{left:menu.x,top:menu.y}} onClick={e=>e.stopPropagation()}>
-    {menu.mode==='icon'&&m?<>
+    {menu.mode==='proj'?<>
+     <div className="mi" onClick={()=>{setMenu(null);newProj()}}>➕ Nouveau projet</div>
+     <div className="mi" onClick={()=>{setMenu(null);joinProj()}}>🔑 Rejoindre avec un code</div></>
+    :menu.mode==='icon'&&m?<>
      <div className="eg">{EMOJIS.map(e=><span key={e} onClick={()=>{patch(m.id,{icon:e});setMenu(null)}}>{e}</span>)}</div><hr/>
      <div className="mi" onClick={()=>{setMenu(null);ask('Tape ou colle un emoji','',v=>patch(m.id,{icon:[...new Intl.Segmenter().segment(v)][0].segment}))}}>✍️ Autre emoji…</div>
      <div className="mi" onClick={()=>{patch(m.id,{icon:null});setMenu(null)}}>🚫 Retirer l'icône</div></>
@@ -137,5 +152,6 @@ function Main({user}){
        <input type="color" title="Autre couleur" value={m.color||'#3b82f6'} onChange={e=>setItems(l=>l.map(x=>x.id===m.id?{...x,color:e.target.value}:x))} onBlur={e=>patch(m.id,{color:e.target.value})}/></div>}
       <div className="mi red" onClick={()=>{setMenu(null);del(m)}}>🗑️ Supprimer</div></>}</>}
    </div></div>}
-  {dlg&&<Dlg key={dlg.k} d={dlg} close={()=>setDlg(null)}/>}</div>
+  {dlg&&<Dlg key={dlg.k} d={dlg} close={()=>setDlg(null)}/>}
+  {share&&<ShareDlg code={share} onNew={newCode} close={()=>setShare(null)}/>}</div>
 }
