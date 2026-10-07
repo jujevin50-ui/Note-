@@ -10,7 +10,7 @@ aside{background:var(--side);border-right:1px solid var(--bd);padding:12px;displ
 .row:hover,.row.on{background:var(--hov)}.t{display:flex;align-items:center;gap:6px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.t small{width:10px;color:var(--mut)}
 .act{display:flex;gap:2px;visibility:hidden}.row:hover .act{visibility:visible}.act b{font-weight:400;padding:0 6px;border-radius:4px}.act b:hover{background:var(--bd)}
 .kids{margin-left:14px;border-left:1px solid var(--bd);padding-left:4px}
-main{padding:28px 48px;overflow:auto}.muted{color:var(--mut)}
+main{padding:28px 48px;overflow:auto;flex:1}.muted{color:var(--mut)}
 .ov{position:fixed;inset:0;z-index:10;background:rgba(0,0,0,.18);display:grid;place-items:center}
 .ov:has(.menu){background:transparent;display:block}
 .dlg{background:var(--bg);padding:20px;border-radius:12px;width:340px;display:grid;gap:12px;box-shadow:0 10px 40px rgba(0,0,0,.2)}.dlg h3{margin:0}
@@ -35,3 +35,10 @@ ul[data-type=taskList]{list-style:none;padding-left:4px}ul[data-type=taskList] l
 .ProseMirror.resize-cursor{cursor:col-resize}
 .collaboration-cursor__caret{border-left:2px solid;margin:0 -1px;position:relative;word-break:normal}
 .collaboration-cursor__label{position:absolute;top:-1.4em;left:-1px;font-size:11px;color:#fff;padding:0 4px;border-radius:3px;white-space:nowrap}
+.mainc{display:flex;flex-direction:column;min-width:0;height:100vh;overflow:hidden}
+.tabs{display:flex;gap:4px;padding:6px 8px 0;border-bottom:1px solid var(--bd);background:var(--side);overflow-x:auto;align-items:flex-end}
+.tab{display:flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid var(--bd);border-bottom:0;border-radius:8px 8px 0 0;background:var(--bg);cursor:pointer;white-space:nowrap;max-width:200px}
+.tab span{overflow:hidden;text-overflow:ellipsis}.tab.on{border-top:2px solid var(--ac);font-weight:600}.tab b{color:var(--mut);font-weight:400}
+.row.dz-before{box-shadow:0 -2px 0 var(--ac)}.row.dz-after{box-shadow:0 2px 0 var(--ac)}.row.dz-in{background:#dbeafe}
+.eg{display:grid;grid-template-columns:repeat(6,1fr);gap:2px;padding:4px}.eg span{text-align:center;padding:4px;border-radius:6px;cursor:pointer;font-size:18px}.eg span:hover{background:var(--hov)}
+.sw{align-items:center}.sw input{width:22px;height:22px;padding:0;border:0;background:none;cursor:pointer}.ic{cursor:pointer}
