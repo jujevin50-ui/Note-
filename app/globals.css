@@ -1,4 +1,5 @@
-:root{--bg:#fff;--fg:#1f2328;--mut:#8a8f98;--bd:#e5e5e0;--side:#f7f7f5;--hov:#ececE8;--ac:#2563eb}
+:root{--bg:#fff;--fg:#1f2328;--mut:#8a8f98;--bd:#e5e5e0;--side:#f7f7f5;--hov:#ececE8;--ac:#2563eb;--sel:#d6d6d0;--dzin:#dbeafe;--cb:#d4d4cf}
+:root[data-theme=dark]{color-scheme:dark;--bg:#191a1c;--fg:#e6e6e6;--mut:#9aa0a8;--bd:#34363b;--side:#212326;--hov:#2b2d31;--ac:#3b82f6;--sel:#3a3d43;--dzin:#1e3a5f;--cb:#4a4d54}
 *{box-sizing:border-box}body{margin:0;font:15px system-ui,sans-serif;background:var(--bg);color:var(--fg)}
 input,select,button{font:inherit;color:inherit;background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:6px 10px}
 button{cursor:pointer}button:hover{background:var(--hov)}button.on{background:var(--ac);color:#fff;border-color:var(--ac)}button.ghost{background:none}
@@ -27,7 +28,7 @@ ul[data-type=taskList]{list-style:none;padding-left:4px}ul[data-type=taskList] l
 .card{background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:8px;display:flex;justify-content:space-between;cursor:grab}.card b{cursor:pointer;color:var(--mut)}
 .tableWrapper{overflow-x:auto}
 .ProseMirror table{border-collapse:collapse;table-layout:fixed;width:100%;margin:12px 0;overflow:hidden}
-.ProseMirror td,.ProseMirror th{border:1px solid #d4d4cf;padding:6px 8px;vertical-align:top;position:relative;min-width:60px}
+.ProseMirror td,.ProseMirror th{border:1px solid var(--cb);padding:6px 8px;vertical-align:top;position:relative;min-width:60px}
 .ProseMirror th{background:var(--side);font-weight:600;text-align:left}
 .ProseMirror td p,.ProseMirror th p{margin:0}
 .ProseMirror .selectedCell:after{content:"";position:absolute;inset:0;background:rgba(37,99,235,.12);pointer-events:none}
@@ -39,14 +40,14 @@ ul[data-type=taskList]{list-style:none;padding-left:4px}ul[data-type=taskList] l
 .tabs{display:flex;gap:4px;padding:6px 8px 0;border-bottom:1px solid var(--bd);background:var(--side);overflow-x:auto;align-items:flex-end}
 .tab{display:flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid var(--bd);border-bottom:0;border-radius:8px 8px 0 0;background:var(--bg);cursor:pointer;white-space:nowrap;max-width:200px}
 .tab span{overflow:hidden;text-overflow:ellipsis}.tab.on{border-top:2px solid var(--ac);font-weight:600}.tab b{color:var(--mut);font-weight:400}
-.row.dz-before{box-shadow:0 -2px 0 var(--ac)}.row.dz-after{box-shadow:0 2px 0 var(--ac)}.row.dz-in{background:#dbeafe}
+.row.dz-before{box-shadow:0 -2px 0 var(--ac)}.row.dz-after{box-shadow:0 2px 0 var(--ac)}.row.dz-in{background:var(--dzin)}
 .eg{display:grid;grid-template-columns:repeat(6,1fr);gap:2px;padding:4px}.eg span{text-align:center;padding:4px;border-radius:6px;cursor:pointer;font-size:18px}.eg span:hover{background:var(--hov)}
 .sw{align-items:center}.sw input{width:22px;height:22px;padding:0;border:0;background:none;cursor:pointer}.ic{cursor:pointer}
 aside{position:relative}
-.row.on,.row.on:hover{background:#d6d6d0}
+.row.on,.row.on:hover{background:var(--sel)}
 .rz{position:absolute;top:0;right:0;width:5px;height:100%;cursor:col-resize;z-index:5}.rz:hover{background:var(--ac);opacity:.35}
 .pres{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
-.pres i{width:24px;height:24px;border-radius:50%;color:#fff;font:600 12px/24px system-ui;text-align:center;font-style:normal;border:2px solid #fff;box-shadow:0 0 0 1px var(--bd)}
+.pres i{width:24px;height:24px;border-radius:50%;color:#fff;font:600 12px/24px system-ui;text-align:center;font-style:normal;border:2px solid var(--bg);box-shadow:0 0 0 1px var(--bd)}
 .bm{display:flex;gap:4px;flex-wrap:wrap;align-items:center;padding:6px;background:var(--bg);border:1px solid var(--bd);border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.15)}.bm button{padding:3px 8px}
 .cl{position:relative;display:inline-flex;align-items:center;justify-content:center;min-width:32px;padding:6px 9px;border:1px solid var(--bd);border-radius:6px;cursor:pointer;background:var(--bg)}
 .cl input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;padding:0;border:0}
@@ -60,3 +61,4 @@ a.lc span{color:var(--mut);font-size:13px;overflow:hidden;display:-webkit-box;-w
 .chead{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
 .cedit{display:grid;gap:6px;margin-top:10px;border-top:1px solid var(--bd);padding-top:10px}
 .crow{display:flex;gap:6px;align-items:center}.crow input[type=text],.crow input[type=number]{min-width:0}.crow input[type=color]{width:34px;height:30px;padding:2px}
+.ProseMirror td[style*=background],.ProseMirror th[style*=background]{color:#1f2328}

@@ -31,12 +31,15 @@ function ShareDlg({code,onNew,close}){
    <button onClick={()=>{navigator.clipboard.writeText(c);setOk(true)}}>{ok?'Copié ✓':'Copier'}</button><button className="on" onClick={close}>Fermer</button></div></div></div>
 }
 function Settings({user,close}){
- const [n,setN]=useState(user.user_metadata?.name||''),[st,setSt]=useState('')
+ const [n,setN]=useState(user.user_metadata?.name||''),[st,setSt]=useState(''),[th,setTh]=useState(()=>localStorage.getItem('theme')||'light')
+ const setTheme=t=>{setTh(t);localStorage.setItem('theme',t);document.documentElement.dataset.theme=t}
  const save=async()=>{const {error}=await supabase.auth.updateUser({data:{name:n.trim()}});setSt(error?error.message:'✓ Enregistré')}
  return <div className="ov" onClick={close}><div className="dlg" onClick={e=>e.stopPropagation()}>
   <h3>⚙️ Paramètres</h3>
   <label className="muted">Nom d'utilisateur (affiché sur ton curseur et dans « en ligne »)</label>
   <input autoFocus autoComplete="off" name="nom-utilisateur" value={n} placeholder={user.email.split('@')[0]} onChange={e=>setN(e.target.value)} onKeyDown={e=>e.key==='Enter'&&save()}/>
+  <label className="muted">Thème (sur cet appareil)</label>
+  <div className="btns" style={{justifyContent:'flex-start'}}>{[['light','☀️ Clair'],['dark','🌙 Sombre']].map(([k,l])=><button key={k} className={th===k?'on':''} onClick={()=>setTheme(k)}>{l}</button>)}</div>
   <p className="muted" style={{margin:0}}>Compte : {user.email}</p>{st&&<p style={{margin:0}}>{st}</p>}
   <div className="btns"><button className="ghost" onClick={close}>Fermer</button><button className="on" onClick={save}>Enregistrer</button></div></div></div>
 }
