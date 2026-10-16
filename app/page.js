@@ -3,15 +3,14 @@ import {useEffect,useRef,useState} from 'react'
 import {supabase} from '../lib/supabase'
 import {colorOf} from '../lib/provider'
 import Editor from '../components/Editor'
-import Board from '../components/Board'
 
 const COLORS=['#f59e0b','#ef4444','#22c55e','#3b82f6','#8b5cf6','#ec4899','#64748b']
-const NAMES={page:'Nom de la page',board:'Nom du kanban',folder:'Nom du dossier'}
+const NAMES={page:'Nom de la page',folder:'Nom du dossier'}
 const EMOJIS='📄 📝 📌 📎 📅 📊 📈 📚 📖 📕 💡 ⭐ ✅ ❗ ❓ 🎯 🚀 🔥 💰 🛠️ 🧠 💬 📁 🗂️ 🧾 🔒 🏠 ✈️ 🍽️ ❤️ 🎓 🧪'.split(' ')
 const Folder=({c='#f59e0b'})=><svg width="16" height="14" viewBox="0 0 16 14" style={{flex:'none'}}><path d="M1 1.5h5l1.5 1.5H15v9.5H1z" fill={c}/></svg>
 const err=({error})=>error&&alert(error.message)
 const Doc=({c})=><svg width="14" height="16" viewBox="0 0 14 16" style={{flex:'none'}}><path d="M1 1h8l4 4v10H1z" fill={c}/><path d="M9 1v4h4" fill="rgba(255,255,255,.45)"/></svg>
-const Ic=({i})=>i.icon?<span>{i.icon}</span>:i.type==='folder'?<Folder c={i.color}/>:i.type==='pdf'?<Doc c={i.color||'#ef4444'}/>:<span>{i.type==='board'?'🗂️':'📄'}</span>
+const Ic=({i})=>i.icon?<span>{i.icon}</span>:i.type==='folder'?<Folder c={i.color}/>:i.type==='pdf'?<Doc c={i.color||'#ef4444'}/>:<span>📄</span>
 
 function Dlg({d,close}){
  const [v,setV]=useState(d.value||'')
@@ -54,6 +53,35 @@ function PdfView({path,title}){
  return u?<><a href={u} download={title+'.pdf'} style={{display:'inline-block',margin:'0 0 10px',padding:'6px 12px',border:'1px solid #e5e5e0',borderRadius:6,color:'inherit',textDecoration:'none'}}>⬇ Télécharger le PDF</a><iframe src={u} className="pdf"/></>:<p className="muted">Chargement…</p>
 }
 
+function Home({items,sibs,openItem,show,projName}){
+ const [q,setQ]=useState(''),[more,setMore]=useState({})
+ const roots=sibs(null),folders=roots.filter(i=>i.type==='folder'),loose=roots.filter(i=>i.type!=='folder')
+ const nF=items.filter(i=>i.type==='folder').length,nP=items.filter(i=>i.type==='page').length,nD=items.filter(i=>i.type==='pdf').length
+ const path=i=>{const a=[];let c=items.find(x=>x.id===i.parent_id);while(c){a.unshift(c.title);c=items.find(x=>x.id===c.parent_id)}return a.join(' › ')}
+ const flat=(id,d=0)=>sibs(id).flatMap(c=>[{i:c,d},...(c.type==='folder'?flat(c.id,d+1):[])])
+ const needle=q.trim().toLowerCase(),found=needle?items.filter(i=>(i.title||'').toLowerCase().includes(needle)):[]
+ const plural=(n,w)=>n+' '+w+(n>1?'s':'')
+ const Row=({i,d})=>i.type==='folder'
+  ?<div className="hrow hsub" style={{paddingLeft:6+d*16}} onContextMenu={e=>show(e,i)}><Ic i={i}/><b>{i.title}</b><small className="muted">{flat(i.id).filter(x=>x.i.type!=='folder').length}</small>
+    <span className="hact"><b onClick={e=>show(e,i,'new')}>＋</b><b onClick={e=>show(e,i)}>⋯</b></span></div>
+  :<div className="hrow hitem" style={{paddingLeft:6+d*16}} onClick={()=>openItem(i.id)} onContextMenu={e=>show(e,i)}><Ic i={i}/><span>{i.title}</span></div>
+ const card=f=>{const all=flat(f.id),n=all.filter(x=>x.i.type!=='folder').length,sf=all.filter(x=>x.i.type==='folder').length,open=more[f.id],rows=open?all:all.slice(0,8)
+  return <div className="hcard" key={f.id} style={{borderTopColor:f.color||'#f59e0b'}}>
+   <div className="hhead" onContextMenu={e=>show(e,f)}><Ic i={f}/><div><h3>{f.title}</h3><small className="muted">{plural(n,'élément')}{sf>0&&' · '+plural(sf,'sous-dossier')}</small></div>
+    <span className="hact"><b onClick={e=>show(e,f,'new')} title="Ajouter dans ce dossier">＋</b><b onClick={e=>show(e,f)}>⋯</b></span></div>
+   <div className="hbody">{rows.length?rows.map(r=><Row key={r.i.id} {...r}/>):<p className="muted" style={{margin:'4px 6px'}}>Dossier vide</p>}</div>
+   {all.length>8&&<button className="ghost hmore" onClick={()=>setMore({...more,[f.id]:!open})}>{open?'Réduire':'Afficher '+(all.length-8)+' de plus'}</button>}</div>}
+ return <div className="home">
+  <div className="hhd"><div><h1>🏠 Accueil</h1><p className="muted" style={{margin:'2px 0 0'}}>{projName} · {plural(nF,'dossier')} · {plural(nP,'page')}{nD>0&&' · '+plural(nD,'PDF')}</p></div>
+   <div className="hsearch"><input placeholder="Rechercher…" value={q} onChange={e=>setQ(e.target.value)}/><button className="on" onClick={e=>show(e,null,'new')}>＋ Nouveau</button></div></div>
+  {needle?<div className="hsec"><h4>Résultats ({found.length})</h4>{found.length?<div className="hlist">{found.map(i=><div className="hrow hitem hres" key={i.id} onClick={()=>i.type!=='folder'&&openItem(i.id)} onContextMenu={e=>show(e,i)}><Ic i={i}/><span>{i.title}</span><small className="muted">{path(i)}</small></div>)}</div>:<p className="muted">Aucun résultat.</p>}</div>
+  :!items.length?<div className="hempty"><p className="muted">Ton espace est vide.</p><button className="on" onClick={e=>show(e,null,'new')}>＋ Créer un premier élément</button></div>
+  :<>
+   {folders.length>0&&<div className="hsec"><h4>Dossiers</h4><div className="hgrid">{folders.map(card)}</div></div>}
+   {loose.length>0&&<div className="hsec"><h4>Hors dossier</h4><div className="hgrid hgrid-s">{loose.map(i=><div className="hmini" key={i.id} onClick={()=>openItem(i.id)} onContextMenu={e=>show(e,i)}><Ic i={i}/><span>{i.title}</span></div>)}</div></div>}</>}
+ </div>
+}
+
 export default function App(){
  const [s,setS]=useState(null),[ready,setReady]=useState(false)
  useEffect(()=>{supabase.auth.getSession().then(({data})=>{setS(data.session);setReady(true)})
@@ -76,7 +104,7 @@ function Main({user}){
  const [dlg,setDlg]=useState(null),[menu,setMenu]=useState(null),[tabs,setTabs]=useState([]),[open,setOpen]=useState(true),[drop,setDrop]=useState(null),[share,setShare]=useState(null),[settings,setSettings]=useState(false),[online,setOnline]=useState([]),[w,setW]=useState(290)
  const fi=useRef(),pp=useRef(null),drag=useRef(null),pch=useRef(null)
  const loadP=async()=>{const {data}=await supabase.from('projects').select('*');setProjs(data||[]);if(!pid&&data?.[0])setPid(data[0].id)}
- const loadI=async()=>{if(!pid)return;const {data}=await supabase.from('items').select('id,parent_id,type,title,color,closed,icon,pos,created_at').eq('project_id',pid).order('created_at');setItems(data||[])}
+ const loadI=async()=>{if(!pid)return;const {data}=await supabase.from('items').select('id,parent_id,type,title,color,closed,icon,pos,created_at').eq('project_id',pid).order('created_at');setItems((data||[]).filter(x=>x.type!=='board'))}
  useEffect(()=>{loadP()},[])
  useEffect(()=>{setSel(null);setTabs([]);loadI();if(!pid)return
   const ch=supabase.channel('items:'+pid).on('postgres_changes',{event:'*',schema:'public',table:'items',filter:'project_id=eq.'+pid},loadI).subscribe()
@@ -130,6 +158,7 @@ function Main({user}){
   patch(id,{parent_id:t.parent_id,pos:(a+b)/2})}
 
  const cur=items.find(i=>i.id===sel)
+ const trail=i=>{const a=[];let c=items.find(x=>x.id===i.parent_id);while(c){a.unshift(c);c=items.find(x=>x.id===c.parent_id)}return a}
  const tabItems=tabs.map(id=>items.find(i=>i.id===id)).filter(Boolean)
  const tree=parent=>sibs(parent).map(i=>{const f=i.type==='folder',z=drop&&drop.id===i.id?' dz-'+drop.zone:'';return <div key={i.id}>
   <div className={'row'+(sel===i.id?' on':'')+z} draggable
@@ -140,7 +169,7 @@ function Main({user}){
    <span className="t">{f&&<small>{i.closed?'▸':'▾'}</small>}<Ic i={i}/> {i.title}</span>
    <span className="act">{f&&<b onClick={e=>show(e,i,'new')}>＋</b>}<b onClick={e=>show(e,i)}>⋯</b></span></div>
   {f&&!i.closed&&<div className="kids">{tree(i.id)}</div>}</div>})
- const news=p=>[['📄 Nouvelle page',()=>add('page',p)],['🗂️ Nouveau kanban',()=>add('board',p)],['📁 Nouveau dossier',()=>add('folder',p)],['📎 Importer un PDF',()=>pick(p)]]
+ const news=p=>[['📄 Nouvelle page',()=>add('page',p)],['📁 Nouveau dossier',()=>add('folder',p)],['📎 Importer un PDF',()=>pick(p)]]
  const m=menu&&menu.i&&items.find(x=>x.id===menu.i.id)
  const titleOf=id=>items.find(x=>x.id===id)?.title
  const pres=<div className="pres">{online.map(u=><i key={u.id} style={{background:u.color}} title={u.name+(u.id===user.id?' (toi)':'')+(u.item&&titleOf(u.item)?' · '+titleOf(u.item):'')}>{(u.name||'?')[0].toUpperCase()}</i>)}{online.length>0&&<small className="muted">{online.length} en ligne</small>}</div>
@@ -152,19 +181,18 @@ function Main({user}){
    <div className="head"><img src="/logo-192.png" width="24" height="24" alt="" style={{borderRadius:6}}/><select value={pid||''} onChange={e=>setPid(e.target.value)} style={{flex:1,minWidth:0}}>{projs.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select>
     <button onClick={e=>show(e,null,'proj')} title="Nouveau projet ou rejoindre">＋</button>{pid&&<button onClick={invite} title="Partager (code)">👥</button>}
     <button className="ghost" onClick={()=>setOpen(false)} title="Masquer le menu">«</button></div>
-   {pid&&<button className="on" onClick={e=>show(e,null,'new')}>＋ Nouveau</button>}
+   {pid&&<div className="head"><button className={sel?'ghost':'on'} style={{flex:1}} onClick={()=>setSel(null)}>🏠 Accueil</button><button className="on" style={{flex:1}} onClick={e=>show(e,null,'new')}>＋ Nouveau</button></div>}
    {pres}
    <div className="tree" onContextMenu={e=>pid&&show(e,null,'new')} onDragOver={e=>drag.current&&e.preventDefault()}
     onDrop={e=>{if(drag.current){e.preventDefault();move(drag.current,null);drag.current=null;setDrop(null)}}}>{tree(null)}</div>
    <div className="head"><button className="ghost" onClick={()=>setSettings(true)}>⚙️ Paramètres</button><button className="ghost" onClick={()=>supabase.auth.signOut()}>Déconnexion</button></div></aside>}
   <section className="mainc">
-   {!open&&<div className="tabs"><button className="ghost" onClick={()=>setOpen(true)} title="Afficher le menu">☰</button>
+   {!open&&<div className="tabs"><button className="ghost" onClick={()=>setOpen(true)} title="Afficher le menu">☰</button><button className="ghost" onClick={()=>setSel(null)} title="Accueil">🏠</button>
     {tabItems.map(t=><div key={t.id} className={'tab'+(sel===t.id?' on':'')} onClick={()=>setSel(t.id)}><Ic i={t}/><span>{t.title}</span>
      <b onClick={e=>{e.stopPropagation();closeTab(t.id)}}>✕</b></div>)}<span style={{marginLeft:'auto'}}>{pres}</span></div>}
-   <main>{!pid?<p className="muted">Crée un projet, ou rejoins-en un avec un code, via « ＋ » en haut à gauche.</p>:!cur?<p className="muted">Choisis un élément, ou crée-en un avec « ＋ Nouveau ». Glisse-dépose pour réorganiser.</p>
-    :<><h2><span className="ic" onClick={e=>show(e,cur,'icon')} title="Choisir une icône">{cur.icon||<span className="muted">☺</span>}</span> {cur.title}</h2>
-     {cur.type==='board'?<Board key={cur.id} id={cur.id} pid={pid} ask={ask}/>
-     :cur.type==='pdf'?<PdfView key={cur.id} path={pid+'/'+cur.id+'.pdf'} title={cur.title}/>
+   <main>{!pid?<p className="muted">Crée un projet, ou rejoins-en un avec un code, via « ＋ » en haut à gauche.</p>:!cur?<Home items={items} sibs={sibs} openItem={openItem} show={show} projName={projs.find(p=>p.id===pid)?.name||''}/>
+    :<><div className="crumb"><a onClick={()=>setSel(null)}>🏠 Accueil</a>{trail(cur).map(t=><span key={t.id}> › {t.title}</span>)}</div><h2><span className="ic" onClick={e=>show(e,cur,'icon')} title="Choisir une icône">{cur.icon||<span className="muted">☺</span>}</span> {cur.title}</h2>
+     {cur.type==='pdf'?<PdfView key={cur.id} path={pid+'/'+cur.id+'.pdf'} title={cur.title}/>
      :<Editor key={cur.id} id={cur.id} user={user}/>}</>}</main></section>
   <input ref={fi} type="file" accept="application/pdf" hidden onChange={onPdf}/>
   {menu&&<div className="ov" onClick={()=>setMenu(null)} onContextMenu={e=>{e.preventDefault();setMenu(null)}}>

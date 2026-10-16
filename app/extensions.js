@@ -1,5 +1,5 @@
 'use client'
-import {useEffect,useState} from 'react'
+import {useEffect,useRef,useState} from 'react'
 import {Node,Mark,Extension} from '@tiptap/core'
 import {Plugin} from '@tiptap/pm/state'
 import {ReactNodeViewRenderer,NodeViewWrapper} from '@tiptap/react'
@@ -82,29 +82,38 @@ export const UnderlineMark=Mark.create({
  renderHTML(){return ['u',0]}
 })
 
-// Image redimensionnable avec poignées visibles uniquement à la sélection
+// Image redimensionnable façon Word : clic = sélection, poignées aux coins et sur les côtés, alignement
+const HANDLES=[['nw',-1],['ne',1],['se',1],['sw',-1],['w',-1],['e',1]]
 function ResizableImageView({node,updateAttributes,selected,deleteNode}){
- const [width,setWidth]=useState(Number(node.attrs.width)||600)
+ const [width,setWidth]=useState(Number(node.attrs.width)||600),[drag,setDrag]=useState(false)
+ const fr=useRef(null)
+ const align=node.attrs.align||'left'
  useEffect(()=>{setWidth(Number(node.attrs.width)||600)},[node.attrs.width])
- const startResize=e=>{
+ const start=sx=>e=>{
   e.preventDefault();e.stopPropagation()
-  const startX=e.clientX,startWidth=Number(node.attrs.width)||600
-  const move=ev=>{const w=Math.max(100,Math.min(1400,Math.round((startWidth+ev.clientX-startX)/10)*10));setWidth(w);updateAttributes({width:w})}
-  const up=()=>{window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up)}
-  window.addEventListener('pointermove',move);window.addEventListener('pointerup',up,{once:true})
+  const x0=e.clientX,w0=width,box=fr.current?.parentElement?.clientWidth||1400,k=align==='center'?2:1
+  let w=w0;setDrag(true)
+  const move=ev=>{w=Math.max(40,Math.min(box,Math.round(w0+(ev.clientX-x0)*sx*k)));setWidth(w)}
+  const up=()=>{window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);setDrag(false);updateAttributes({width:w})}
+  window.addEventListener('pointermove',move);window.addEventListener('pointerup',up)
  }
- return <NodeViewWrapper className={'note-image-wrap'+(selected?' selected':'')} contentEditable={false}>
-  <div className="note-image-frame" style={{width:`min(${width}px, 100%)`}}>
-   <img src={node.attrs.src} alt={node.attrs.alt||''} draggable="false" />
-   {selected&&<><button className="image-delete" type="button" title="Supprimer l’image" onMouseDown={e=>e.preventDefault()} onClick={deleteNode}>×</button><span className="image-size-label">{width}px</span><button className="image-resize-handle" type="button" aria-label="Redimensionner l’image" title="Faire glisser pour redimensionner" onPointerDown={startResize}/></>}
+ const tool=(a,l,t)=><button key={a} type="button" title={t} className={align===a?'on':''} onMouseDown={e=>e.preventDefault()} onClick={()=>updateAttributes({align:a})}>{l}</button>
+ return <NodeViewWrapper className={'note-image-wrap'+(selected?' selected':'')+(drag?' resizing':'')} style={{textAlign:align}} contentEditable={false}>
+  <div ref={fr} className="note-image-frame" style={{width:`min(${width}px, 100%)`}}>
+   <img data-drag-handle src={node.attrs.src} alt={node.attrs.alt||''} draggable="true"/>
+   {selected&&<>
+    {!drag&&<div className="image-tools">{tool('left','⇤','Aligner à gauche')}{tool('center','↔','Centrer')}{tool('right','⇥','Aligner à droite')}
+     <button type="button" title="Supprimer l’image" onMouseDown={e=>e.preventDefault()} onClick={deleteNode}>🗑</button></div>}
+    {HANDLES.map(([h,sx])=><span key={h} className={'image-handle h-'+h} onPointerDown={start(sx)}/>)}
+    <span className="image-size-label">{width}px</span></>}
   </div>
  </NodeViewWrapper>
 }
 export const NoteImage=Node.create({
  name:'noteImage',group:'block',atom:true,draggable:true,selectable:true,
- addAttributes(){return {src:{default:null},alt:{default:''},width:{default:600}}},
+ addAttributes(){return {src:{default:null},alt:{default:''},width:{default:600},align:{default:'left',parseHTML:el=>el.getAttribute('data-align')||'left'}}},
  parseHTML(){return [{tag:'img[src]',getAttrs:el=>({src:el.getAttribute('src'),alt:el.getAttribute('alt')||'',width:Number(el.getAttribute('width'))||el.width||600})}]},
- renderHTML({node}){return ['img',{src:node.attrs.src,alt:node.attrs.alt||'',width:node.attrs.width,style:`width:${node.attrs.width}px;max-width:100%;height:auto`}]},
+ renderHTML({node}){return ['img',{src:node.attrs.src,alt:node.attrs.alt||'','data-align':node.attrs.align,width:node.attrs.width,style:`width:${node.attrs.width}px;max-width:100%;height:auto`}]},
  addNodeView(){return ReactNodeViewRenderer(ResizableImageView)}
 })
 export const ImagePaste=Extension.create({
