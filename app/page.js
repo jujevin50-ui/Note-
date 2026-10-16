@@ -53,77 +53,92 @@ function PdfView({path,title}){
  return u?<><a href={u} download={title+'.pdf'} style={{display:'inline-block',margin:'0 0 10px',padding:'6px 12px',border:'1px solid #e5e5e0',borderRadius:6,color:'inherit',textDecoration:'none'}}>⬇ Télécharger le PDF</a><iframe src={u} className="pdf"/></>:<p className="muted">Chargement…</p>
 }
 
-const SECTIONS=[
+const INV_SECTIONS=[
  {title:'Entreprises à suivre',icon:'📈',color:'#007aff'},
  {title:'Analyses',icon:'🔬',color:'#ff9500'},
- {title:'Journal d’investissement',icon:'📓',color:'#34c759'},
- {title:'Concepts & vocabulaire',icon:'💡',color:'#af52de'},
- {title:'Sources & actualités',icon:'📰',color:'#ff3b30'},
+ {title:'Journal',icon:'📓',color:'#34c759'},
+ {title:'Concepts',icon:'💡',color:'#af52de'},
+ {title:'Sources',icon:'📰',color:'#ff3b30'},
  {title:'Portefeuille',icon:'💰',color:'#30b0c7'},
  {title:'Objectifs',icon:'🎯',color:'#5856d6'},
- {title:'Questions ouvertes',icon:'❓',color:'#8e8e93'},
+ {title:'Questions',icon:'❓',color:'#8e8e93'},
 ]
 
-function Home({items,sibs,openItem,show,projName}){
+function NotesHome({items,sibs,openItem,show,projName}){
  const [q,setQ]=useState(''),[more,setMore]=useState({})
- const roots=sibs(null)
+ const roots=sibs(null),folders=roots.filter(i=>i.type==='folder'),loose=roots.filter(i=>i.type!=='folder')
  const nF=items.filter(i=>i.type==='folder').length,nP=items.filter(i=>i.type==='page').length,nD=items.filter(i=>i.type==='pdf').length
  const path=i=>{const a=[];let c=items.find(x=>x.id===i.parent_id);while(c){a.unshift(c.title);c=items.find(x=>x.id===c.parent_id)}return a.join(' › ')}
  const flat=(id,d=0)=>sibs(id).flatMap(c=>[{i:c,d},...(c.type==='folder'?flat(c.id,d+1):[])])
  const needle=q.trim().toLowerCase(),found=needle?items.filter(i=>(i.title||'').toLowerCase().includes(needle)):[]
  const plural=(n,w)=>n+' '+w+(n>1?'s':'')
+ const Row=({i,d})=>i.type==='folder'
+  ?<div className="hrow hsub" style={{paddingLeft:6+d*16}} onContextMenu={e=>show(e,i)}><Ic i={i}/><b>{i.title}</b><small className="muted">{flat(i.id).filter(x=>x.i.type!=='folder').length}</small>
+    <span className="hact"><b onClick={e=>show(e,i,'new')}>＋</b><b onClick={e=>show(e,i)}>⋯</b></span></div>
+  :<div className="hrow hitem" style={{paddingLeft:6+d*16}} onClick={()=>openItem(i.id)} onContextMenu={e=>show(e,i)}><Ic i={i}/><span>{i.title}</span></div>
+ const card=f=>{const all=flat(f.id),n=all.filter(x=>x.i.type!=='folder').length,sf=all.filter(x=>x.i.type==='folder').length,open=more[f.id],rows=open?all:all.slice(0,8)
+  return <div className="hcard" key={f.id} style={{borderTopColor:f.color||'#007aff'}}>
+   <div className="hhead" onContextMenu={e=>show(e,f)}><Ic i={f}/><div><h3>{f.title}</h3><small className="muted">{plural(n,'élément')}{sf>0&&' · '+plural(sf,'sous-dossier')}</small></div>
+    <span className="hact"><b onClick={e=>show(e,f,'new')} title="Ajouter">＋</b><b onClick={e=>show(e,f)}>⋯</b></span></div>
+   <div className="hbody">{rows.length?rows.map(r=><Row key={r.i.id} {...r}/>):<p className="muted" style={{margin:'4px 6px'}}>Dossier vide</p>}</div>
+   {all.length>8&&<button className="ghost hmore" onClick={()=>setMore({...more,[f.id]:!open})}>{open?'Réduire':'Afficher '+(all.length-8)+' de plus'}</button>}</div>}
+ return <div className="home">
+  <div className="hhd"><div><h1>Notes</h1><p className="muted" style={{margin:'2px 0 0'}}>{projName} · {plural(nF,'dossier')} · {plural(nP,'page')}{nD>0&&' · '+plural(nD,'PDF')}</p></div>
+   <div className="hsearch"><input placeholder="Rechercher…" value={q} onChange={e=>setQ(e.target.value)}/><button className="on" onClick={e=>show(e,null,'new')}>＋ Nouveau</button></div></div>
+  {needle?<div className="hsec"><h4>Résultats ({found.length})</h4>{found.length?<div className="hlist">{found.map(i=><div className="hrow hitem hres" key={i.id} onClick={()=>i.type!=='folder'&&openItem(i.id)} onContextMenu={e=>show(e,i)}><Ic i={i}/><span>{i.title}</span><small className="muted">{path(i)}</small></div>)}</div>:<p className="muted">Aucun résultat.</p>}</div>
+  :!items.length?<div className="hempty"><p className="muted">Aucune note pour l’instant.</p><button className="on" onClick={e=>show(e,null,'new')}>＋ Créer une note</button></div>
+  :<>
+   {folders.length>0&&<div className="hsec"><h4>Dossiers</h4><div className="hgrid">{folders.map(card)}</div></div>}
+   {loose.length>0&&<div className="hsec"><h4>Hors dossier</h4><div className="hgrid hgrid-s">{loose.map(i=><div className="hmini" key={i.id} onClick={()=>openItem(i.id)} onContextMenu={e=>show(e,i)}><Ic i={i}/><span>{i.title}</span></div>)}</div></div>}
+  </>}
+ </div>
+}
+
+function InvestHome({items,sibs,openItem,show,projName}){
+ const [q,setQ]=useState('')
+ const roots=sibs(null)
+ const path=i=>{const a=[];let c=items.find(x=>x.id===i.parent_id);while(c){a.unshift(c.title);c=items.find(x=>x.id===c.parent_id)}return a.join(' › ')}
+ const needle=q.trim().toLowerCase(),found=needle?items.filter(i=>(i.title||'').toLowerCase().includes(needle)):[]
+ const plural=(n,w)=>n+' '+w+(n>1?'s':'')
  const findFolder=t=>roots.find(i=>i.type==='folder'&&(i.title||'').toLowerCase()===t.toLowerCase())
- const sectionTitles=new Set(SECTIONS.map(s=>s.title.toLowerCase()))
+ const sectionTitles=new Set(INV_SECTIONS.map(s=>s.title.toLowerCase()))
  const otherFolders=roots.filter(i=>i.type==='folder'&&!sectionTitles.has((i.title||'').toLowerCase()))
  const loose=roots.filter(i=>i.type!=='folder')
 
  const ItemRow=({i})=>{
-  if(i.type==='folder')return <div className="inv-row inv-sub" onContextMenu={e=>show(e,i)}><Ic i={i}/><b>{i.title}</b><small className="muted">{flat(i.id).filter(x=>x.i.type!=='folder').length}</small>
+  if(i.type==='folder')return <div className="inv-row inv-sub" onContextMenu={e=>show(e,i)}><Ic i={i}/><b>{i.title}</b><small className="muted">{sibs(i.id).length}</small>
    <span className="hact"><b onClick={e=>show(e,i,'new')}>＋</b><b onClick={e=>show(e,i)}>⋯</b></span></div>
   return <div className="inv-row" onClick={()=>openItem(i.id)} onContextMenu={e=>show(e,i)}><Ic i={i}/><span>{i.title}</span>
    <span className="hact"><b onClick={e=>{e.stopPropagation();show(e,i)}}>⋯</b></span></div>
  }
-
  const Section=({s})=>{
   const folder=findFolder(s.title)
   const kids=folder?sibs(folder.id):[]
   return <section className="inv-sec" style={{'--inv':s.color}}>
    <header className="inv-head">
     <span className="inv-ico">{s.icon}</span>
-    <div className="inv-titles">
-     <h3>{s.title}</h3>
-     <small className="muted">{folder?(kids.length?plural(kids.length,'élément'):'Vide'):'Dossier absent'}</small>
-    </div>
-    {folder&&<button type="button" className="ghost inv-add" onClick={e=>show(e,folder,'new')} title="Ajouter">＋</button>}
+    <div className="inv-titles"><h3>{s.title}</h3><small className="muted">{folder?(kids.length?plural(kids.length,'élément'):'Vide'):'—'}</small></div>
+    <button type="button" className="ghost inv-add" onClick={e=>folder?show(e,folder,'new'):show(e,null,'new')} title="Ajouter">＋</button>
    </header>
    <div className="inv-body">
-    {folder? (kids.length?kids.map(i=><ItemRow key={i.id} i={i}/>):<p className="inv-empty muted">Rien ici pour l’instant. Ajoute une page avec ＋</p>)
-     :<p className="inv-empty muted">Crée un dossier « {s.title} » dans la sidebar pour l’afficher ici.</p>}
+    {folder?(kids.length?kids.map(i=><ItemRow key={i.id} i={i}/>):<p className="inv-empty muted">Vide</p>)
+     :<p className="inv-empty muted">Crée un dossier « {s.title} » ici pour le remplir.</p>}
    </div>
   </section>
  }
-
- const card=f=>{const all=flat(f.id),n=all.filter(x=>x.i.type!=='folder').length,sf=all.filter(x=>x.i.type==='folder').length,open=more[f.id],rows=open?all:all.slice(0,8)
-  const Row=({i,d})=>i.type==='folder'
-   ?<div className="hrow hsub" style={{paddingLeft:6+d*16}} onContextMenu={e=>show(e,i)}><Ic i={i}/><b>{i.title}</b><small className="muted">{flat(i.id).filter(x=>x.i.type!=='folder').length}</small>
-     <span className="hact"><b onClick={e=>show(e,i,'new')}>＋</b><b onClick={e=>show(e,i)}>⋯</b></span></div>
-   :<div className="hrow hitem" style={{paddingLeft:6+d*16}} onClick={()=>openItem(i.id)} onContextMenu={e=>show(e,i)}><Ic i={i}/><span>{i.title}</span></div>
-  return <div className="hcard" key={f.id} style={{borderTopColor:f.color||'#007aff'}}>
-   <div className="hhead" onContextMenu={e=>show(e,f)}><Ic i={f}/><div><h3>{f.title}</h3><small className="muted">{plural(n,'élément')}{sf>0&&' · '+plural(sf,'sous-dossier')}</small></div>
-    <span className="hact"><b onClick={e=>show(e,f,'new')} title="Ajouter">＋</b><b onClick={e=>show(e,f)}>⋯</b></span></div>
-   <div className="hbody">{rows.length?rows.map(r=><Row key={r.i.id} {...r}/>):<p className="muted" style={{margin:'4px 6px'}}>Dossier vide</p>}</div>
-   {all.length>8&&<button className="ghost hmore" onClick={()=>setMore({...more,[f.id]:!open})}>{open?'Réduire':'Afficher '+(all.length-8)+' de plus'}</button>}</div>}
-
  return <div className="home">
-  <div className="hhd"><div><h1>Espace investissement</h1><p className="muted" style={{margin:'2px 0 0'}}>{projName} · {plural(nF,'dossier')} · {plural(nP,'page')}{nD>0&&' · '+plural(nD,'PDF')}</p></div>
+  <div className="hhd"><div><h1>Invest</h1><p className="muted" style={{margin:'2px 0 0'}}>{projName} · espace investissement</p></div>
    <div className="hsearch"><input placeholder="Rechercher…" value={q} onChange={e=>setQ(e.target.value)}/><button className="on" onClick={e=>show(e,null,'new')}>＋ Nouveau</button></div></div>
-
   {needle?<div className="hsec"><h4>Résultats ({found.length})</h4>{found.length?<div className="hlist">{found.map(i=><div className="hrow hitem hres" key={i.id} onClick={()=>i.type!=='folder'&&openItem(i.id)} onContextMenu={e=>show(e,i)}><Ic i={i}/><span>{i.title}</span><small className="muted">{path(i)}</small></div>)}</div>:<p className="muted">Aucun résultat.</p>}</div>
   :<>
-   <div className="inv-grid">{SECTIONS.map(s=><Section key={s.title} s={s}/>)}</div>
-
-   {otherFolders.length>0&&<div className="hsec" style={{marginTop:28}}><h4>Autres dossiers</h4><div className="hgrid">{otherFolders.map(card)}</div></div>}
-   {loose.length>0&&<div className="hsec"><h4>Hors dossier</h4><div className="hgrid hgrid-s">{loose.map(i=><div className="hmini" key={i.id} onClick={()=>openItem(i.id)} onContextMenu={e=>show(e,i)}><Ic i={i}/><span>{i.title}</span></div>)}</div></div>}
+   <div className="inv-grid">{INV_SECTIONS.map(s=><Section key={s.title} s={s}/>)}</div>
+   {(otherFolders.length>0||loose.length>0)&&<div className="hsec" style={{marginTop:24}}>
+    <h4>Autres</h4>
+    <div className="hgrid hgrid-s">
+     {otherFolders.map(f=><div className="hmini" key={f.id} onClick={()=>show({preventDefault(){},stopPropagation(){},clientX:0,clientY:0},f)} onContextMenu={e=>show(e,f)}><Ic i={f}/><span>{f.title}</span></div>)}
+     {loose.map(i=><div className="hmini" key={i.id} onClick={()=>openItem(i.id)} onContextMenu={e=>show(e,i)}><Ic i={i}/><span>{i.title}</span></div>)}
+    </div>
+   </div>}
   </>}
  </div>
 }
@@ -148,9 +163,11 @@ function Login(){
 function Main({user}){
  const [projs,setProjs]=useState([]),[pid,setPid]=useState(null),[items,setItems]=useState([]),[sel,setSel]=useState(null)
  const [dlg,setDlg]=useState(null),[menu,setMenu]=useState(null),[tabs,setTabs]=useState([]),[open,setOpen]=useState(true),[drop,setDrop]=useState(null),[share,setShare]=useState(null),[settings,setSettings]=useState(false),[online,setOnline]=useState([]),[w,setW]=useState(290)
+ const [space,setSpace]=useState(()=>{try{return localStorage.getItem('space')||'notes'}catch{return 'notes'}})
+ const switchSpace=s=>{setSpace(s);try{localStorage.setItem('space',s)}catch{};setSel(null);setTabs([])}
  const fi=useRef(),pp=useRef(null),drag=useRef(null),pch=useRef(null)
  const loadP=async()=>{const {data}=await supabase.from('projects').select('*');setProjs(data||[]);if(!pid&&data?.[0])setPid(data[0].id)}
- const loadI=async()=>{if(!pid)return;const {data}=await supabase.from('items').select('id,parent_id,type,title,color,closed,icon,pos,created_at').eq('project_id',pid).order('created_at');setItems((data||[]).filter(x=>x.type!=='board'))}
+ const loadI=async()=>{if(!pid)return;const {data}=await supabase.from('items').select('id,parent_id,type,title,color,closed,icon,pos,created_at,space').eq('project_id',pid).order('created_at');setItems((data||[]).filter(x=>x.type!=='board').map(x=>({...x,space:x.space||'notes'})))}
  useEffect(()=>{loadP()},[])
  useEffect(()=>{setSel(null);setTabs([]);loadI();if(!pid)return
   const ch=supabase.channel('items:'+pid).on('postgres_changes',{event:'*',schema:'public',table:'items',filter:'project_id=eq.'+pid},loadI).subscribe()
@@ -167,7 +184,7 @@ function Main({user}){
  const startRz=e=>{e.preventDefault();const mv=ev=>{const n=Math.max(200,Math.min(560,ev.clientX));setW(n);localStorage.setItem('sbw',n)}
   const up=()=>{removeEventListener('mousemove',mv);removeEventListener('mouseup',up)};addEventListener('mousemove',mv);addEventListener('mouseup',up)}
  const ask=(label,value,ok)=>setDlg({label,value,ok,k:Math.random()})
- const insert=async row=>{const {data,error}=await supabase.from('items').insert({project_id:pid,pos:Date.now(),...row}).select().single();if(error)alert(error.message);return data}
+ const insert=async row=>{const {data,error}=await supabase.from('items').insert({project_id:pid,pos:Date.now(),space,...row}).select().single();if(error){alert(error.message+(String(error.message).includes('space')?'\n\n→ Exécute supabase/space.sql dans Supabase.':''));return null}return data?{...data,space:data.space||space}:null}
  const patch=(id,p)=>{setItems(l=>l.map(x=>x.id===id?{...x,...p}:x));supabase.from('items').update(p).eq('id',id).then(err)}
  const newProj=()=>ask('Nom du projet','',async name=>{const {data,error}=await supabase.from('projects').insert({name}).select().single();if(error)return alert(error.message);await loadP();setPid(data.id)})
  const code=projs.find(p=>p.id===pid)?.code
@@ -190,7 +207,8 @@ function Main({user}){
  const closeTab=id=>{const n=tabs.filter(x=>x!==id);setTabs(n);if(sel===id)setSel(n[n.length-1]||null)}
  // ordre + déplacement par glisser-déposer
  const key=x=>x.pos??new Date(x.created_at).getTime()
- const sibs=p=>items.filter(i=>i.parent_id===p).sort((a,b)=>key(a)-key(b))
+ const spaceItems=items.filter(i=>(i.space||'notes')===space)
+ const sibs=p=>spaceItems.filter(i=>i.parent_id===p).sort((a,b)=>key(a)-key(b))
  const isIn=(id,anc)=>{let c=items.find(x=>x.id===id);while(c){if(c.id===anc)return true;c=items.find(x=>x.id===c.parent_id)}return false}
  const zoneOf=(e,f)=>{const r=e.currentTarget.getBoundingClientRect(),y=(e.clientY-r.top)/r.height;return f?(y<.25?'before':y>.75?'after':'in'):(y<.5?'before':'after')}
  const move=(id,tid,zone)=>{
@@ -203,9 +221,9 @@ function Main({user}){
   const b=zone==='before'?key(t):(l[k+1]?key(l[k+1]):key(t)+2000)
   patch(id,{parent_id:t.parent_id,pos:(a+b)/2})}
 
- const cur=items.find(i=>i.id===sel)
+ const cur=items.find(i=>i.id===sel&&(i.space||'notes')===space)
  const trail=i=>{const a=[];let c=items.find(x=>x.id===i.parent_id);while(c){a.unshift(c);c=items.find(x=>x.id===c.parent_id)}return a}
- const tabItems=tabs.map(id=>items.find(i=>i.id===id)).filter(Boolean)
+ const tabItems=tabs.map(id=>items.find(i=>i.id===id)).filter(i=>i&&(i.space||'notes')===space)
  const tree=parent=>sibs(parent).map(i=>{const f=i.type==='folder',z=drop&&drop.id===i.id?' dz-'+drop.zone:'';return <div key={i.id}>
   <div className={'row'+(sel===i.id?' on':'')+z} draggable
    onDragStart={e=>{drag.current=i.id;e.dataTransfer.setData('text/plain',i.id)}} onDragEnd={()=>{drag.current=null;setDrop(null)}}
@@ -227,6 +245,7 @@ function Main({user}){
    <div className="head side-top"><img src="/logo-192.png" width="24" height="24" alt=""/><select value={pid||''} onChange={e=>setPid(e.target.value)}>{projs.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select>
     <button onClick={e=>show(e,null,'proj')} title="Nouveau projet ou rejoindre">＋</button>{pid&&<button onClick={invite} title="Partager (code)">👥</button>}
     <button className="ghost" onClick={()=>setOpen(false)} title="Masquer le menu">«</button></div>
+   {pid&&<div className="side-spaces"><button type="button" className={space==='notes'?'on':''} onClick={()=>switchSpace('notes')}>📝 Notes</button><button type="button" className={space==='invest'?'on':''} onClick={()=>switchSpace('invest')}>📈 Invest</button></div>}
    {pid&&<div className="head side-nav"><button className={sel?'ghost':'on'} onClick={()=>setSel(null)}>🏠 Accueil</button><button className="on" onClick={e=>show(e,null,'new')}>＋ Nouveau</button></div>}
    {pres}
    <div className="tree" onContextMenu={e=>pid&&show(e,null,'new')} onDragOver={e=>drag.current&&e.preventDefault()}
@@ -236,7 +255,9 @@ function Main({user}){
    {!open&&<div className="tabs"><button className="ghost" onClick={()=>setOpen(true)} title="Afficher le menu">☰</button><button className="ghost" onClick={()=>setSel(null)} title="Accueil">🏠</button>
     {tabItems.map(t=><div key={t.id} className={'tab'+(sel===t.id?' on':'')} onClick={()=>setSel(t.id)}><Ic i={t}/><span>{t.title}</span>
      <b onClick={e=>{e.stopPropagation();closeTab(t.id)}}>✕</b></div>)}<span style={{marginLeft:'auto'}}>{pres}</span></div>}
-   <main>{!pid?<p className="muted">Crée un projet, ou rejoins-en un avec un code, via « ＋ » en haut à gauche.</p>:!cur?<Home items={items} sibs={sibs} openItem={openItem} show={show} projName={projs.find(p=>p.id===pid)?.name||''}/>
+   <main>{!pid?<p className="muted">Crée un projet, ou rejoins-en un avec un code, via « ＋ » en haut à gauche.</p>:!cur?(space==='invest'
+     ?<InvestHome items={spaceItems} sibs={sibs} openItem={openItem} show={show} projName={projs.find(p=>p.id===pid)?.name||''}/>
+     :<NotesHome items={spaceItems} sibs={sibs} openItem={openItem} show={show} projName={projs.find(p=>p.id===pid)?.name||''}/>)
     :<><div className="crumb"><a onClick={()=>setSel(null)}>🏠 Accueil</a>{trail(cur).map(t=><span key={t.id}> › {t.title}</span>)}</div><h2><span className="ic" onClick={e=>show(e,cur,'icon')} title="Choisir une icône">{cur.icon||<span className="muted">☺</span>}</span> {cur.title}</h2>
      {cur.type==='pdf'?<PdfView key={cur.id} path={pid+'/'+cur.id+'.pdf'} title={cur.title}/>
      :<Editor key={cur.id} id={cur.id} user={user}/>}</>}</main></section>
