@@ -15,7 +15,7 @@ import Highlight from '@tiptap/extension-highlight'
 import Youtube from '@tiptap/extension-youtube'
 import {supabase} from '../lib/supabase'
 import {connect,b64,un,colorOf} from '../lib/provider'
-import {Cell,HeadCell,LinkCard,Chart,PasteLink} from './extensions'
+import {Cell,HeadCell,LinkCard,Chart,PasteLink,NoteImage,UnderlineMark,ImagePaste} from './extensions'
 
 export default function Editor({id,user}){
  const [ctx,setCtx]=useState(null)
@@ -40,6 +40,7 @@ function Tiptap({ydoc,provider}){
  const ed=useEditor({immediatelyRender:false,extensions:[StarterKit.configure({history:false}),
   Collaboration.configure({document:ydoc}),
   CollaborationCursor.configure({provider,user:provider.awareness.getLocalState().user}),
+  NoteImage,UnderlineMark,ImagePaste,
   TaskList,TaskItem.configure({nested:true}),Table.configure({resizable:true}),TableRow,HeadCell,Cell,
   TextStyle,Color,Highlight.configure({multicolor:true}),Youtube.configure({nocookie:true,width:640,height:360}),LinkCard,Chart,PasteLink]})
  if(!ed)return null
@@ -56,12 +57,14 @@ function Tiptap({ydoc,provider}){
    {B('☑',()=>f().toggleTaskList().run(),ed.isActive('taskList'),'Cases à cocher')}
    {B('B',()=>f().toggleBold().run(),ed.isActive('bold'),'Gras')}
    {B('I',()=>f().toggleItalic().run(),ed.isActive('italic'),'Italique')}
+   {B('U̲',()=>f().toggleMark('underline').run(),ed.isActive('underline'),'Souligner')}
    <label className="cl" title="Couleur du texte"><b style={{color:'#e11d48'}}>A</b><input type="color" defaultValue="#e11d48" onChange={e=>f().setColor(e.target.value).run()}/></label>
    <label className="cl" title="Surligner">🖍<input type="color" defaultValue="#fde047" onChange={e=>f().setHighlight({color:e.target.value}).run()}/></label>
    {B('⌫',()=>f().unsetColor().unsetHighlight().run(),false,'Effacer couleur et surlignage')}
    {B('</>',()=>f().toggleCodeBlock().run(),ed.isActive('codeBlock'),'Bloc de code')}
    {B('❝',()=>f().toggleBlockquote().run(),ed.isActive('blockquote'),'Citation')}
    {B('―',()=>f().setHorizontalRule().run(),false,'Séparateur')}
+   <label className="image-upload" title="Insérer une image depuis votre ordinateur">🖼 Image<input type="file" accept="image/*" onChange={e=>{const file=e.target.files?.[0];if(!file)return;const reader=new FileReader();reader.onload=()=>f().insertContent({type:'noteImage',attrs:{src:reader.result,width:600}}).run();reader.readAsDataURL(file);e.target.value=''}}/></label>
    {B('📊',()=>f().insertContent({type:'chart'}).run(),false,'Insérer un graphique')}
    <select value="" onChange={e=>tbl(e.target.value)}><option value="" disabled hidden>▦ Tableau</option>
     <option value="ins">Insérer un tableau 3×3</option><option value="row+">Ajouter une ligne</option><option value="col+">Ajouter une colonne</option>

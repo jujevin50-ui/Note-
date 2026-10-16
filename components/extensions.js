@@ -1,6 +1,6 @@
 'use client'
-import {useState} from 'react'
-import {Node,Extension} from '@tiptap/core'
+import {useEffect,useState} from 'react'
+import {Node,Mark,Extension} from '@tiptap/core'
 import {Plugin} from '@tiptap/pm/state'
 import {ReactNodeViewRenderer,NodeViewWrapper} from '@tiptap/react'
 import TableCell from '@tiptap/extension-table-cell'
@@ -73,3 +73,41 @@ export const Chart=Node.create({name:'chart',group:'block',atom:true,draggable:t
   data:{default:JSON.stringify([{id:'a',l:'A',v:30,c:PAL[0]},{id:'b',l:'B',v:50,c:PAL[1]},{id:'c',l:'C',v:20,c:PAL[2]}])}}},
  parseHTML(){return[{tag:'div[data-chart]'}]},renderHTML(){return['div',{'data-chart':''}]},
  addNodeView(){return ReactNodeViewRenderer(ChartView)}})
+
+
+// Soulignement du texte
+export const UnderlineMark=Mark.create({
+ name:'underline',
+ parseHTML(){return [{tag:'u'}]},
+ renderHTML(){return ['u',0]}
+})
+
+// Image collée/importée avec réglage de largeur
+function ResizableImageView({node,updateAttributes,selected}){
+ const [width,setWidth]=useState(Number(node.attrs.width)||600)
+ useEffect(()=>{setWidth(Number(node.attrs.width)||600)},[node.attrs.width])
+ return <NodeViewWrapper className={'note-image-wrap'+(selected?' selected':'')} contentEditable={false}>
+  <div className="note-image-frame" style={{width:`min(${width}px, 100%)`}}>
+   <img src={node.attrs.src} alt={node.attrs.alt||''} draggable="true" />
+   <input aria-label="Redimensionner l’image" className="image-resize" type="range" min="100" max="1200" step="10" value={Math.min(1200,width)} onChange={e=>{const w=Number(e.target.value);setWidth(w);updateAttributes({width:w})}} title="Faire glisser pour redimensionner"/>
+   <span className="image-width">{width}px</span>
+  </div>
+ </NodeViewWrapper>
+}
+export const NoteImage=Node.create({
+ name:'noteImage',group:'block',atom:true,draggable:true,selectable:true,
+ addAttributes(){return {src:{default:null},alt:{default:''},width:{default:600}}},
+ parseHTML(){return [{tag:'img[src]',getAttrs:el=>({src:el.getAttribute('src'),alt:el.getAttribute('alt')||'',width:Number(el.getAttribute('width'))||el.width||600})}]},
+ renderHTML({node}){return ['img',{src:node.attrs.src,alt:node.attrs.alt||'',width:node.attrs.width,style:`width:${node.attrs.width}px;max-width:100%;height:auto`}]},
+ addNodeView(){return ReactNodeViewRenderer(ResizableImageView)}
+})
+export const ImagePaste=Extension.create({
+ name:'imagePaste',
+ addProseMirrorPlugins(){const editor=this.editor;return [new Plugin({props:{handlePaste:(view,event)=>{
+  const files=Array.from(event.clipboardData?.items||[]).map(i=>i.getAsFile?.()).filter(f=>f&&f.type.startsWith('image/'))
+  if(!files.length)return false
+  event.preventDefault()
+  files.forEach(file=>{const reader=new FileReader();reader.onload=()=>editor.chain().focus().insertContent({type:'noteImage',attrs:{src:reader.result,width:600}}).run();reader.readAsDataURL(file)})
+  return true
+ }}})]}
+})

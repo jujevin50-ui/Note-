@@ -62,3 +62,13 @@ a.lc span{color:var(--mut);font-size:13px;overflow:hidden;display:-webkit-box;-w
 .cedit{display:grid;gap:6px;margin-top:10px;border-top:1px solid var(--bd);padding-top:10px}
 .crow{display:flex;gap:6px;align-items:center}.crow input[type=text],.crow input[type=number]{min-width:0}.crow input[type=color]{width:34px;height:30px;padding:2px}
 .ProseMirror td[style*=background],.ProseMirror th[style*=background]{color:#1f2328}
+
+/* Images collées/importées et texte souligné */
+.image-upload{position:relative;display:inline-flex;align-items:center;gap:5px;border:1px solid var(--bd);border-radius:6px;padding:6px 10px;cursor:pointer;background:var(--bg)}
+.image-upload input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.ProseMirror u{text-decoration:underline;text-underline-offset:2px}
+.note-image-wrap{display:block;max-width:100%;margin:12px 0;clear:both}
+.note-image-frame{position:relative;max-width:100%;display:inline-block;line-height:0}
+.note-image-frame img{display:block;width:100%;height:auto;max-width:100%;border-radius:4px}
+.image-resize{display:block;width:100%;height:16px;padding:0;margin-top:5px;accent-color:var(--ac);cursor:ew-resize;border:0;background:transparent}
+.image-width{display:block;font-size:11px;line-height:1.2;color:var(--mut);text-align:right}
