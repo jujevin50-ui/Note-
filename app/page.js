@@ -53,32 +53,75 @@ function PdfView({path,title}){
  return u?<><a href={u} download={title+'.pdf'} style={{display:'inline-block',margin:'0 0 10px',padding:'6px 12px',border:'1px solid #e5e5e0',borderRadius:6,color:'inherit',textDecoration:'none'}}>⬇ Télécharger le PDF</a><iframe src={u} className="pdf"/></>:<p className="muted">Chargement…</p>
 }
 
-function Home({items,sibs,openItem,show,projName}){
- const [q,setQ]=useState(''),[more,setMore]=useState({})
+const HUB=[
+ {title:'Entreprises à suivre',icon:'📈',color:'#007aff',desc:'Watchlist, thèses d’investissement, points de suivi'},
+ {title:'Journal d’investissement',icon:'📓',color:'#34c759',desc:'Décisions, trades, retours d’expérience'},
+ {title:'Concepts & vocabulaire',icon:'💡',color:'#af52de',desc:'Définitions, notions apprises ensemble'},
+ {title:'Analyses',icon:'🔬',color:'#ff9500',desc:'Due diligence, notes sur une entreprise'},
+ {title:'Sources & actualités',icon:'📰',color:'#ff3b30',desc:'Articles, podcasts, rapports à relire'},
+ {title:'Objectifs',icon:'🎯',color:'#5856d6',desc:'Objectifs financiers, plan d’apprentissage'},
+ {title:'Portefeuille',icon:'💰',color:'#30b0c7',desc:'Positions, allocation, suivi de perf'},
+ {title:'Questions ouvertes',icon:'❓',color:'#8e8e93',desc:'Ce qu’on ne comprend pas encore'},
+]
+
+function Home({items,sibs,openItem,show,projName,ensureHub}){
+ const [q,setQ]=useState(''),[more,setMore]=useState({}),[busy,setBusy]=useState(false)
  const roots=sibs(null),folders=roots.filter(i=>i.type==='folder'),loose=roots.filter(i=>i.type!=='folder')
  const nF=items.filter(i=>i.type==='folder').length,nP=items.filter(i=>i.type==='page').length,nD=items.filter(i=>i.type==='pdf').length
  const path=i=>{const a=[];let c=items.find(x=>x.id===i.parent_id);while(c){a.unshift(c.title);c=items.find(x=>x.id===c.parent_id)}return a.join(' › ')}
  const flat=(id,d=0)=>sibs(id).flatMap(c=>[{i:c,d},...(c.type==='folder'?flat(c.id,d+1):[])])
  const needle=q.trim().toLowerCase(),found=needle?items.filter(i=>(i.title||'').toLowerCase().includes(needle)):[]
  const plural=(n,w)=>n+' '+w+(n>1?'s':'')
+ const findHub=t=>roots.find(i=>i.type==='folder'&&(i.title||'').toLowerCase()===t.toLowerCase())
+ const openHub=async h=>{
+  setBusy(true)
+  try{await ensureHub(h)}finally{setBusy(false)}
+ }
+ const setupAll=async()=>{
+  setBusy(true)
+  try{for(const h of HUB){if(!findHub(h.title))await ensureHub(h)}}finally{setBusy(false)}
+ }
+ const missing=HUB.filter(h=>!findHub(h.title))
  const Row=({i,d})=>i.type==='folder'
   ?<div className="hrow hsub" style={{paddingLeft:6+d*16}} onContextMenu={e=>show(e,i)}><Ic i={i}/><b>{i.title}</b><small className="muted">{flat(i.id).filter(x=>x.i.type!=='folder').length}</small>
     <span className="hact"><b onClick={e=>show(e,i,'new')}>＋</b><b onClick={e=>show(e,i)}>⋯</b></span></div>
   :<div className="hrow hitem" style={{paddingLeft:6+d*16}} onClick={()=>openItem(i.id)} onContextMenu={e=>show(e,i)}><Ic i={i}/><span>{i.title}</span></div>
  const card=f=>{const all=flat(f.id),n=all.filter(x=>x.i.type!=='folder').length,sf=all.filter(x=>x.i.type==='folder').length,open=more[f.id],rows=open?all:all.slice(0,8)
-  return <div className="hcard" key={f.id} style={{borderTopColor:f.color||'#f59e0b'}}>
+  return <div className="hcard" key={f.id} style={{borderTopColor:f.color||'#007aff'}}>
    <div className="hhead" onContextMenu={e=>show(e,f)}><Ic i={f}/><div><h3>{f.title}</h3><small className="muted">{plural(n,'élément')}{sf>0&&' · '+plural(sf,'sous-dossier')}</small></div>
     <span className="hact"><b onClick={e=>show(e,f,'new')} title="Ajouter dans ce dossier">＋</b><b onClick={e=>show(e,f)}>⋯</b></span></div>
    <div className="hbody">{rows.length?rows.map(r=><Row key={r.i.id} {...r}/>):<p className="muted" style={{margin:'4px 6px'}}>Dossier vide</p>}</div>
    {all.length>8&&<button className="ghost hmore" onClick={()=>setMore({...more,[f.id]:!open})}>{open?'Réduire':'Afficher '+(all.length-8)+' de plus'}</button>}</div>}
  return <div className="home">
-  <div className="hhd"><div><h1>🏠 Accueil</h1><p className="muted" style={{margin:'2px 0 0'}}>{projName} · {plural(nF,'dossier')} · {plural(nP,'page')}{nD>0&&' · '+plural(nD,'PDF')}</p></div>
+  <div className="hhd"><div><h1>Accueil</h1><p className="muted" style={{margin:'2px 0 0'}}>{projName} · {plural(nF,'dossier')} · {plural(nP,'page')}{nD>0&&' · '+plural(nD,'PDF')}</p></div>
    <div className="hsearch"><input placeholder="Rechercher…" value={q} onChange={e=>setQ(e.target.value)}/><button className="on" onClick={e=>show(e,null,'new')}>＋ Nouveau</button></div></div>
   {needle?<div className="hsec"><h4>Résultats ({found.length})</h4>{found.length?<div className="hlist">{found.map(i=><div className="hrow hitem hres" key={i.id} onClick={()=>i.type!=='folder'&&openItem(i.id)} onContextMenu={e=>show(e,i)}><Ic i={i}/><span>{i.title}</span><small className="muted">{path(i)}</small></div>)}</div>:<p className="muted">Aucun résultat.</p>}</div>
-  :!items.length?<div className="hempty"><p className="muted">Ton espace est vide.</p><button className="on" onClick={e=>show(e,null,'new')}>＋ Créer un premier élément</button></div>
   :<>
-   {folders.length>0&&<div className="hsec"><h4>Dossiers</h4><div className="hgrid">{folders.map(card)}</div></div>}
-   {loose.length>0&&<div className="hsec"><h4>Hors dossier</h4><div className="hgrid hgrid-s">{loose.map(i=><div className="hmini" key={i.id} onClick={()=>openItem(i.id)} onContextMenu={e=>show(e,i)}><Ic i={i}/><span>{i.title}</span></div>)}</div></div>}</>}
+   <div className="hsec">
+    <div className="hsec-top">
+     <h4>Espace investissement</h4>
+     {missing.length>0&&<button className="ghost hsetup" disabled={busy} onClick={setupAll}>{busy?'Création…':'Créer les dossiers manquants ('+missing.length+')'}</button>}
+    </div>
+    <p className="hsec-desc muted">Sections prêtes pour apprendre l’investissement à deux. Clique pour ouvrir ou créer le dossier.</p>
+    <div className="hgrid hgrid-hub">
+     {HUB.map(h=>{
+      const ex=findHub(h.title)
+      const n=ex?flat(ex.id).filter(x=>x.i.type!=='folder').length:0
+      return <button key={h.title} type="button" className={'hhub'+(ex?' exists':'')} style={{'--hub':h.color}} onClick={()=>openHub(h)} disabled={busy}>
+       <span className="hhub-ico">{h.icon}</span>
+       <span className="hhub-body">
+        <strong>{h.title}</strong>
+        <small>{ex?(n?plural(n,'élément'):'Dossier prêt'):h.desc}</small>
+       </span>
+       <span className="hhub-go">{ex?'→':'＋'}</span>
+      </button>
+     })}
+    </div>
+   </div>
+   {!items.length&&<div className="hempty"><p className="muted">Ton espace est encore vide — utilise les cartes ci-dessus ou crée un élément.</p><button className="on" onClick={e=>show(e,null,'new')}>＋ Créer un élément libre</button></div>}
+   {folders.length>0&&<div className="hsec"><h4>Tous les dossiers</h4><div className="hgrid">{folders.map(card)}</div></div>}
+   {loose.length>0&&<div className="hsec"><h4>Hors dossier</h4><div className="hgrid hgrid-s">{loose.map(i=><div className="hmini" key={i.id} onClick={()=>openItem(i.id)} onContextMenu={e=>show(e,i)}><Ic i={i}/><span>{i.title}</span></div>)}</div></div>}
+  </>}
  </div>
 }
 
@@ -141,6 +184,18 @@ function Main({user}){
  const show=(e,i,mode)=>{e.preventDefault();e.stopPropagation();setMenu({x:Math.min(e.clientX,innerWidth-230),y:Math.min(e.clientY,innerHeight-340),i,mode})}
 
  const openItem=id=>{setSel(id);setTabs(t=>t.includes(id)?t:[...t,id])}
+ const ensureHub=async h=>{
+  const exists=items.find(i=>!i.parent_id&&i.type==='folder'&&(i.title||'').toLowerCase()===h.title.toLowerCase())
+  if(exists){
+   if(exists.closed)patch(exists.id,{closed:false})
+   setSel(null)
+   return exists
+  }
+  const data=await insert({type:'folder',title:h.title,parent_id:null,color:h.color,icon:h.icon})
+  if(data)setItems(l=>[...l,data])
+  setSel(null)
+  return data
+ }
  const closeTab=id=>{const n=tabs.filter(x=>x!==id);setTabs(n);if(sel===id)setSel(n[n.length-1]||null)}
  // ordre + déplacement par glisser-déposer
  const key=x=>x.pos??new Date(x.created_at).getTime()
@@ -190,7 +245,7 @@ function Main({user}){
    {!open&&<div className="tabs"><button className="ghost" onClick={()=>setOpen(true)} title="Afficher le menu">☰</button><button className="ghost" onClick={()=>setSel(null)} title="Accueil">🏠</button>
     {tabItems.map(t=><div key={t.id} className={'tab'+(sel===t.id?' on':'')} onClick={()=>setSel(t.id)}><Ic i={t}/><span>{t.title}</span>
      <b onClick={e=>{e.stopPropagation();closeTab(t.id)}}>✕</b></div>)}<span style={{marginLeft:'auto'}}>{pres}</span></div>}
-   <main>{!pid?<p className="muted">Crée un projet, ou rejoins-en un avec un code, via « ＋ » en haut à gauche.</p>:!cur?<Home items={items} sibs={sibs} openItem={openItem} show={show} projName={projs.find(p=>p.id===pid)?.name||''}/>
+   <main>{!pid?<p className="muted">Crée un projet, ou rejoins-en un avec un code, via « ＋ » en haut à gauche.</p>:!cur?<Home items={items} sibs={sibs} openItem={openItem} show={show} projName={projs.find(p=>p.id===pid)?.name||''} ensureHub={ensureHub}/>
     :<><div className="crumb"><a onClick={()=>setSel(null)}>🏠 Accueil</a>{trail(cur).map(t=><span key={t.id}> › {t.title}</span>)}</div><h2><span className="ic" onClick={e=>show(e,cur,'icon')} title="Choisir une icône">{cur.icon||<span className="muted">☺</span>}</span> {cur.title}</h2>
      {cur.type==='pdf'?<PdfView key={cur.id} path={pid+'/'+cur.id+'.pdf'} title={cur.title}/>
      :<Editor key={cur.id} id={cur.id} user={user}/>}</>}</main></section>
