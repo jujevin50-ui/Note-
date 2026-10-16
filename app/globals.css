@@ -78,3 +78,106 @@ a.lc span{color:var(--mut);font-size:13px;overflow:hidden;display:-webkit-box;-w
 .member-row{display:flex;align-items:center;gap:9px;padding:8px;border:1px solid var(--bd);border-radius:8px;min-width:0}
 .member-avatar{display:grid;place-items:center;flex:none;width:34px;height:34px;border-radius:50%;background:var(--side);font-weight:700}
 .member-row>span:nth-child(2){display:grid;gap:2px;min-width:0;flex:1}.member-row small{color:var(--mut);overflow-wrap:anywhere}.member-owner{font-size:11px;color:var(--mut);white-space:nowrap}
+
+/* Barre d’édition — esthétique minimaliste inspirée d’iOS */
+.bar{
+  display:flex;
+  align-items:center;
+  gap:5px;
+  flex-wrap:wrap;
+  position:sticky;
+  top:8px;
+  z-index:20;
+  width:fit-content;
+  max-width:100%;
+  margin:0 auto 24px;
+  padding:7px;
+  border:1px solid color-mix(in srgb,var(--bd) 72%,transparent);
+  border-radius:18px;
+  background:color-mix(in srgb,var(--bg) 82%,transparent);
+  -webkit-backdrop-filter:blur(24px) saturate(180%);
+  backdrop-filter:blur(24px) saturate(180%);
+  box-shadow:0 8px 30px rgba(0,0,0,.075), inset 0 1px 0 rgba(255,255,255,.35);
+}
+.bar button,
+.bar select,
+.bar .cl,
+.bar .image-upload{
+  min-height:34px;
+  border:1px solid transparent;
+  border-radius:10px;
+  background:transparent;
+  color:var(--fg);
+  transition:background .16s ease,border-color .16s ease,transform .16s ease;
+}
+.bar button{
+  min-width:34px;
+  padding:6px 9px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  font-size:13px;
+  font-weight:600;
+  line-height:1;
+}
+.bar button:hover,
+.bar select:hover,
+.bar .cl:hover,
+.bar .image-upload:hover{
+  background:var(--hov);
+}
+.bar button:active{transform:scale(.96)}
+.bar button.on{
+  background:var(--ac);
+  color:#fff;
+  border-color:transparent;
+  box-shadow:0 2px 5px color-mix(in srgb,var(--ac) 25%,transparent);
+}
+.bar select{
+  max-width:130px;
+  padding:6px 28px 6px 10px;
+  font-size:13px;
+  font-weight:500;
+  cursor:pointer;
+}
+.bar .cl{
+  min-width:34px;
+  padding:6px 9px;
+  border-color:transparent;
+}
+.bar .image-upload{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:6px 11px;
+  font-size:13px;
+  font-weight:600;
+  white-space:nowrap;
+  cursor:pointer;
+}
+.bar .image-upload input{
+  position:absolute;
+  width:1px;
+  height:1px;
+  overflow:hidden;
+  clip:rect(0,0,0,0);
+  opacity:0;
+}
+.bar > select + button{margin-left:3px}
+.bar > select:first-child{min-width:94px}
+.bar > button:nth-of-type(4){font-family:ui-serif,Georgia,serif;font-size:15px}
+.bar > button:nth-of-type(5){font-family:ui-serif,Georgia,serif;font-style:italic;font-size:15px}
+.bar > button:nth-of-type(6){font-family:ui-serif,Georgia,serif;text-decoration:underline;font-size:15px}
+.bar > button:focus-visible,
+.bar > select:focus-visible,
+.bar .image-upload:focus-within{
+  outline:2px solid var(--ac);
+  outline-offset:2px;
+}
+@media(max-width:720px){
+  .bar{width:100%;top:4px;border-radius:15px;gap:3px;padding:6px;margin-bottom:18px}
+  .bar button{min-width:32px;min-height:32px;padding:5px 7px}
+  .bar select{max-width:112px;min-height:32px}
+  .bar .image-upload{min-height:32px;padding:5px 8px}
+}
+@media(prefers-reduced-motion:reduce){.bar button,.bar select,.bar .cl,.bar .image-upload{transition:none}}
