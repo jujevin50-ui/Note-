@@ -219,3 +219,37 @@ a.lc span{color:var(--mut);font-size:13px;overflow:hidden;display:-webkit-box;-w
 .chart-legend div{display:flex;align-items:center;gap:.7em}.chart-legend i{width:.75em;height:.75em;border-radius:50%;flex:none}
 .chart-legend span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.chart-legend b{font-weight:500;font-variant-numeric:tabular-nums;white-space:nowrap}
 .chart-wrap .cedit{text-align:left;margin-top:10px}
+
+/* Panneau latéral « Résumé & notes » — inspiré d’iPadOS / macOS */
+.ed-wrap{transition:margin-right .45s cubic-bezier(.32,.72,0,1)}
+@media(min-width:1180px){.ed-wrap.shift{margin-right:404px}}
+.bar .sum-btn{margin-left:auto;display:inline-flex;align-items:center;gap:7px;border-radius:999px;padding:5px 14px 5px 11px;background:var(--side);font-weight:500;position:relative}
+.bar .sum-btn.active{background:rgba(0,122,255,.12);color:#007aff;border-color:rgba(0,122,255,.25)}
+.sum-btn i{width:7px;height:7px;border-radius:50%;background:#ff9f0a;position:absolute;top:5px;right:7px}
+.sp{position:fixed;top:12px;right:12px;bottom:12px;width:min(380px,calc(100vw - 24px));z-index:30;display:flex;flex-direction:column;border-radius:22px;overflow:hidden;
+ font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter",system-ui,sans-serif;letter-spacing:-.003em;
+ background:rgba(255,255,255,.76);-webkit-backdrop-filter:blur(32px) saturate(180%);backdrop-filter:blur(32px) saturate(180%);
+ border:1px solid rgba(0,0,0,.07);box-shadow:0 0 0 .5px rgba(0,0,0,.05),0 28px 64px -14px rgba(0,0,0,.3),0 8px 20px rgba(0,0,0,.08);
+ transform:translateX(calc(100% + 28px));opacity:0;visibility:hidden;transition:transform .45s cubic-bezier(.32,.72,0,1),opacity .3s ease,visibility 0s linear .45s}
+.sp.open{transform:none;opacity:1;visibility:visible;transition:transform .45s cubic-bezier(.32,.72,0,1),opacity .3s ease,visibility 0s}
+:root[data-theme=dark] .sp{background:rgba(36,37,41,.74);border-color:rgba(255,255,255,.09);box-shadow:0 0 0 .5px rgba(255,255,255,.06),0 28px 64px -14px rgba(0,0,0,.7)}
+.sp-head{display:flex;justify-content:space-between;align-items:flex-start;padding:18px 18px 10px}
+.sp-head h2{margin:0;font-size:18px;font-weight:700;letter-spacing:-.02em}.sp-head p{margin:2px 0 0;font-size:12px;color:var(--mut)}
+.sp .sp-x{width:26px;height:26px;padding:0;border:0;border-radius:50%;background:rgba(120,120,128,.16);color:var(--mut);font-size:11px;line-height:26px;text-align:center}
+.sp .sp-x:hover{background:rgba(120,120,128,.28)}
+.sp-seg{display:flex;gap:2px;margin:4px 18px 8px;padding:2px;border-radius:9px;background:rgba(118,118,128,.14)}
+.sp .sp-seg button{flex:1;border:0;background:none;border-radius:7px;padding:5px 0;font-size:13px;font-weight:500;color:var(--mut)}
+.sp .sp-seg button:hover{background:none;color:var(--fg)}
+.sp .sp-seg button.on{background:#fff;color:#1c1c1e;box-shadow:0 1px 3px rgba(0,0,0,.14),0 0 0 .5px rgba(0,0,0,.04)}
+:root[data-theme=dark] .sp .sp-seg button.on{background:#636366;color:#fff}
+.sp-tools{display:flex;gap:2px;padding:0 14px 6px}
+.sp .sp-tools button{min-width:32px;height:28px;padding:0 8px;border:0;border-radius:8px;background:none;color:var(--fg);font-size:14px}
+.sp .sp-tools button:hover{background:rgba(120,120,128,.16)}
+.sp .sp-tools button.on{background:rgba(0,122,255,.15);color:#007aff}
+:root[data-theme=dark] .sp .sp-tools button.on{background:rgba(10,132,255,.25);color:#0a84ff}
+.sp-body{flex:1;overflow:auto;padding:8px 20px 16px;position:relative;border-top:1px solid rgba(120,120,128,.18)}
+.sp .ProseMirror{min-height:100%;font-size:15px;line-height:1.55;caret-color:#007aff}
+.sp .ProseMirror p{margin:0 0 .65em}.sp .ProseMirror h3{font-size:16px;margin:.4em 0 .3em;letter-spacing:-.01em}
+.sp .ProseMirror ul,.sp .ProseMirror ol{padding-left:1.3em;margin:0 0 .65em}
+.sp-ph{position:absolute;top:8px;left:20px;color:var(--mut);pointer-events:none;font-size:15px;line-height:1.55}
+.sp-foot{display:flex;justify-content:space-between;padding:10px 20px;font-size:12px;color:var(--mut);border-top:1px solid rgba(120,120,128,.18)}
