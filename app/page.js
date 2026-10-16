@@ -178,14 +178,14 @@ function Main({user}){
   onDrop={e=>{const f=[...e.dataTransfer.files].find(x=>x.type==='application/pdf');if(f&&pid){e.preventDefault();readPdf(f,null)}}}>
   {open&&<aside>
    <div className="rz" onMouseDown={startRz}/>
-   <div className="head"><img src="/logo-192.png" width="24" height="24" alt="" style={{borderRadius:6}}/><select value={pid||''} onChange={e=>setPid(e.target.value)} style={{flex:1,minWidth:0}}>{projs.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select>
+   <div className="head side-top"><img src="/logo-192.png" width="24" height="24" alt=""/><select value={pid||''} onChange={e=>setPid(e.target.value)}>{projs.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select>
     <button onClick={e=>show(e,null,'proj')} title="Nouveau projet ou rejoindre">＋</button>{pid&&<button onClick={invite} title="Partager (code)">👥</button>}
     <button className="ghost" onClick={()=>setOpen(false)} title="Masquer le menu">«</button></div>
-   {pid&&<div className="head"><button className={sel?'ghost':'on'} style={{flex:1}} onClick={()=>setSel(null)}>🏠 Accueil</button><button className="on" style={{flex:1}} onClick={e=>show(e,null,'new')}>＋ Nouveau</button></div>}
+   {pid&&<div className="head side-nav"><button className={sel?'ghost':'on'} onClick={()=>setSel(null)}>🏠 Accueil</button><button className="on" onClick={e=>show(e,null,'new')}>＋ Nouveau</button></div>}
    {pres}
    <div className="tree" onContextMenu={e=>pid&&show(e,null,'new')} onDragOver={e=>drag.current&&e.preventDefault()}
     onDrop={e=>{if(drag.current){e.preventDefault();move(drag.current,null);drag.current=null;setDrop(null)}}}>{tree(null)}</div>
-   <div className="head"><button className="ghost" onClick={()=>setSettings(true)}>⚙️ Paramètres</button><button className="ghost" onClick={()=>supabase.auth.signOut()}>Déconnexion</button></div></aside>}
+   <div className="head side-foot"><button className="ghost" onClick={()=>setSettings(true)}>⚙️ Paramètres</button><button className="ghost" onClick={()=>supabase.auth.signOut()}>Déconnexion</button></div></aside>}
   <section className="mainc">
    {!open&&<div className="tabs"><button className="ghost" onClick={()=>setOpen(true)} title="Afficher le menu">☰</button><button className="ghost" onClick={()=>setSel(null)} title="Accueil">🏠</button>
     {tabItems.map(t=><div key={t.id} className={'tab'+(sel===t.id?' on':'')} onClick={()=>setSel(t.id)}><Ic i={t}/><span>{t.title}</span>
