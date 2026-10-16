@@ -34,10 +34,9 @@ export const PasteLink=Extension.create({name:'pasteLink',addProseMirrorPlugins(
 const PAL=['#29a9f0','#22c55e','#8b3adb','#f97316','#ef4444','#22c6c6','#facc15']
 const rid=()=>Math.random().toString(36).slice(2,8)
 const nf=(v,d)=>new Intl.NumberFormat('fr-FR',{minimumFractionDigits:d,maximumFractionDigits:d}).format(+v||0)
-const SAMPLE=[['Trading',104.6],['Transport',35],['Alimentation',27.89],['Shopping',26.54],['Santé',9.6],['Loisirs',7]].map(([l,v],i)=>({id:'s'+i,l,v,c:PAL[i]}))
 const NB='\u00a0'
 function ChartView({node,updateAttributes,deleteNode,selected,editor,getPos}){
- const [edit,setEdit]=useState(false)
+ const [edit,setEdit]=useState(()=>{try{return !(JSON.parse(node.attrs.data)||[]).length}catch{return false}})
  const {type,title,subtitle,unit,label}=node.attrs,align=node.attrs.align||'left'
  let D=[];try{D=JSON.parse(node.attrs.data)||[]}catch{}
  const set=d=>updateAttributes({data:JSON.stringify(d)})
@@ -54,8 +53,8 @@ function ChartView({node,updateAttributes,deleteNode,selected,editor,getPos}){
    :full?<circle cx={C} cy={C} r={(ro+ri)/2} fill="none" stroke={(D.find(d=>+d.v>0)||{}).c||PAL[0]} strokeWidth={ro-ri+10} style={glow((D.find(d=>+d.v>0)||{}).c||PAL[0])}/>
    :D.map((d,i)=>{const v=+d.v||0;if(v<=0)return null;const span=v/tot*2*Math.PI;let s=a0+pad,e=a0+span-pad;if(e-s<.03){const m=a0+span/2;s=m-.015;e=m+.015}
     a0+=span;return <path key={d.id||i} d={sec(s,e)} fill={d.c} stroke={d.c} strokeWidth="10" strokeLinejoin="round" style={glow(d.c)}/>})}
-   <text x={C} y={C+4} textAnchor="middle" fontSize="30" fontWeight="700" fill="#fff">{nf(tot,tot>=100?0:2)}{u}</text>
-   {label&&<text x={C} y={C+34} textAnchor="middle" fontSize="11" letterSpacing="2" fill="#8a8f98">{label.toUpperCase()}</text>}
+   {D.length?<text x={C} y={C+4} textAnchor="middle" fontSize="30" fontWeight="700" fill="#fff">{nf(tot,tot>=100?0:2)}{u}</text>:<text x={C} y={C+5} textAnchor="middle" fontSize="14" fill="#8a8f98">Aucune donnée</text>}
+   {D.length>0&&label&&<text x={C} y={C+34} textAnchor="middle" fontSize="11" letterSpacing="2" fill="#8a8f98">{label.toUpperCase()}</text>}
   </svg>}
  const W=480,H=240,bw=(W-40)/(D.length||1),max=Math.max(1,...D.map(d=>+d.v||0)),y=v=>H-40-((+v||0)/max)*(H-80)
  const lab=(d,i)=><text key={'t'+i} x={30+(i+.5)*bw} y={H-16} textAnchor="middle" fontSize="12" fill="#8a8f98">{d.l}</text>
@@ -85,12 +84,12 @@ function ChartView({node,updateAttributes,deleteNode,selected,editor,getPos}){
    {D.map((d,i)=><div className="crow" key={d.id||i}><input type="text" defaultValue={d.l} placeholder="Nom" style={{flex:1}} onChange={e=>row(i,{l:e.target.value})}/>
     <input type="number" step="any" defaultValue={d.v} style={{width:100}} onChange={e=>row(i,{v:e.target.value})}/>
     <input type="color" defaultValue={d.c} onChange={e=>row(i,{c:e.target.value})}/><button onClick={()=>set(D.filter((_,k)=>k!==i))}>✕</button></div>)}
-   <div className="crow"><button onClick={()=>set([...D,{id:rid(),l:'Nouveau',v:10,c:PAL[D.length%PAL.length]}])}>＋ Ligne de données</button><button className="on" onClick={()=>setEdit(false)}>✓ Terminé</button></div></div>}
+   <div className="crow"><button onClick={()=>set([...D,{id:rid(),l:'',v:'',c:PAL[D.length%PAL.length]}])}>＋ Ligne de données</button><button className="on" onClick={()=>setEdit(false)}>✓ Terminé</button></div></div>}
  </NodeViewWrapper>
 }
 export const Chart=Node.create({name:'chart',group:'block',atom:true,draggable:true,selectable:true,
- addAttributes(){return{type:{default:'pie'},title:{default:'Dépenses par catégorie'},subtitle:{default:'Répartition du mois'},unit:{default:'€'},label:{default:'Dépenses'},
-  width:{default:620},align:{default:'left'},data:{default:JSON.stringify(SAMPLE)}}},
+ addAttributes(){return{type:{default:'pie'},title:{default:''},subtitle:{default:''},unit:{default:''},label:{default:''},
+  width:{default:620},align:{default:'left'},data:{default:'[]'}}},
  parseHTML(){return[{tag:'div[data-chart]'}]},renderHTML(){return['div',{'data-chart':''}]},
  addNodeView(){return ReactNodeViewRenderer(ChartView)}})
 
