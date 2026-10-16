@@ -63,12 +63,18 @@ a.lc span{color:var(--mut);font-size:13px;overflow:hidden;display:-webkit-box;-w
 .crow{display:flex;gap:6px;align-items:center}.crow input[type=text],.crow input[type=number]{min-width:0}.crow input[type=color]{width:34px;height:30px;padding:2px}
 .ProseMirror td[style*=background],.ProseMirror th[style*=background]{color:#1f2328}
 
-/* Images collées/importées et texte souligné */
-.image-upload{position:relative;display:inline-flex;align-items:center;gap:5px;border:1px solid var(--bd);border-radius:6px;padding:6px 10px;cursor:pointer;background:var(--bg)}
-.image-upload input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
-.ProseMirror u{text-decoration:underline;text-underline-offset:2px}
-.note-image-wrap{display:block;max-width:100%;margin:12px 0;clear:both}
-.note-image-frame{position:relative;max-width:100%;display:inline-block;line-height:0}
-.note-image-frame img{display:block;width:100%;height:auto;max-width:100%;border-radius:4px}
-.image-resize{display:block;width:100%;height:16px;padding:0;margin-top:5px;accent-color:var(--ac);cursor:ew-resize;border:0;background:transparent}
-.image-width{display:block;font-size:11px;line-height:1.2;color:var(--mut);text-align:right}
+/* Images dans l’éditeur : poignées autour de l’image sélectionnée */
+.note-image-wrap{display:block;max-width:100%;margin:14px 0;line-height:0;position:relative}
+.note-image-frame{display:inline-block;max-width:100%;position:relative;line-height:0}
+.note-image-frame img{display:block;width:100%;height:auto;max-width:100%;border-radius:3px}
+.note-image-wrap.selected .note-image-frame{outline:2px solid var(--ac);outline-offset:1px}
+.image-resize-handle{position:absolute;right:-7px;bottom:-7px;width:15px;height:15px;padding:0;border:2px solid var(--bg);border-radius:3px;background:var(--ac);cursor:nwse-resize;touch-action:none;box-shadow:0 0 0 1px var(--ac)}
+.image-size-label{position:absolute;left:5px;bottom:5px;background:rgba(0,0,0,.72);color:#fff;border-radius:4px;font:11px/1.4 system-ui;padding:2px 5px}
+.image-delete{position:absolute;right:5px;top:5px;border:0;border-radius:50%;width:24px;height:24px;padding:0;background:rgba(0,0,0,.72);color:#fff;font-size:19px;line-height:24px}
+.ProseMirror u{text-decoration:underline}
+.share-dialog{max-height:85vh;overflow:auto;width:min(440px,calc(100vw - 32px))}
+.share-divider{width:100%;border:0;border-top:1px solid var(--bd);margin:2px 0}
+.member-list{display:grid;gap:8px;max-height:220px;overflow:auto}
+.member-row{display:flex;align-items:center;gap:9px;padding:8px;border:1px solid var(--bd);border-radius:8px;min-width:0}
+.member-avatar{display:grid;place-items:center;flex:none;width:34px;height:34px;border-radius:50%;background:var(--side);font-weight:700}
+.member-row>span:nth-child(2){display:grid;gap:2px;min-width:0;flex:1}.member-row small{color:var(--mut);overflow-wrap:anywhere}.member-owner{font-size:11px;color:var(--mut);white-space:nowrap}

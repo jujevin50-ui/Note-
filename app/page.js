@@ -21,14 +21,19 @@ function Dlg({d,close}){
   {!d.confirm&&<input autoFocus autoComplete="off" name="nom-note" value={v} onChange={e=>setV(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')ok();if(e.key==='Escape')close()}}/>}
   <div className="btns"><button className="ghost" onClick={close}>Annuler</button><button className="on" onClick={ok}>{d.confirm?'Supprimer':'OK'}</button></div></div></div>
 }
-function ShareDlg({code,onNew,close}){
- const [c,setC]=useState(code),[ok,setOk]=useState(false)
- return <div className="ov" onClick={close}><div className="dlg" onClick={e=>e.stopPropagation()}>
-  <h3>Code du projet</h3>
+function ShareDlg({code,pid,onNew,close}){
+ const [c,setC]=useState(code),[ok,setOk]=useState(false),[members,setMembers]=useState([]),[loading,setLoading]=useState(true),[memberError,setMemberError]=useState('')
+ useEffect(()=>{let live=true;supabase.rpc('project_members_info',{p_pid:pid}).then(({data,error})=>{if(!live)return;if(error)setMemberError('Pour afficher les noms et emails, exécute le fichier supabase/project_members_info.sql dans Supabase.');else setMembers(data||[]);setLoading(false)});return()=>{live=false}},[pid])
+ return <div className="ov" onClick={close}><div className="dlg share-dialog" onClick={e=>e.stopPropagation()}>
+  <h3>Partager l’espace</h3>
+  <label className="muted">Code pour inviter un membre</label>
   <input readOnly value={c} onFocus={e=>e.target.select()} style={{fontSize:22,letterSpacing:3,textAlign:'center'}}/>
   <p className="muted" style={{margin:0}}>La personne crée son compte, clique sur ＋ puis « Rejoindre avec un code » et saisit ce code.</p>
   <div className="btns"><button className="ghost" onClick={async()=>setC(await onNew())}>Nouveau code</button>
-   <button onClick={()=>{navigator.clipboard.writeText(c);setOk(true)}}>{ok?'Copié ✓':'Copier'}</button><button className="on" onClick={close}>Fermer</button></div></div></div>
+   <button onClick={()=>{navigator.clipboard.writeText(c);setOk(true)}}>{ok?'Copié ✓':'Copier le code'}</button></div>
+  <hr className="share-divider"/><h3>Membres de cet espace</h3>
+  {loading?<p className="muted">Chargement des membres…</p>:memberError?<p className="muted">{memberError}</p>:members.length?<div className="member-list">{members.map(m=><div className="member-row" key={m.user_id}><span className="member-avatar">{(m.name||m.email||'?').slice(0,1).toUpperCase()}</span><span><b>{m.name||'Membre'}</b><small>{m.email||m.user_id}</small></span>{m.is_owner&&<span className="member-owner">Propriétaire</span>}</div>)}</div>:<p className="muted">Aucun membre trouvé.</p>}
+  <div className="btns"><button className="on" onClick={close}>Fermer</button></div></div></div>
 }
 function Settings({user,close}){
  const [n,setN]=useState(user.user_metadata?.name||''),[st,setSt]=useState(''),[th,setTh]=useState(()=>localStorage.getItem('theme')||'light')
@@ -181,6 +186,6 @@ function Main({user}){
       <div className="mi red" onClick={()=>{setMenu(null);del(m)}}>🗑️ Supprimer</div></>}</>}
    </div></div>}
   {dlg&&<Dlg key={dlg.k} d={dlg} close={()=>setDlg(null)}/>}
-  {share&&<ShareDlg code={share} onNew={newCode} close={()=>setShare(null)}/>}
+  {share&&<ShareDlg code={share} pid={pid} onNew={newCode} close={()=>setShare(null)}/>}
   {settings&&<Settings user={user} close={()=>setSettings(false)}/>}</div>
 }
