@@ -1,5 +1,5 @@
 'use client'
-import {useEffect,useState} from 'react'
+import {useEffect,useRef,useState} from 'react'
 import {Node,Mark,Extension} from '@tiptap/core'
 import {Plugin} from '@tiptap/pm/state'
 import {ReactNodeViewRenderer,NodeViewWrapper} from '@tiptap/react'
@@ -30,50 +30,69 @@ export const PasteLink=Extension.create({name:'pasteLink',addProseMirrorPlugins(
   return true},
  handleClick(view,pos,e){const a=e.target.closest&&e.target.closest('a.lc');if(a){window.open(a.href,'_blank','noopener');return true}return false}}})]}})
 
-// Graphique (barres / courbe / camembert) avec tableau de données
-const PAL=['#3b82f6','#22c55e','#f59e0b','#ef4444','#8b5cf6','#ec4899','#14b8a6']
+// Graphique (anneau / barres / courbe) — style dashboard sombre, redimensionnable comme une image
+const PAL=['#29a9f0','#22c55e','#8b3adb','#f97316','#ef4444','#22c6c6','#facc15']
 const rid=()=>Math.random().toString(36).slice(2,8)
-function ChartView({node,updateAttributes,deleteNode}){
+const nf=(v,d)=>new Intl.NumberFormat('fr-FR',{minimumFractionDigits:d,maximumFractionDigits:d}).format(+v||0)
+const SAMPLE=[['Trading',104.6],['Transport',35],['Alimentation',27.89],['Shopping',26.54],['Santé',9.6],['Loisirs',7]].map(([l,v],i)=>({id:'s'+i,l,v,c:PAL[i]}))
+const NB='\u00a0'
+function ChartView({node,updateAttributes,deleteNode,selected,editor,getPos}){
  const [edit,setEdit]=useState(false)
- const {type,title}=node.attrs
+ const {type,title,subtitle,unit,label}=node.attrs,align=node.attrs.align||'left'
  let D=[];try{D=JSON.parse(node.attrs.data)||[]}catch{}
  const set=d=>updateAttributes({data:JSON.stringify(d)})
  const row=(i,p)=>set(D.map((x,k)=>k===i?{...x,...p}:x))
- const W=480,H=230,bw=(W-40)/(D.length||1),max=Math.max(1,...D.map(d=>+d.v||0)),tot=D.reduce((a,d)=>a+(+d.v||0),0)||1
- const y=v=>H-34-((+v||0)/max)*(H-70)
- const lab=(d,i)=><text key={'t'+i} x={30+(i+.5)*bw} y={H-14} textAnchor="middle" fontSize="12" fill="currentColor">{d.l}</text>
- let g
- if(type==='pie'){const cx=130,cy=H/2,r=88;let a0=-Math.PI/2
-  g=<>{D.map((d,i)=>{const a=((+d.v||0)/tot)*2*Math.PI,a1=a0+a
-   const p=a>=6.28?<circle key={i} cx={cx} cy={cy} r={r} fill={d.c}/>:<path key={i} fill={d.c} d={`M${cx},${cy}L${cx+r*Math.cos(a0)},${cy+r*Math.sin(a0)}A${r},${r} 0 ${a>Math.PI?1:0} 1 ${cx+r*Math.cos(a1)},${cy+r*Math.sin(a1)}Z`}/>
-   a0=a1;return p})}
-   {D.map((d,i)=><g key={'l'+i}><rect x="250" y={26+i*22} width="12" height="12" rx="3" fill={d.c}/><text x="270" y={37+i*22} fontSize="13" fill="currentColor">{d.l} — {d.v} ({Math.round((+d.v||0)/tot*100)}%)</text></g>)}</>
- }else if(type==='line'){
-  g=<><line x1="30" x2={W-10} y1={H-34} y2={H-34} stroke="#d4d4cf"/>
-   <polyline fill="none" stroke="#2563eb" strokeWidth="3" points={D.map((d,i)=>`${30+(i+.5)*bw},${y(d.v)}`).join(' ')}/>
-   {D.map((d,i)=><g key={i}><circle cx={30+(i+.5)*bw} cy={y(d.v)} r="5" fill={d.c}/><text x={30+(i+.5)*bw} y={y(d.v)-10} textAnchor="middle" fontSize="12" fill="currentColor">{d.v}</text>{lab(d,i)}</g>)}</>
- }else{
-  g=<><line x1="30" x2={W-10} y1={H-34} y2={H-34} stroke="#d4d4cf"/>
-   {D.map((d,i)=><g key={i}><rect x={30+i*bw+bw*.15} y={y(d.v)} width={bw*.7} height={H-34-y(d.v)} rx="4" fill={d.c}/><text x={30+(i+.5)*bw} y={y(d.v)-6} textAnchor="middle" fontSize="12" fill="currentColor">{d.v}</text>{lab(d,i)}</g>)}</>
- }
- return <NodeViewWrapper className="chart" contentEditable={false}>
-  <div className="chead"><b>{title}</b><span><button onClick={()=>setEdit(!edit)}>{edit?'✓ Terminé':'✏️ Modifier'}</button> <button onClick={deleteNode}>🗑</button></span></div>
-  <svg viewBox={`0 0 ${W} ${H}`} width="100%">{g}</svg>
+ const tot=D.reduce((a,d)=>a+(+d.v||0),0),u=unit?NB+unit:''
+ const C=130,ro=108,ri=76,pad=.035+5/((ro+ri)/2)
+ const P=(r,a)=>[C+r*Math.cos(a),C+r*Math.sin(a)]
+ const sec=(a0,a1)=>{const [x0,y0]=P(ro,a0),[x1,y1]=P(ro,a1),[x2,y2]=P(ri,a1),[x3,y3]=P(ri,a0),L=a1-a0>Math.PI?1:0
+  return `M${x0},${y0}A${ro},${ro} 0 ${L} 1 ${x1},${y1}L${x2},${y2}A${ri},${ri} 0 ${L} 0 ${x3},${y3}Z`}
+ const glow=c=>({filter:`drop-shadow(0 0 7px ${c}99)`})
+ const donut=()=>{let a0=Math.PI;const full=D.filter(d=>+d.v>0).length<2
+  return <svg viewBox="0 0 260 260" className="chart-svg" style={{overflow:'visible'}}>
+   {tot<=0?<circle cx={C} cy={C} r={(ro+ri)/2} fill="none" stroke="#26272b" strokeWidth={ro-ri+10}/>
+   :full?<circle cx={C} cy={C} r={(ro+ri)/2} fill="none" stroke={(D.find(d=>+d.v>0)||{}).c||PAL[0]} strokeWidth={ro-ri+10} style={glow((D.find(d=>+d.v>0)||{}).c||PAL[0])}/>
+   :D.map((d,i)=>{const v=+d.v||0;if(v<=0)return null;const span=v/tot*2*Math.PI;let s=a0+pad,e=a0+span-pad;if(e-s<.03){const m=a0+span/2;s=m-.015;e=m+.015}
+    a0+=span;return <path key={d.id||i} d={sec(s,e)} fill={d.c} stroke={d.c} strokeWidth="10" strokeLinejoin="round" style={glow(d.c)}/>})}
+   <text x={C} y={C+4} textAnchor="middle" fontSize="30" fontWeight="700" fill="#fff">{nf(tot,tot>=100?0:2)}{u}</text>
+   {label&&<text x={C} y={C+34} textAnchor="middle" fontSize="11" letterSpacing="2" fill="#8a8f98">{label.toUpperCase()}</text>}
+  </svg>}
+ const W=480,H=240,bw=(W-40)/(D.length||1),max=Math.max(1,...D.map(d=>+d.v||0)),y=v=>H-40-((+v||0)/max)*(H-80)
+ const lab=(d,i)=><text key={'t'+i} x={30+(i+.5)*bw} y={H-16} textAnchor="middle" fontSize="12" fill="#8a8f98">{d.l}</text>
+ const val=v=>nf(v,Number.isInteger(+v)?0:2)
+ const bars=()=><svg viewBox={`0 0 ${W} ${H}`} className="chart-svg"><line x1="20" x2={W-10} y1={H-40} y2={H-40} stroke="#2a2b30"/>
+  {D.map((d,i)=><g key={i}><rect x={30+i*bw+bw*.18} y={y(d.v)} width={bw*.64} height={Math.max(2,H-40-y(d.v))} rx="8" fill={d.c} style={glow(d.c)}/>
+   <text x={30+(i+.5)*bw} y={y(d.v)-8} textAnchor="middle" fontSize="12" fontWeight="600" fill="#fff">{val(d.v)}</text>{lab(d,i)}</g>)}</svg>
+ const line=()=><svg viewBox={`0 0 ${W} ${H}`} className="chart-svg"><line x1="20" x2={W-10} y1={H-40} y2={H-40} stroke="#2a2b30"/>
+  <polyline fill="none" stroke={(D[0]||{}).c||PAL[0]} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" style={glow((D[0]||{}).c||PAL[0])} points={D.map((d,i)=>`${30+(i+.5)*bw},${y(d.v)}`).join(' ')}/>
+  {D.map((d,i)=><g key={i}><circle cx={30+(i+.5)*bw} cy={y(d.v)} r="6" fill={d.c} stroke="#0e0e10" strokeWidth="2" style={glow(d.c)}/>
+   <text x={30+(i+.5)*bw} y={y(d.v)-14} textAnchor="middle" fontSize="12" fontWeight="600" fill="#fff">{val(d.v)}</text>{lab(d,i)}</g>)}</svg>
+ const inp=(k,ph,st)=><input type="text" defaultValue={node.attrs[k]} placeholder={ph} style={st} onChange={e=>updateAttributes({[k]:e.target.value})}/>
+ return <NodeViewWrapper className="note-image-wrap chart-wrap" style={{textAlign:align}} contentEditable={false}>
+  <Frame editor={editor} getPos={getPos} selected={selected} width={Number(node.attrs.width)||620} align={align} min={260}
+   onCommit={w=>updateAttributes({width:w})} onAlign={a=>updateAttributes({align:a})} onDelete={deleteNode}
+   extra={<button type="button" title="Modifier les données" className={edit?'on':''} onClick={()=>setEdit(!edit)}>✏️</button>}>
+   {w=><div className="chart-card" style={{fontSize:Math.max(10,Math.min(16,w/38))}}>
+    {title&&<div className="chart-title">{title}</div>}{subtitle&&<div className="chart-sub">{subtitle}</div>}
+    <div className={'chart-body'+(type==='pie'?' pie':'')}>
+     {type==='pie'?<>{donut()}<div className="chart-legend">{D.map((d,i)=><div key={d.id||i}><i style={{background:d.c,boxShadow:`0 0 8px ${d.c}88`}}/><span>{d.l}</span><b>{nf(d.v,2)}{u}</b></div>)}</div></>
+     :type==='line'?line():bars()}</div></div>}
+  </Frame>
   {edit&&<div className="cedit">
-   <div className="crow"><input type="text" defaultValue={title} placeholder="Titre" style={{flex:1}} onChange={e=>updateAttributes({title:e.target.value})}/>
-    <select value={type} onChange={e=>updateAttributes({type:e.target.value})}><option value="bar">Barres</option><option value="line">Courbe</option><option value="pie">Camembert</option></select></div>
+   <div className="crow">{inp('title','Titre',{flex:1})}{inp('subtitle','Sous-titre',{flex:1})}</div>
+   <div className="crow">{inp('unit','Unité (€, %…)',{width:110})}{inp('label','Texte au centre',{flex:1})}
+    <select value={type} onChange={e=>updateAttributes({type:e.target.value})}><option value="pie">Anneau</option><option value="bar">Barres</option><option value="line">Courbe</option></select></div>
    {D.map((d,i)=><div className="crow" key={d.id||i}><input type="text" defaultValue={d.l} placeholder="Nom" style={{flex:1}} onChange={e=>row(i,{l:e.target.value})}/>
-    <input type="number" defaultValue={d.v} style={{width:90}} onChange={e=>row(i,{v:e.target.value})}/>
+    <input type="number" step="any" defaultValue={d.v} style={{width:100}} onChange={e=>row(i,{v:e.target.value})}/>
     <input type="color" defaultValue={d.c} onChange={e=>row(i,{c:e.target.value})}/><button onClick={()=>set(D.filter((_,k)=>k!==i))}>✕</button></div>)}
-   <button onClick={()=>set([...D,{id:rid(),l:'Nouveau',v:10,c:PAL[D.length%PAL.length]}])}>＋ Ligne de données</button></div>}
+   <div className="crow"><button onClick={()=>set([...D,{id:rid(),l:'Nouveau',v:10,c:PAL[D.length%PAL.length]}])}>＋ Ligne de données</button><button className="on" onClick={()=>setEdit(false)}>✓ Terminé</button></div></div>}
  </NodeViewWrapper>
 }
-export const Chart=Node.create({name:'chart',group:'block',atom:true,draggable:true,
- addAttributes(){return{type:{default:'bar'},title:{default:'Mon graphique'},
-  data:{default:JSON.stringify([{id:'a',l:'A',v:30,c:PAL[0]},{id:'b',l:'B',v:50,c:PAL[1]},{id:'c',l:'C',v:20,c:PAL[2]}])}}},
+export const Chart=Node.create({name:'chart',group:'block',atom:true,draggable:true,selectable:true,
+ addAttributes(){return{type:{default:'pie'},title:{default:'Dépenses par catégorie'},subtitle:{default:'Répartition du mois'},unit:{default:'€'},label:{default:'Dépenses'},
+  width:{default:620},align:{default:'left'},data:{default:JSON.stringify(SAMPLE)}}},
  parseHTML(){return[{tag:'div[data-chart]'}]},renderHTML(){return['div',{'data-chart':''}]},
  addNodeView(){return ReactNodeViewRenderer(ChartView)}})
-
 
 // Soulignement du texte
 export const UnderlineMark=Mark.create({
@@ -82,24 +101,47 @@ export const UnderlineMark=Mark.create({
  renderHTML(){return ['u',0]}
 })
 
-// Image collée/importée avec réglage de largeur
-function ResizableImageView({node,updateAttributes,selected}){
- const [width,setWidth]=useState(Number(node.attrs.width)||600)
- useEffect(()=>{setWidth(Number(node.attrs.width)||600)},[node.attrs.width])
- return <NodeViewWrapper className={'note-image-wrap'+(selected?' selected':'')} contentEditable={false}>
-  <div className="note-image-frame" style={{width:`min(${width}px, 100%)`}}>
-   <img src={node.attrs.src} alt={node.attrs.alt||''} draggable="true" />
-   <input aria-label="Redimensionner l’image" className="image-resize" type="range" min="100" max="1200" step="10" value={Math.min(1200,width)} onChange={e=>{const w=Number(e.target.value);setWidth(w);updateAttributes({width:w})}} title="Faire glisser pour redimensionner"/>
-   <span className="image-width">{width}px</span>
-  </div>
+// Cadre redimensionnable façon Word (images et graphiques) : clic = sélection, poignées aux coins et sur les côtés
+const HANDLES=[['nw',-1],['ne',1],['se',1],['sw',-1],['w',-1],['e',1]]
+function Frame({editor,getPos,selected,width,align,onCommit,onAlign,onDelete,extra,children,min=40}){
+ const [w,setW]=useState(width),[drag,setDrag]=useState(false),fr=useRef(null)
+ useEffect(()=>{setW(width)},[width])
+ const start=sx=>e=>{
+  e.preventDefault();e.stopPropagation()
+  const x0=e.clientX,w0=w,box=fr.current?.parentElement?.clientWidth||1400,k=align==='center'?2:1
+  let cur=w0;setDrag(true)
+  const move=ev=>{cur=Math.max(min,Math.min(box,Math.round(w0+(ev.clientX-x0)*sx*k)));setW(cur)}
+  const up=()=>{window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);setDrag(false);onCommit(cur)}
+  window.addEventListener('pointermove',move);window.addEventListener('pointerup',up)
+ }
+ const pick=()=>{if(!selected){const p=getPos();if(typeof p==='number')editor.commands.setNodeSelection(p)}}
+ const tool=(a,l,t)=><button key={a} type="button" title={t} className={align===a?'on':''} onClick={()=>onAlign(a)}>{l}</button>
+ return <div ref={fr} className={'note-image-frame'+(selected?' sel':'')+(drag?' resizing':'')} style={{width:`min(${w}px, 100%)`}} onMouseDown={pick}>
+  {children(w)}
+  {selected&&<>
+   {!drag&&<div className="image-tools" onMouseDown={e=>{e.preventDefault();e.stopPropagation()}}>
+    {tool('left','⇤','Aligner à gauche')}{tool('center','↔','Centrer')}{tool('right','⇥','Aligner à droite')}{extra}
+    <button type="button" title="Supprimer" onClick={onDelete}>🗑</button></div>}
+   {HANDLES.map(([h,sx])=><span key={h} className={'image-handle h-'+h} onPointerDown={start(sx)}/>)}</>}
+ </div>
+}
+
+// Image
+function ImageView({node,updateAttributes,selected,deleteNode,editor,getPos}){
+ const align=node.attrs.align||'left'
+ return <NodeViewWrapper className="note-image-wrap" style={{textAlign:align}} contentEditable={false}>
+  <Frame editor={editor} getPos={getPos} selected={selected} width={Number(node.attrs.width)||600} align={align}
+   onCommit={w=>updateAttributes({width:w})} onAlign={a=>updateAttributes({align:a})} onDelete={deleteNode}>
+   {()=><img data-drag-handle src={node.attrs.src} alt={node.attrs.alt||''} draggable="true"/>}
+  </Frame>
  </NodeViewWrapper>
 }
 export const NoteImage=Node.create({
  name:'noteImage',group:'block',atom:true,draggable:true,selectable:true,
- addAttributes(){return {src:{default:null},alt:{default:''},width:{default:600}}},
+ addAttributes(){return {src:{default:null},alt:{default:''},width:{default:600},align:{default:'left',parseHTML:el=>el.getAttribute('data-align')||'left'}}},
  parseHTML(){return [{tag:'img[src]',getAttrs:el=>({src:el.getAttribute('src'),alt:el.getAttribute('alt')||'',width:Number(el.getAttribute('width'))||el.width||600})}]},
- renderHTML({node}){return ['img',{src:node.attrs.src,alt:node.attrs.alt||'',width:node.attrs.width,style:`width:${node.attrs.width}px;max-width:100%;height:auto`}]},
- addNodeView(){return ReactNodeViewRenderer(ResizableImageView)}
+ renderHTML({node}){return ['img',{src:node.attrs.src,alt:node.attrs.alt||'','data-align':node.attrs.align,width:node.attrs.width,style:`width:${node.attrs.width}px;max-width:100%;height:auto`}]},
+ addNodeView(){return ReactNodeViewRenderer(ImageView)}
 })
 export const ImagePaste=Extension.create({
  name:'imagePaste',
