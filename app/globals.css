@@ -630,79 +630,101 @@ button.on{
 }
 
 
-/* Hub investissement — Accueil */
-.hsec-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:4px}
-.hsec-top h4{margin:0}
-.hsec-desc{margin:0 0 14px;font-size:13.5px;line-height:1.45;max-width:640px}
-.hsetup{font-size:12.5px;padding:5px 10px;border-radius:8px;color:var(--ac);font-weight:500}
-.hsetup:hover{background:var(--sel)}
-.hsetup:disabled{opacity:.5;cursor:default}
-.hgrid-hub{grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
-.hhub{
-  display:flex;
-  align-items:flex-start;
-  gap:12px;
-  text-align:left;
-  padding:14px 14px 14px 12px;
+/* Accueil titres plus Apple */
+.home .hhd h1{
+  font-size:28px;
+  font-weight:700;
+  letter-spacing:-.03em;
+}
+
+/* Espace investissement — sections d’affichage */
+.inv-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+  gap:14px;
+  margin-bottom:8px;
+}
+.inv-sec{
+  background:var(--side);
   border:1px solid var(--bd);
   border-radius:14px;
-  background:var(--bg);
-  cursor:pointer;
-  transition:background .15s ease,border-color .15s ease,transform .15s ease,box-shadow .15s ease;
-  box-shadow:0 1px 2px rgba(0,0,0,.04);
-  position:relative;
   overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  min-height:140px;
+  box-shadow:0 1px 2px rgba(0,0,0,.03);
 }
-.hhub::before{
-  content:"";
-  position:absolute;
-  left:0;top:0;bottom:0;
-  width:4px;
-  background:var(--hub,#007aff);
-  border-radius:4px 0 0 4px;
+.inv-head{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:12px 12px 10px;
+  border-bottom:1px solid var(--bd);
+  border-top:3px solid var(--inv,#007aff);
 }
-.hhub:hover{
-  background:var(--side);
-  border-color:color-mix(in srgb,var(--hub,#007aff) 35%,var(--bd));
-  transform:translateY(-1px);
-  box-shadow:0 4px 14px rgba(0,0,0,.06);
-}
-.hhub:disabled{opacity:.65;cursor:wait;transform:none}
-.hhub.exists{background:var(--side)}
-.hhub-ico{
-  font-size:22px;
+.inv-ico{
+  font-size:20px;
   line-height:1;
-  flex:none;
-  width:36px;height:36px;
+  width:34px;height:34px;
   display:grid;place-items:center;
-  border-radius:10px;
-  background:color-mix(in srgb,var(--hub,#007aff) 12%,transparent);
-}
-.hhub-body{flex:1;min-width:0;display:grid;gap:3px}
-.hhub-body strong{
-  font-size:14.5px;
-  font-weight:600;
-  letter-spacing:-.015em;
-  color:var(--fg);
-}
-.hhub-body small{
-  font-size:12.5px;
-  color:var(--mut);
-  line-height:1.35;
-  display:-webkit-box;
-  -webkit-line-clamp:2;
-  -webkit-box-orient:vertical;
-  overflow:hidden;
-}
-.hhub-go{
+  border-radius:9px;
+  background:color-mix(in srgb,var(--inv,#007aff) 12%,transparent);
   flex:none;
-  color:var(--mut);
-  font-size:16px;
-  font-weight:500;
-  margin-top:6px;
-  opacity:.7;
 }
-.hhub:hover .hhub-go{color:var(--hub,#007aff);opacity:1}
+.inv-titles{flex:1;min-width:0;display:grid;gap:1px}
+.inv-titles h3{
+  margin:0;
+  font-size:14.5px;
+  font-weight:650;
+  letter-spacing:-.015em;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.inv-titles small{font-size:11.5px}
+.inv-add{
+  width:28px;height:28px;
+  padding:0;
+  border:none;
+  border-radius:7px;
+  font-size:16px;
+  color:var(--mut);
+  flex:none;
+}
+.inv-add:hover{background:var(--hov);color:var(--fg)}
+.inv-body{
+  padding:6px 8px 10px;
+  display:grid;
+  gap:1px;
+  flex:1;
+}
+.inv-row{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:7px 8px;
+  border-radius:8px;
+  cursor:pointer;
+  min-width:0;
+  font-size:13.5px;
+}
+.inv-row:hover{background:var(--hov)}
+.inv-row span:not(.hact){
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  flex:1;
+  min-width:0;
+}
+.inv-row .hact{margin-left:auto;visibility:hidden}
+.inv-row:hover .hact{visibility:visible}
+.inv-sub{cursor:default}
+.inv-sub b{flex:1;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
+.inv-empty{
+  margin:6px 8px 4px;
+  font-size:12.5px;
+  line-height:1.4;
+}
 
 /* Accueil titres plus Apple */
 .home .hhd h1{
