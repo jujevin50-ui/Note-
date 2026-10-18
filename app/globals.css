@@ -1,3 +1,23 @@
+/* Police Universal Sans — place les fichiers .woff2 dans public/fonts/ */
+@font-face{
+  font-family:"Universal Sans";
+  src:url("/fonts/UniversalSans-400.woff2") format("woff2"),
+      url("/fonts/UniversalSans.woff2") format("woff2"),
+      url("/fonts/UniversalSansGX.woff2") format("woff2");
+  font-weight:300 700;
+  font-style:normal;
+  font-display:swap;
+}
+@font-face{
+  font-family:"Universal Sans";
+  src:url("/fonts/UniversalSans-400-Italic.woff2") format("woff2"),
+      url("/fonts/UniversalSansItalic.woff2") format("woff2"),
+      url("/fonts/UniversalSansItalicGX.woff2") format("woff2");
+  font-weight:300 700;
+  font-style:italic;
+  font-display:swap;
+}
+
 /* ===== Design inspiré Apple (macOS / Notes / Finder) ===== */
 :root{
   --bg:#ffffff;
@@ -36,7 +56,7 @@
 *{box-sizing:border-box}
 body{
   margin:0;
-  font:15px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",system-ui,sans-serif;
+  font:15px/1.45 "Universal Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
   background:var(--bg);
   color:var(--fg);
   -webkit-font-smoothing:antialiased;
@@ -172,7 +192,7 @@ aside .side-nav button.on{
   height:22px;
   border-radius:50%;
   color:#fff;
-  font:600 11px/22px -apple-system,system-ui,sans-serif;
+  font:600 11px/22px "Universal Sans",system-ui,sans-serif;
   text-align:center;
   font-style:normal;
   border:2px solid var(--side);
@@ -366,7 +386,7 @@ main{padding:28px 48px;overflow:auto;flex:1}
 .eg span{text-align:center;padding:5px;border-radius:7px;cursor:pointer;font-size:18px}
 .eg span:hover{background:var(--hov)}
 
-.ProseMirror{outline:none;min-height:60vh;line-height:1.6;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",system-ui,sans-serif}.ProseMirror pre{background:var(--side);padding:10px;border-radius:6px}
+.ProseMirror{outline:none;min-height:60vh;line-height:1.6;font-family:"Universal Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif}.ProseMirror pre{background:var(--side);padding:10px;border-radius:6px}
 .ProseMirror blockquote{border-left:3px solid var(--bd);margin-left:0;padding-left:12px}
 ul[data-type=taskList]{list-style:none;padding-left:4px}ul[data-type=taskList] li{display:flex;gap:8px}
 .pdf{width:100%;height:calc(100vh - 110px);border:1px solid var(--bd);border-radius:8px}
@@ -531,7 +551,7 @@ ul[data-type=taskList]{list-style:none;padding-left:4px}ul[data-type=taskList] l
 
 /* Graphiques : style dashboard sombre */
 .chart-wrap{line-height:1.4;margin:16px 0}.chart-wrap .note-image-frame{line-height:1.4}
-.chart-card{background:#0e0e10;color:#fff;border:1px solid #232428;border-radius:1.1em;padding:1.4em 1.5em;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;text-align:left}
+.chart-card{background:#0e0e10;color:#fff;border:1px solid #232428;border-radius:1.1em;padding:1.4em 1.5em;font-family:"Universal Sans",system-ui,sans-serif;text-align:left}
 .chart-title{font-size:1.25em;font-weight:700}.chart-sub{font-size:.85em;color:#8a8f98;margin-top:.2em}
 .chart-body{margin-top:1.2em}.chart-svg{display:block;width:100%;height:auto}
 .chart-body.pie{display:flex;align-items:center;gap:1.6em;flex-wrap:wrap}.chart-body.pie .chart-svg{flex:1 1 11em;max-width:20em;margin:auto}
@@ -547,7 +567,7 @@ ul[data-type=taskList]{list-style:none;padding-left:4px}ul[data-type=taskList] l
 .bar .sum-btn.active{background:rgba(0,122,255,.12);color:#007aff;border-color:rgba(0,122,255,.25)}
 .sum-btn i{width:7px;height:7px;border-radius:50%;background:#ff9f0a;position:absolute;top:5px;right:7px}
 .sp{position:fixed;top:12px;right:12px;bottom:12px;width:min(380px,calc(100vw - 24px));z-index:30;display:flex;flex-direction:column;border-radius:22px;overflow:hidden;
- font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter",system-ui,sans-serif;letter-spacing:-.003em;
+ font-family:"Universal Sans",-apple-system,system-ui,sans-serif;letter-spacing:-.003em;
  background:rgba(255,255,255,.76);-webkit-backdrop-filter:blur(32px) saturate(180%);backdrop-filter:blur(32px) saturate(180%);
  border:1px solid rgba(0,0,0,.07);box-shadow:0 0 0 .5px rgba(0,0,0,.05),0 28px 64px -14px rgba(0,0,0,.3),0 8px 20px rgba(0,0,0,.08);
  transform:translateX(calc(100% + 28px));opacity:0;visibility:hidden;transition:transform .45s cubic-bezier(.32,.72,0,1),opacity .3s ease,visibility 0s linear .45s}
@@ -765,4 +785,13 @@ button.on{
   background:#636366;
   color:#fff;
   box-shadow:0 1px 3px rgba(0,0,0,.35);
+}
+
+/* Force Universal Sans partout */
+html,body,button,input,select,textarea,
+.ProseMirror,.menu,.dlg,.tab,.row,.t,.home,.inv-sec,.bar,.side-spaces{
+  font-family:"Universal Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif !important;
+}
+code,pre,.ProseMirror pre,kbd{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace !important;
 }
