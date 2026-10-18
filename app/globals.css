@@ -1019,6 +1019,7 @@ code,pre,.ProseMirror pre,kbd{
   border-radius:4px;
   box-shadow:0 1px 4px rgba(0,0,0,.12);
   background:#fff;
+  image-rendering:-webkit-optimize-contrast;
 }
 .note-pdf-err{margin:12px 14px;font-size:13px}
 .note-pdf-frame{display:none}

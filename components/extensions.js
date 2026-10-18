@@ -186,20 +186,25 @@ function PdfEmbedView({node,selected,deleteNode}){
     const doc=await pdfjs.getDocument({data:buf}).promise
     if(off)return
     setNPages(doc.numPages)
-    const maxW=Math.min((box.current?.clientWidth||720)-2,900)
+    // Largeur d’affichage × densité d’écran pour un rendu net (Retina)
+    const cssW=Math.max(320,Math.min((box.current?.clientWidth||800)-24,1100))
+    const dpr=Math.min(Math.max(window.devicePixelRatio||1,2),3)
     const out=[]
     for(let i=1;i<=doc.numPages;i++){
      const page=await doc.getPage(i)
      const base=page.getViewport({scale:1})
-     const scale=Math.min(2,maxW/base.width)
+     const scale=(cssW/base.width)*dpr
      const viewport=page.getViewport({scale})
      const canvas=document.createElement('canvas')
-     canvas.width=viewport.width
-     canvas.height=viewport.height
-     await page.render({canvasContext:canvas.getContext('2d'),viewport}).promise
-     out.push(canvas.toDataURL('image/jpeg',0.92))
+     canvas.width=Math.floor(viewport.width)
+     canvas.height=Math.floor(viewport.height)
+     const ctx=canvas.getContext('2d',{alpha:false})
+     ctx.fillStyle='#ffffff'
+     ctx.fillRect(0,0,canvas.width,canvas.height)
+     await page.render({canvasContext:ctx,viewport,intent:'print'}).promise
+     // PNG = texte net (pas de compression JPEG)
+     out.push(canvas.toDataURL('image/png'))
      if(off)return
-     // progressive update
      setPages([...out])
     }
     setBusy(false)
