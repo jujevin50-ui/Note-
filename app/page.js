@@ -291,7 +291,7 @@ function Main({user}){
      :<NotesHome items={spaceItems} sibs={sibs} openItem={openItem} show={show} projName={projs.find(p=>p.id===pid)?.name||''}/>)
     :<><div className="crumb"><a onClick={()=>setSel(null)}>🏠 Accueil</a>{trail(cur).map(t=><span key={t.id}> › {t.title}</span>)}</div><h2><span className="ic" onClick={e=>show(e,cur,'icon')} title="Choisir une icône">{cur.icon||<span className="muted">☺</span>}</span> {cur.title}</h2>
      {cur.type==='pdf'?<PdfView key={cur.id} id={cur.id} user={user} path={pid+'/'+cur.id+'.pdf'} title={cur.title}/>
-     :<Editor key={cur.id} id={cur.id} user={user}/>}</>}</main></section>
+     :<Editor key={cur.id} id={cur.id} user={user} projectId={pid}/>}</>}</main></section>
   <input ref={fi} type="file" accept="application/pdf" hidden onChange={onPdf}/>
   {menu&&<div className="ov" onClick={()=>setMenu(null)} onContextMenu={e=>{e.preventDefault();setMenu(null)}}>
    <div className="menu" style={{left:menu.x,top:menu.y}} onClick={e=>e.stopPropagation()}>

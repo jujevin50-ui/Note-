@@ -15,9 +15,9 @@ import Highlight from '@tiptap/extension-highlight'
 import Youtube from '@tiptap/extension-youtube'
 import {supabase} from '../lib/supabase'
 import {connect,b64,un,colorOf} from '../lib/provider'
-import {Cell,HeadCell,LinkCard,Chart,PasteLink,NoteImage,UnderlineMark,ImagePaste} from './extensions'
+import {Cell,HeadCell,LinkCard,Chart,PasteLink,NoteImage,NotePdf,UnderlineMark,ImagePaste} from './extensions'
 
-export default function Editor({id,user}){
+export default function Editor({id,user,projectId}){
  const [ctx,setCtx]=useState(null)
  useEffect(()=>{
   let c,off=false,t,dirty=false
@@ -33,10 +33,10 @@ export default function Editor({id,user}){
   })()
   return()=>{off=true;clearTimeout(t);save();c?.destroy();setCtx(null)}
  },[id])
- return ctx?<Tiptap key={id} {...ctx}/>:<p className="muted">Chargement…</p>
+ return ctx?<Tiptap key={id} {...ctx} projectId={projectId}/>:<p className="muted">Chargement…</p>
 }
 
-function Tiptap({ydoc,provider}){
+function Tiptap({ydoc,provider,projectId}){
  const [sp,setSp]=useState(()=>{try{return localStorage.getItem('sp')==='1'}catch{return false}})
  const toggle=v=>{setSp(v);try{localStorage.setItem('sp',v?'1':'0')}catch{}}
  const [hasSum,setHasSum]=useState(false)
@@ -55,7 +55,7 @@ function Tiptap({ydoc,provider}){
  const ed=useEditor({immediatelyRender:false,extensions:[StarterKit.configure({history:false}),
   Collaboration.configure({document:ydoc}),
   CollaborationCursor.configure({provider,user:provider.awareness.getLocalState().user}),
-  NoteImage,UnderlineMark,ImagePaste,
+  NoteImage,NotePdf,UnderlineMark,ImagePaste,
   TaskList,TaskItem.configure({nested:true}),Table.configure({resizable:true}),TableRow,HeadCell,Cell,
   TextStyle,Color,Highlight.configure({multicolor:true}),Youtube.configure({nocookie:true,width:640,height:360}),LinkCard,Chart,PasteLink]})
  if(!ed)return null
@@ -122,6 +122,15 @@ function Tiptap({ydoc,provider}){
    {B('❝',()=>f().toggleBlockquote().run(),ed.isActive('blockquote'),'Citation','tb-ico')}
    {B('—',()=>f().setHorizontalRule().run(),false,'Séparateur','tb-ico')}
    <label className="image-upload" title="Insérer une image depuis votre ordinateur">Image<input type="file" accept="image/*" onChange={e=>{const file=e.target.files?.[0];if(!file)return;const reader=new FileReader();reader.onload=()=>f().insertContent({type:'noteImage',attrs:{src:reader.result,width:600}}).run();reader.readAsDataURL(file);e.target.value=''}}/></label>
+   <label className="image-upload" title="Insérer un PDF dans la note">PDF<input type="file" accept="application/pdf" onChange={async e=>{
+    const file=e.target.files?.[0];e.target.value=''
+    if(!file)return
+    if(!projectId){alert('Projet introuvable');return}
+    const key=projectId+'/embed-'+crypto.randomUUID()+'.pdf'
+    const {error}=await supabase.storage.from('pdfs').upload(key,file,{contentType:'application/pdf',upsert:false})
+    if(error){alert('Envoi du PDF impossible : '+error.message);return}
+    f().insertContent([{type:'notePdf',attrs:{src:key,name:file.name}},{type:'paragraph'}]).run()
+   }}/></label>
    {B('Graphique',()=>f().insertContent({type:'chart'}).run(),false,'Insérer un graphique','tb-word')}
    <div className="tb-slot">
     <button type="button" className={'tb-trigger tb-word'+(pop==='table'?' open':'')} onMouseDown={openPop('table')} title="Tableau">

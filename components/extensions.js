@@ -152,3 +152,37 @@ export const ImagePaste=Extension.create({
   return true
  }}})]}
 })
+
+// PDF embarqué dans une note (écriture au-dessus / en dessous)
+function PdfEmbedView({node,selected,deleteNode}){
+ const [url,setUrl]=useState('')
+ const [err,setErr]=useState('')
+ const path=node.attrs.src, name=node.attrs.name||'document.pdf'
+ useEffect(()=>{
+  let x,off=false
+  if(!path)return
+  if(path.startsWith('blob:')||path.startsWith('data:')){setUrl(path);return}
+  supabase.storage.from('pdfs').download(path).then(({data,error})=>{
+   if(off)return
+   if(error||!data){setErr(error?.message||'PDF introuvable');return}
+   x=URL.createObjectURL(data);setUrl(x)
+  })
+  return()=>{off=true;x&&URL.revokeObjectURL(x)}
+ },[path])
+ return <NodeViewWrapper className={'note-pdf'+(selected?' sel':'')} contentEditable={false}>
+  <div className="note-pdf-bar" data-drag-handle>
+   <span className="note-pdf-ico">📄</span>
+   <span className="note-pdf-name">{name}</span>
+   {url&&<a href={url} download={name} className="note-pdf-dl" onClick={e=>e.stopPropagation()}>Télécharger</a>}
+   <button type="button" className="ghost note-pdf-x" title="Retirer le PDF" onClick={e=>{e.stopPropagation();deleteNode()}}>✕</button>
+  </div>
+  {err?<p className="muted note-pdf-err">{err}</p>:url?<iframe src={url} className="note-pdf-frame" title={name}/>:<p className="muted note-pdf-err">Chargement du PDF…</p>}
+ </NodeViewWrapper>
+}
+export const NotePdf=Node.create({
+ name:'notePdf',group:'block',atom:true,draggable:true,selectable:true,
+ addAttributes(){return{src:{default:null},name:{default:'document.pdf'}}},
+ parseHTML(){return[{tag:'div[data-note-pdf]',getAttrs:el=>({src:el.getAttribute('data-src'),name:el.getAttribute('data-name')||'document.pdf'})}]},
+ renderHTML({node}){return['div',{'data-note-pdf':'1','data-src':node.attrs.src,'data-name':node.attrs.name}]},
+ addNodeView(){return ReactNodeViewRenderer(PdfEmbedView)}
+})
