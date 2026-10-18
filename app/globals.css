@@ -1004,8 +1004,21 @@ code,pre,.ProseMirror pre,kbd{
   color:var(--mut);font-size:13px;
 }
 .note-pdf-x:hover{background:var(--hov);color:var(--fg)}
-.note-pdf-frame{
-  display:block;width:100%;height:min(70vh,640px);
-  border:0;background:#525659;
+.note-pdf-pages{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  padding:12px;
+  background:#e8e8ed;
+}
+:root[data-theme=dark] .note-pdf-pages{background:#1a1a1c}
+.note-pdf-page{
+  display:block;
+  width:100%;
+  height:auto;
+  border-radius:4px;
+  box-shadow:0 1px 4px rgba(0,0,0,.12);
+  background:#fff;
 }
 .note-pdf-err{margin:12px 14px;font-size:13px}
+.note-pdf-frame{display:none}

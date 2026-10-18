@@ -153,30 +153,75 @@ export const ImagePaste=Extension.create({
  }}})]}
 })
 
-// PDF embarqué dans une note (écriture au-dessus / en dessous)
+// PDF embarqué : toutes les pages empilées, scroll dans la note
 function PdfEmbedView({node,selected,deleteNode}){
  const [url,setUrl]=useState('')
+ const [pages,setPages]=useState([]) // data URLs of rendered page canvases
  const [err,setErr]=useState('')
+ const [busy,setBusy]=useState(true)
+ const [nPages,setNPages]=useState(0)
+ const box=useRef(null)
  const path=node.attrs.src, name=node.attrs.name||'document.pdf'
+
  useEffect(()=>{
   let x,off=false
   if(!path)return
-  if(path.startsWith('blob:')||path.startsWith('data:')){setUrl(path);return}
-  supabase.storage.from('pdfs').download(path).then(({data,error})=>{
-   if(off)return
-   if(error||!data){setErr(error?.message||'PDF introuvable');return}
-   x=URL.createObjectURL(data);setUrl(x)
-  })
-  return()=>{off=true;x&&URL.revokeObjectURL(x)}
+  ;(async()=>{
+   try{
+    let blob
+    if(path.startsWith('blob:')||path.startsWith('data:')){
+     const r=await fetch(path);blob=await r.blob()
+     x=path.startsWith('blob:')?path:URL.createObjectURL(blob)
+    }else{
+     const {data,error}=await supabase.storage.from('pdfs').download(path)
+     if(error||!data)throw new Error(error?.message||'PDF introuvable')
+     blob=data
+     x=URL.createObjectURL(blob)
+    }
+    if(off)return
+    setUrl(x)
+    const buf=await blob.arrayBuffer()
+    const pdfjs=await import('pdfjs-dist')
+    if(pdfjs.GlobalWorkerOptions)pdfjs.GlobalWorkerOptions.workerSrc=`https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`
+    const doc=await pdfjs.getDocument({data:buf}).promise
+    if(off)return
+    setNPages(doc.numPages)
+    const maxW=Math.min((box.current?.clientWidth||720)-2,900)
+    const out=[]
+    for(let i=1;i<=doc.numPages;i++){
+     const page=await doc.getPage(i)
+     const base=page.getViewport({scale:1})
+     const scale=Math.min(2,maxW/base.width)
+     const viewport=page.getViewport({scale})
+     const canvas=document.createElement('canvas')
+     canvas.width=viewport.width
+     canvas.height=viewport.height
+     await page.render({canvasContext:canvas.getContext('2d'),viewport}).promise
+     out.push(canvas.toDataURL('image/jpeg',0.92))
+     if(off)return
+     // progressive update
+     setPages([...out])
+    }
+    setBusy(false)
+   }catch(e){
+    if(!off){setErr(e.message||'Impossible d’afficher le PDF');setBusy(false)}
+   }
+  })()
+  return()=>{off=true;x&&x.startsWith('blob:')&&URL.revokeObjectURL(x)}
  },[path])
+
  return <NodeViewWrapper className={'note-pdf'+(selected?' sel':'')} contentEditable={false}>
   <div className="note-pdf-bar" data-drag-handle>
    <span className="note-pdf-ico">📄</span>
-   <span className="note-pdf-name">{name}</span>
+   <span className="note-pdf-name">{name}{nPages?` · ${nPages} page${nPages>1?'s':''}`:''}</span>
    {url&&<a href={url} download={name} className="note-pdf-dl" onClick={e=>e.stopPropagation()}>Télécharger</a>}
    <button type="button" className="ghost note-pdf-x" title="Retirer le PDF" onClick={e=>{e.stopPropagation();deleteNode()}}>✕</button>
   </div>
-  {err?<p className="muted note-pdf-err">{err}</p>:url?<iframe src={url} className="note-pdf-frame" title={name}/>:<p className="muted note-pdf-err">Chargement du PDF…</p>}
+  <div className="note-pdf-pages" ref={box}>
+   {err&&<p className="muted note-pdf-err">{err}</p>}
+   {!err&&pages.map((src,i)=><img key={i} src={src} alt={`Page ${i+1}`} className="note-pdf-page" draggable="false"/>)}
+   {busy&&!err&&<p className="muted note-pdf-err">Chargement des pages…{nPages?` (${pages.length}/${nPages})`:''}</p>}
+  </div>
  </NodeViewWrapper>
 }
 export const NotePdf=Node.create({
