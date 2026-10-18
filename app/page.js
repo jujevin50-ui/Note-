@@ -94,13 +94,16 @@ function NotesHome({items,sibs,openItem,show,projName}){
  </div>
 }
 
-function InvestHome({items,sibs,openItem,show,projName}){
+function InvestHome({items,sibs,openItem,show,projName,addCompany,del}){
  const [q,setQ]=useState('')
  const roots=sibs(null)
  const path=i=>{const a=[];let c=items.find(x=>x.id===i.parent_id);while(c){a.unshift(c.title);c=items.find(x=>x.id===c.parent_id)}return a.join(' › ')}
  const needle=q.trim().toLowerCase(),found=needle?items.filter(i=>(i.title||'').toLowerCase().includes(needle)):[]
  const plural=(n,w)=>n+' '+w+(n>1?'s':'')
  const findFolder=t=>roots.find(i=>i.type==='folder'&&(i.title||'').toLowerCase()===t.toLowerCase())
+ const companyFolder=findFolder('Entreprises à suivre')
+ const companies=companyFolder?sibs(companyFolder.id).filter(i=>i.type!=='folder'):[]
+ const otherSections=INV_SECTIONS.filter(s=>s.title!=='Entreprises à suivre')
  const sectionTitles=new Set(INV_SECTIONS.map(s=>s.title.toLowerCase()))
  const otherFolders=roots.filter(i=>i.type==='folder'&&!sectionTitles.has((i.title||'').toLowerCase()))
  const loose=roots.filter(i=>i.type!=='folder')
@@ -126,16 +129,37 @@ function InvestHome({items,sibs,openItem,show,projName}){
    </div>
   </section>
  }
+
  return <div className="home">
   <div className="hhd"><div><h1>Invest</h1><p className="muted" style={{margin:'2px 0 0'}}>{projName} · espace investissement</p></div>
    <div className="hsearch"><input placeholder="Rechercher…" value={q} onChange={e=>setQ(e.target.value)}/><button className="on" onClick={e=>show(e,null,'new')}>＋ Nouveau</button></div></div>
   {needle?<div className="hsec"><h4>Résultats ({found.length})</h4>{found.length?<div className="hlist">{found.map(i=><div className="hrow hitem hres" key={i.id} onClick={()=>i.type!=='folder'&&openItem(i.id)} onContextMenu={e=>show(e,i)}><Ic i={i}/><span>{i.title}</span><small className="muted">{path(i)}</small></div>)}</div>:<p className="muted">Aucun résultat.</p>}</div>
   :<>
-   <div className="inv-grid">{INV_SECTIONS.map(s=><Section key={s.title} s={s}/>)}</div>
+   {/* Entreprises à suivre — liste simple de noms */}
+   <section className="co-sec">
+    <header className="co-head">
+     <div className="co-titles">
+      <span className="co-ico">📈</span>
+      <div>
+       <h2>Entreprises à suivre</h2>
+       <p className="muted">{companies.length?plural(companies.length,'entreprise'):'Ajoute les sociétés que tu veux suivre'}</p>
+      </div>
+     </div>
+     <button type="button" className="on co-add" onClick={addCompany}>＋ Ajouter</button>
+    </header>
+    {companies.length>0?<div className="co-list">
+     {companies.map(c=><div key={c.id} className="co-chip" onClick={()=>openItem(c.id)} onContextMenu={e=>show(e,c)}>
+      <span className="co-name">{c.title}</span>
+      <button type="button" className="ghost co-x" title="Retirer" onClick={e=>{e.stopPropagation();del(c)}}>✕</button>
+     </div>)}
+    </div>:<div className="co-empty muted">Aucune entreprise pour l’instant. Clique sur « ＋ Ajouter » pour en saisir une.</div>}
+   </section>
+
+   <div className="inv-grid" style={{marginTop:22}}>{otherSections.map(s=><Section key={s.title} s={s}/>)}</div>
    {(otherFolders.length>0||loose.length>0)&&<div className="hsec" style={{marginTop:24}}>
     <h4>Autres</h4>
     <div className="hgrid hgrid-s">
-     {otherFolders.map(f=><div className="hmini" key={f.id} onClick={()=>show({preventDefault(){},stopPropagation(){},clientX:0,clientY:0},f)} onContextMenu={e=>show(e,f)}><Ic i={f}/><span>{f.title}</span></div>)}
+     {otherFolders.map(f=><div className="hmini" key={f.id} onContextMenu={e=>show(e,f)}><Ic i={f}/><span>{f.title}</span></div>)}
      {loose.map(i=><div className="hmini" key={i.id} onClick={()=>openItem(i.id)} onContextMenu={e=>show(e,i)}><Ic i={i}/><span>{i.title}</span></div>)}
     </div>
    </div>}
@@ -192,6 +216,18 @@ function Main({user}){
  const newCode=async()=>{const {data,error}=await supabase.rpc('new_code',{p_pid:pid});if(error){alert(error.message);return code}await loadP();return data}
  const joinProj=()=>ask('Code du projet','',async p_code=>{const {data,error}=await supabase.rpc('join_project',{p_code});if(error)return alert(error.message);await loadP();setPid(data)})
  const add=(type,parent_id)=>ask(NAMES[type],'',async title=>{await insert({type,title,parent_id});if(parent_id)patch(parent_id,{closed:false})})
+ const addCompany=()=>ask('Nom de l’entreprise','',async title=>{
+  if(!title)return
+  let folder=spaceItems.find(i=>!i.parent_id&&i.type==='folder'&&(i.title||'').toLowerCase()==='entreprises à suivre')
+  if(!folder){
+   folder=await insert({type:'folder',title:'Entreprises à suivre',parent_id:null,color:'#007aff',icon:'📈'})
+   if(!folder)return
+   setItems(l=>[...l,{...folder,space}])
+  }
+  const page=await insert({type:'page',title,parent_id:folder.id,icon:'🏢'})
+  if(page)setItems(l=>[...l,{...page,space}])
+  if(folder.closed)patch(folder.id,{closed:false})
+ })
  const ren=i=>ask('Renommer',i.title,title=>patch(i.id,{title}))
  const del=i=>setDlg({label:`Supprimer « ${i.title} » et son contenu ?`,confirm:true,k:Math.random(),ok:async()=>{
   if(i.type==='pdf')supabase.storage.from('pdfs').remove([pid+'/'+i.id+'.pdf'])
@@ -256,7 +292,7 @@ function Main({user}){
     {tabItems.map(t=><div key={t.id} className={'tab'+(sel===t.id?' on':'')} onClick={()=>setSel(t.id)}><Ic i={t}/><span>{t.title}</span>
      <b onClick={e=>{e.stopPropagation();closeTab(t.id)}}>✕</b></div>)}<span style={{marginLeft:'auto'}}>{pres}</span></div>}
    <main>{!pid?<p className="muted">Crée un projet, ou rejoins-en un avec un code, via « ＋ » en haut à gauche.</p>:!cur?(space==='invest'
-     ?<InvestHome items={spaceItems} sibs={sibs} openItem={openItem} show={show} projName={projs.find(p=>p.id===pid)?.name||''}/>
+     ?<InvestHome items={spaceItems} sibs={sibs} openItem={openItem} show={show} projName={projs.find(p=>p.id===pid)?.name||''} addCompany={addCompany} del={del}/>
      :<NotesHome items={spaceItems} sibs={sibs} openItem={openItem} show={show} projName={projs.find(p=>p.id===pid)?.name||''}/>)
     :<><div className="crumb"><a onClick={()=>setSel(null)}>🏠 Accueil</a>{trail(cur).map(t=><span key={t.id}> › {t.title}</span>)}</div><h2><span className="ic" onClick={e=>show(e,cur,'icon')} title="Choisir une icône">{cur.icon||<span className="muted">☺</span>}</span> {cur.title}</h2>
      {cur.type==='pdf'?<PdfView key={cur.id} path={pid+'/'+cur.id+'.pdf'} title={cur.title}/>
