@@ -26,10 +26,11 @@
   --bd:#d2d2d7;
   --side:#f5f5f7;
   --hov:rgba(0,0,0,.05);
-  --ac:#007aff;
-  --sel:rgba(0,122,255,.12);
-  --sel-fg:#007aff;
-  --dzin:rgba(0,122,255,.18);
+  --ac:#1d1d1f;
+  --sel:rgba(0,0,0,.08);
+  --sel-fg:#1d1d1f;
+  --dzin:rgba(0,0,0,.12);
+  --on-fg:#ffffff;
   --cb:#c7c7cc;
   --side-border:rgba(0,0,0,.08);
   --radius:8px;
@@ -44,10 +45,11 @@
   --bd:#38383a;
   --side:#2c2c2e;
   --hov:rgba(255,255,255,.08);
-  --ac:#0a84ff;
-  --sel:rgba(10,132,255,.22);
-  --sel-fg:#0a84ff;
-  --dzin:rgba(10,132,255,.28);
+  --ac:#f5f5f7;
+  --sel:rgba(255,255,255,.14);
+  --sel-fg:#f5f5f7;
+  --dzin:rgba(255,255,255,.2);
+  --on-fg:#1c1c1e;
   --cb:#48484a;
   --side-border:rgba(255,255,255,.08);
   --shadow:0 1px 3px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25);
@@ -73,7 +75,7 @@ input,select,button{
 }
 button{cursor:pointer}
 button:hover{background:var(--hov)}
-button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+button.on{background:var(--ac);color:var(--on-fg,#fff);border-color:var(--ac)}
 button.ghost{background:transparent;border-color:transparent}
 button.ghost:hover{background:var(--hov)}
 
@@ -149,7 +151,7 @@ aside .head > button:hover{
 }
 aside .head > button.on{
   background:var(--ac);
-  color:#fff;
+  color:var(--on-fg,#fff);
 }
 
 /* Boutons Accueil / Nouveau */
@@ -395,7 +397,7 @@ ul[data-type=taskList]{list-style:none;padding-left:4px}ul[data-type=taskList] l
 .ProseMirror td,.ProseMirror th{border:1px solid var(--cb);padding:6px 8px;vertical-align:top;position:relative;min-width:60px}
 .ProseMirror th{background:var(--side);font-weight:600;text-align:left}
 .ProseMirror td p,.ProseMirror th p{margin:0}
-.ProseMirror .selectedCell:after{content:"";position:absolute;inset:0;background:rgba(37,99,235,.12);pointer-events:none}
+.ProseMirror .selectedCell:after{content:"";position:absolute;inset:0;background:rgba(0,0,0,.08);pointer-events:none}
 .ProseMirror .column-resize-handle{position:absolute;right:-2px;top:0;bottom:-2px;width:4px;background:var(--ac);pointer-events:none}
 .ProseMirror.resize-cursor{cursor:col-resize}
 .collaboration-cursor__caret{border-left:2px solid;margin:0 -1px;position:relative;word-break:normal}
@@ -413,7 +415,7 @@ ul[data-type=taskList]{list-style:none;padding-left:4px}ul[data-type=taskList] l
 .image-handle.h-w{left:-6px;top:50%;margin-top:-6px;cursor:ew-resize}.image-handle.h-e{right:-6px;top:50%;margin-top:-6px;cursor:ew-resize}
 .image-tools{position:absolute;top:8px;left:50%;transform:translateX(-50%);display:flex;gap:2px;padding:3px;border-radius:8px;background:rgba(0,0,0,.78);z-index:4;line-height:1}
 .image-tools button{background:none;border:0;color:#fff;padding:4px 7px;border-radius:5px;font-size:13px;line-height:1.2}
-.image-tools button:hover{background:rgba(255,255,255,.2)}.image-tools button.on{background:var(--ac)}
+.image-tools button:hover{background:rgba(255,255,255,.2)}.image-tools button.on{background:var(--ac);color:var(--on-fg,#fff)}
 .ProseMirror u{text-decoration:underline}
 .share-dialog{max-height:85vh;overflow:auto;width:min(440px,calc(100vw - 32px))}
 .share-divider{width:100%;border:0;border-top:1px solid var(--bd);margin:2px 0}
@@ -472,7 +474,7 @@ ul[data-type=taskList]{list-style:none;padding-left:4px}ul[data-type=taskList] l
 .bar button:active{transform:scale(.96)}
 .bar button.on{
   background:var(--ac);
-  color:#fff;
+  color:var(--on-fg,#fff);
   border-color:transparent;
   box-shadow:0 2px 5px color-mix(in srgb,var(--ac) 25%,transparent);
 }
@@ -561,7 +563,7 @@ ul[data-type=taskList]{list-style:none;padding-left:4px}ul[data-type=taskList] l
 .ed-wrap{transition:margin-right .45s cubic-bezier(.32,.72,0,1)}
 @media(min-width:1180px){.ed-wrap.shift{margin-right:404px}}
 .bar .sum-btn{margin-left:auto;display:inline-flex;align-items:center;gap:7px;border-radius:999px;padding:5px 14px 5px 11px;background:var(--side);font-weight:500;position:relative}
-.bar .sum-btn.active{background:rgba(0,122,255,.12);color:#007aff;border-color:rgba(0,122,255,.25)}
+.bar .sum-btn.active{background:var(--sel);color:var(--ac);border-color:color-mix(in srgb,var(--ac) 28%,transparent)}
 .sum-btn i{width:7px;height:7px;border-radius:50%;background:#ff9f0a;position:absolute;top:5px;right:7px}
 .sp{position:fixed;top:12px;right:12px;bottom:12px;width:min(380px,calc(100vw - 24px));z-index:30;display:flex;flex-direction:column;border-radius:22px;overflow:hidden;
  font-family:"Universal Sans",-apple-system,system-ui,sans-serif;letter-spacing:-.003em;
@@ -577,15 +579,15 @@ ul[data-type=taskList]{list-style:none;padding-left:4px}ul[data-type=taskList] l
 .sp-seg{display:flex;gap:2px;margin:4px 18px 8px;padding:2px;border-radius:9px;background:rgba(118,118,128,.14)}
 .sp .sp-seg button{flex:1;border:0;background:none;border-radius:7px;padding:5px 0;font-size:13px;font-weight:500;color:var(--mut)}
 .sp .sp-seg button:hover{background:none;color:var(--fg)}
-.sp .sp-seg button.on{background:#fff;color:#1c1c1e;box-shadow:0 1px 3px rgba(0,0,0,.14),0 0 0 .5px rgba(0,0,0,.04)}
+.sp .sp-seg button.on{background:var(--bg);color:var(--fg);box-shadow:0 1px 3px rgba(0,0,0,.14),0 0 0 .5px rgba(0,0,0,.04)}
 :root[data-theme=dark] .sp .sp-seg button.on{background:#636366;color:#fff}
 .sp-tools{display:flex;gap:2px;padding:0 14px 6px}
 .sp .sp-tools button{min-width:32px;height:28px;padding:0 8px;border:0;border-radius:8px;background:none;color:var(--fg);font-size:14px}
 .sp .sp-tools button:hover{background:rgba(120,120,128,.16)}
-.sp .sp-tools button.on{background:rgba(0,122,255,.15);color:#007aff}
-:root[data-theme=dark] .sp .sp-tools button.on{background:rgba(10,132,255,.25);color:#0a84ff}
+.sp .sp-tools button.on{background:var(--sel);color:var(--ac)}
+:root[data-theme=dark] .sp .sp-tools button.on{background:var(--sel);color:var(--ac)}
 .sp-body{flex:1;overflow:auto;padding:8px 20px 16px;position:relative;border-top:1px solid rgba(120,120,128,.18)}
-.sp .ProseMirror{min-height:100%;font-size:15px;line-height:1.55;caret-color:#007aff}
+.sp .ProseMirror{min-height:100%;font-size:15px;line-height:1.55;caret-color:var(--ac)}
 .sp .ProseMirror p{margin:0 0 .65em}.sp .ProseMirror h3{font-size:16px;margin:.4em 0 .3em;letter-spacing:-.01em}
 .sp .ProseMirror ul,.sp .ProseMirror ol{padding-left:1.3em;margin:0 0 .65em}
 .sp-ph{position:absolute;top:8px;left:20px;color:var(--mut);pointer-events:none;font-size:15px;line-height:1.55}
@@ -617,10 +619,10 @@ button{
   font-weight:500;
 }
 button.on{
-  box-shadow:0 1px 2px rgba(0,122,255,.25);
+  box-shadow:0 1px 2px rgba(0,0,0,.18);
 }
 :root[data-theme=dark] button.on{
-  box-shadow:0 1px 2px rgba(10,132,255,.3);
+  box-shadow:0 1px 2px rgba(0,0,0,.4);
 }
 
 /* Dialogues plus iOS */
@@ -635,7 +637,7 @@ button.on{
 .dlg input:focus{
   outline:none;
   border-color:var(--ac);
-  box-shadow:0 0 0 3px rgba(0,122,255,.2);
+  box-shadow:0 0 0 3px rgba(0,0,0,.15);
 }
 
 /* Menu contextuel plus macOS */
@@ -677,7 +679,7 @@ button.on{
   gap:10px;
   padding:12px 12px 10px;
   border-bottom:1px solid var(--bd);
-  border-top:3px solid var(--inv,#007aff);
+  border-top:3px solid var(--inv,var(--ac));
 }
 .inv-ico{
   font-size:20px;
@@ -685,7 +687,7 @@ button.on{
   width:34px;height:34px;
   display:grid;place-items:center;
   border-radius:9px;
-  background:color-mix(in srgb,var(--inv,#007aff) 12%,transparent);
+  background:color-mix(in srgb,var(--inv,var(--ac)) 12%,transparent);
   flex:none;
 }
 .inv-titles{flex:1;min-width:0;display:grid;gap:1px}
@@ -799,7 +801,7 @@ code,pre,.ProseMirror pre,kbd{
   border:1px solid var(--bd);
   border-radius:16px;
   padding:18px 18px 16px;
-  border-top:3px solid #007aff;
+  border-top:3px solid var(--ac);
   margin-bottom:4px;
 }
 .co-head{
@@ -816,7 +818,7 @@ code,pre,.ProseMirror pre,kbd{
   width:42px;height:42px;
   display:grid;place-items:center;
   border-radius:12px;
-  background:rgba(0,122,255,.12);
+  background:rgba(0,0,0,.08);
   flex:none;
 }
 .co-titles h2{
@@ -852,8 +854,8 @@ code,pre,.ProseMirror pre,kbd{
   max-width:100%;
 }
 .co-chip:hover{
-  border-color:rgba(0,122,255,.45);
-  background:rgba(0,122,255,.06);
+  border-color:color-mix(in srgb,var(--ac) 40%,var(--bd));
+  background:var(--sel);
   transform:translateY(-1px);
 }
 .co-name{
