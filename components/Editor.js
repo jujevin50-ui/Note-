@@ -152,7 +152,7 @@ function Tiptap({ydoc,provider}){
   <SidePanel ydoc={ydoc} open={sp} onClose={()=>toggle(false)}/></>
 }
 
-function SidePanel({ydoc,open,onClose}){
+export function SidePanel({ydoc,open,onClose}){
  const [tab,setTab]=useState('summary')
  const ed=useEditor({immediatelyRender:false,extensions:[StarterKit.configure({history:false}),
   Collaboration.configure({document:ydoc,field:tab}),TaskList,TaskItem.configure({nested:true})]},[tab])
@@ -171,7 +171,7 @@ function SidePanel({ydoc,open,onClose}){
    {T('☑',()=>f().toggleTaskList().run(),ed.isActive('taskList'),'Cases à cocher')}
    {T('Aa',()=>f().toggleHeading({level:3}).run(),ed.isActive('heading'),'Titre')}</div>}
   <div className="sp-body">{ed&&<EditorContent editor={ed}/>}
-   {ed?.isEmpty&&<span className="sp-ph">{tab==='summary'?'Résume cette page en quelques lignes…':'Idées, remarques, choses à faire…'}</span>}</div>
+   {ed?.isEmpty&&<span className="sp-ph">{tab==='summary'?'Résume en quelques lignes…':'Idées, remarques, choses à faire…'}</span>}</div>
   <div className="sp-foot"><span>{words} mot{words>1?'s':''}</span><span>Échap pour fermer</span></div>
  </div>
 }

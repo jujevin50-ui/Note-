@@ -922,3 +922,49 @@ code,pre,.ProseMirror pre,kbd{
 .bm .tb-dot{width:18px !important;height:18px !important;min-width:18px !important;min-height:18px !important}
 :root[data-theme=dark] .tb-pop{background:rgba(44,44,46,.9);border-color:rgba(255,255,255,.08)}
 :root[data-theme=dark] .bar .tb-dot{box-shadow:inset 0 0 0 2px #2c2c2e;border-color:rgba(255,255,255,.16) !important}
+
+/* PDF + barre Résumé */
+.pdf-bar{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin:0 0 12px;
+  flex-wrap:wrap;
+}
+.pdf-dl{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:7px 12px;
+  border:1px solid var(--bd);
+  border-radius:10px;
+  color:inherit;
+  text-decoration:none;
+  font-size:13px;
+  font-weight:500;
+  background:var(--bg);
+}
+.pdf-dl:hover{background:var(--hov)}
+.pdf-bar .sum-btn{
+  margin-left:auto;
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  border-radius:999px;
+  padding:5px 14px 5px 11px;
+  background:var(--side);
+  font-weight:500;
+  position:relative;
+  border:1px solid transparent;
+}
+.pdf-bar .sum-btn.active{
+  background:var(--sel);
+  color:var(--ac);
+  border-color:color-mix(in srgb,var(--ac) 28%,transparent);
+}
+.pdf-bar .sum-btn i{
+  width:7px;height:7px;border-radius:50%;background:#ff9f0a;
+  position:absolute;top:5px;right:7px;
+}
+.ed-wrap .pdf{height:calc(100vh - 160px);width:100%;border:1px solid var(--bd);border-radius:10px;background:var(--side)}
+@media(min-width:1180px){.ed-wrap.shift .pdf{height:calc(100vh - 160px)}}

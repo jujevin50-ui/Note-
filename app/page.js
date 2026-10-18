@@ -3,6 +3,7 @@ import {useEffect,useRef,useState} from 'react'
 import {supabase} from '../lib/supabase'
 import {colorOf} from '../lib/provider'
 import Editor from '../components/Editor'
+import PdfView from '../components/PdfView'
 
 const COLORS=['#f59e0b','#ef4444','#22c55e','#3b82f6','#8b5cf6','#ec4899','#64748b']
 const NAMES={page:'Nom de la page',folder:'Nom du dossier'}
@@ -47,12 +48,6 @@ function Settings({user,close}){
   <p className="muted" style={{margin:0}}>Compte : {user.email}</p>{st&&<p style={{margin:0}}>{st}</p>}
   <div className="btns"><button className="ghost" onClick={close}>Fermer</button><button className="on" onClick={save}>Enregistrer</button></div></div></div>
 }
-function PdfView({path,title}){
- const [u,setU]=useState('')
- useEffect(()=>{let x;supabase.storage.from('pdfs').download(path).then(({data})=>{if(data){x=URL.createObjectURL(data);setU(x)}});return()=>x&&URL.revokeObjectURL(x)},[path])
- return u?<><a href={u} download={title+'.pdf'} style={{display:'inline-block',margin:'0 0 10px',padding:'6px 12px',border:'1px solid #e5e5e0',borderRadius:6,color:'inherit',textDecoration:'none'}}>⬇ Télécharger le PDF</a><iframe src={u} className="pdf"/></>:<p className="muted">Chargement…</p>
-}
-
 const INV_SECTIONS=[
  {title:'Entreprises à suivre',icon:'📈',color:'#007aff'},
  {title:'Analyses',icon:'🔬',color:'#ff9500'},
@@ -295,7 +290,7 @@ function Main({user}){
      ?<InvestHome items={spaceItems} sibs={sibs} openItem={openItem} show={show} projName={projs.find(p=>p.id===pid)?.name||''} addCompany={addCompany} del={del}/>
      :<NotesHome items={spaceItems} sibs={sibs} openItem={openItem} show={show} projName={projs.find(p=>p.id===pid)?.name||''}/>)
     :<><div className="crumb"><a onClick={()=>setSel(null)}>🏠 Accueil</a>{trail(cur).map(t=><span key={t.id}> › {t.title}</span>)}</div><h2><span className="ic" onClick={e=>show(e,cur,'icon')} title="Choisir une icône">{cur.icon||<span className="muted">☺</span>}</span> {cur.title}</h2>
-     {cur.type==='pdf'?<PdfView key={cur.id} path={pid+'/'+cur.id+'.pdf'} title={cur.title}/>
+     {cur.type==='pdf'?<PdfView key={cur.id} id={cur.id} user={user} path={pid+'/'+cur.id+'.pdf'} title={cur.title}/>
      :<Editor key={cur.id} id={cur.id} user={user}/>}</>}</main></section>
   <input ref={fi} type="file" accept="application/pdf" hidden onChange={onPdf}/>
   {menu&&<div className="ov" onClick={()=>setMenu(null)} onContextMenu={e=>{e.preventDefault();setMenu(null)}}>
