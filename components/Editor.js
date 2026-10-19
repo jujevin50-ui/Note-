@@ -67,7 +67,16 @@ function Tiptap({ydoc,provider,projectId}){
  const cur=ed.isActive('heading',{level:1})?'1':ed.isActive('heading',{level:2})?'2':ed.isActive('heading',{level:3})?'3':'p'
  const curStyle=STYLES.find(s=>s.v===cur)
  const INKS=['#1d1d1f','#6e6e73','#007aff','#34c759','#ff9500','#ff3b30','#af52de','#ff2d55']
- const MARKS=['#fff3a3','#ffe0b2','#ffd0d8','#c8f5d4','#cfe4ff','#ead9ff','#f2f2f7','#ffffff']
+ const MARKS=[
+  {c:'rgba(255,214,10,.42)',l:'Jaune'},
+  {c:'rgba(255,159,10,.38)',l:'Orange'},
+  {c:'rgba(255,69,58,.32)',l:'Rouge'},
+  {c:'rgba(48,209,88,.34)',l:'Vert'},
+  {c:'rgba(100,210,255,.38)',l:'Cyan'},
+  {c:'rgba(191,90,242,.34)',l:'Violet'},
+  {c:'rgba(174,174,178,.36)',l:'Gris'},
+ ]
+ const CELL_BG=['#fff3a3','#ffe0b2','#ffd0d8','#c8f5d4','#cfe4ff','#ead9ff']
  const openPop=k=>e=>{e.preventDefault();e.stopPropagation();setPop(pop===k?null:k)}
  const Pop=({children})=><div className="tb-pop" onMouseDown={e=>e.stopPropagation()}>{children}</div>
  return <>
@@ -112,8 +121,9 @@ function Tiptap({ydoc,provider,projectId}){
     </button>
     {pop==='mark'&&<Pop><div className="tb-menu tb-colors">
      <p className="tb-cap">Surlignage</p>
-     <div className="tb-dots">{MARKS.map(c=><button type="button" key={c} className="tb-dot tb-dot-hi" style={{background:c}} title={c} onMouseDown={e=>{e.preventDefault();f().setHighlight({color:c}).run();setPop(null)}}/>)}</div>
-     <label className="tb-custom" onMouseDown={e=>e.preventDefault()}>Personnalisée<input type="color" defaultValue="#fde047" onChange={e=>f().setHighlight({color:e.target.value}).run()}/></label>
+     <div className="tb-hl-grid">{MARKS.map(m=><button type="button" key={m.l} className="tb-hl-chip" title={m.l} onMouseDown={e=>{e.preventDefault();f().setHighlight({color:m.c}).run();setPop(null)}}>
+      <i style={{background:m.c}}/><span>{m.l}</span>
+     </button>)}</div>
      <button type="button" className="tb-clear" onMouseDown={e=>{e.preventDefault();f().unsetHighlight().run();setPop(null)}}>Retirer le surlignage</button>
     </div></Pop>}
    </div>
@@ -152,7 +162,7 @@ function Tiptap({ydoc,provider,projectId}){
     {B('− Ligne',()=>f().deleteRow().run())}{B('− Colonne',()=>f().deleteColumn().run())}
     {B('Fusionner',()=>f().mergeOrSplit().run(),false,'Sélectionne plusieurs cellules en glissant')}
     <span className="tb-sep"/>
-    {MARKS.slice(0,6).map(c=><button type="button" key={c} className="tb-dot tb-dot-hi" style={{background:c}} title="Fond de cellule" onMouseDown={e=>e.preventDefault()} onClick={()=>f().setCellAttribute('background',c).run()}/>)}
+    {CELL_BG.map(c=><button type="button" key={c} className="tb-dot tb-dot-hi" style={{background:c}} title="Fond de cellule" onMouseDown={e=>{e.preventDefault();f().setCellAttribute('background',c).run()}}/>)}
     {B('∅',()=>f().setCellAttribute('background',null).run(),false,'Retirer le fond')}
     {B('En-tête',()=>f().toggleHeaderRow().run(),false,'Ligne d’en-tête')}
     {B('Suppr.',()=>f().deleteTable().run(),false,'Supprimer le tableau')}
