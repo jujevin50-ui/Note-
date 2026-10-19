@@ -417,6 +417,14 @@ ul[data-type=taskList]{list-style:none;padding-left:4px}ul[data-type=taskList] l
 .image-tools button{background:none;border:0;color:#fff;padding:4px 7px;border-radius:5px;font-size:13px;line-height:1.2}
 .image-tools button:hover{background:rgba(255,255,255,.2)}.image-tools button.on{background:var(--ac);color:var(--on-fg,#fff)}
 .ProseMirror u{text-decoration:underline}
+.ProseMirror mark,.ProseMirror mark.hl{
+  border-radius:3px;
+  padding:.05em .12em;
+  box-decoration-break:clone;
+  -webkit-box-decoration-break:clone;
+  color:inherit;
+}
+.ProseMirror mark[data-color],.ProseMirror mark[style]{/* couleur inline via TipTap */}
 .share-dialog{max-height:85vh;overflow:auto;width:min(440px,calc(100vw - 32px))}
 .share-divider{width:100%;border:0;border-top:1px solid var(--bd);margin:2px 0}
 .member-list{display:grid;gap:8px;max-height:220px;overflow:auto}

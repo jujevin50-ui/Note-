@@ -57,7 +57,7 @@ function Tiptap({ydoc,provider,projectId}){
   CollaborationCursor.configure({provider,user:provider.awareness.getLocalState().user}),
   NoteImage,NotePdf,UnderlineMark,ImagePaste,
   TaskList,TaskItem.configure({nested:true}),Table.configure({resizable:true}),TableRow,HeadCell,Cell,
-  TextStyle,Color,Highlight.configure({multicolor:true}),Youtube.configure({nocookie:true,width:640,height:360}),LinkCard,Chart,PasteLink]})
+  TextStyle,Color,Highlight.configure({multicolor:true,HTMLAttributes:{class:'hl'}}),Youtube.configure({nocookie:true,width:640,height:360}),LinkCard,Chart,PasteLink]})
  if(!ed)return null
  const f=()=>ed.chain().focus()
  const B=(l,fn,a,t,extra='')=><button type="button" title={t} className={(a?'on ':'')+extra} onMouseDown={e=>e.preventDefault()} onClick={fn}>{l}</button>
@@ -79,7 +79,7 @@ function Tiptap({ydoc,provider,projectId}){
     </button>
     {pop==='style'&&<Pop><div className="tb-menu tb-styles">
      <p className="tb-cap">Style</p>
-     {STYLES.map(s=><button type="button" key={s.v} className={'tb-style'+(cur===s.v?' on':'')} onClick={()=>block(s.v)}>
+     {STYLES.map(s=><button type="button" key={s.v} className={'tb-style'+(cur===s.v?' on':'')} onMouseDown={e=>{e.preventDefault();block(s.v)}}>
       <span style={{fontSize:s.s,fontWeight:s.w}}>{s.l}</span>
       {cur===s.v&&<em>✓</em>}
      </button>)}
@@ -100,9 +100,9 @@ function Tiptap({ydoc,provider,projectId}){
     </button>
     {pop==='ink'&&<Pop><div className="tb-menu tb-colors">
      <p className="tb-cap">Couleur du texte</p>
-     <div className="tb-dots">{INKS.map(c=><button type="button" key={c} className="tb-dot" style={{background:c}} title={c} onClick={()=>{f().setColor(c).run();setPop(null)}}/>)}</div>
-     <label className="tb-custom">Personnalisée<input type="color" onChange={e=>f().setColor(e.target.value).run()}/></label>
-     <button type="button" className="tb-clear" onClick={()=>{f().unsetColor().run();setPop(null)}}>Couleur par défaut</button>
+     <div className="tb-dots">{INKS.map(c=><button type="button" key={c} className="tb-dot" style={{background:c}} title={c} onMouseDown={e=>{e.preventDefault();f().setColor(c).run();setPop(null)}}/>)}</div>
+     <label className="tb-custom" onMouseDown={e=>e.preventDefault()}>Personnalisée<input type="color" onChange={e=>f().setColor(e.target.value).run()}/></label>
+     <button type="button" className="tb-clear" onMouseDown={e=>{e.preventDefault();f().unsetColor().run();setPop(null)}}>Couleur par défaut</button>
     </div></Pop>}
    </div>
    <div className="tb-slot">
@@ -112,9 +112,9 @@ function Tiptap({ydoc,provider,projectId}){
     </button>
     {pop==='mark'&&<Pop><div className="tb-menu tb-colors">
      <p className="tb-cap">Surlignage</p>
-     <div className="tb-dots">{MARKS.map(c=><button type="button" key={c} className="tb-dot tb-dot-hi" style={{background:c}} title={c} onClick={()=>{f().setHighlight({color:c}).run();setPop(null)}}/>)}</div>
-     <label className="tb-custom">Personnalisée<input type="color" defaultValue="#fde047" onChange={e=>f().setHighlight({color:e.target.value}).run()}/></label>
-     <button type="button" className="tb-clear" onClick={()=>{f().unsetHighlight().run();setPop(null)}}>Retirer le surlignage</button>
+     <div className="tb-dots">{MARKS.map(c=><button type="button" key={c} className="tb-dot tb-dot-hi" style={{background:c}} title={c} onMouseDown={e=>{e.preventDefault();f().setHighlight({color:c}).run();setPop(null)}}/>)}</div>
+     <label className="tb-custom" onMouseDown={e=>e.preventDefault()}>Personnalisée<input type="color" defaultValue="#fde047" onChange={e=>f().setHighlight({color:e.target.value}).run()}/></label>
+     <button type="button" className="tb-clear" onMouseDown={e=>{e.preventDefault();f().unsetHighlight().run();setPop(null)}}>Retirer le surlignage</button>
     </div></Pop>}
    </div>
    <span className="tb-sep"/>
@@ -139,7 +139,7 @@ function Tiptap({ydoc,provider,projectId}){
     {pop==='table'&&<Pop><div className="tb-menu">
      <p className="tb-cap">Tableau</p>
      {[['ins','Insérer un tableau 3×3'],['row+','Ajouter une ligne'],['col+','Ajouter une colonne'],['row-','Supprimer la ligne'],['col-','Supprimer la colonne'],['del','Supprimer le tableau']].map(([v,l])=>
-      <button type="button" key={v} className={'tb-item'+(v==='del'?' danger':'')} onClick={()=>tbl(v)}>{l}</button>)}
+      <button type="button" key={v} className={'tb-item'+(v==='del'?' danger':'')} onMouseDown={e=>{e.preventDefault();tbl(v)}}>{l}</button>)}
     </div></Pop>}
    </div>
    <button type="button" className={'sum-btn'+(sp?' active':'')} title="Résumé et notes de la page" onClick={()=>toggle(!sp)}>
