@@ -139,7 +139,7 @@ function Tiptap({ydoc,provider,projectId}){
     const key=projectId+'/embed-'+crypto.randomUUID()+'.pdf'
     const {error}=await supabase.storage.from('pdfs').upload(key,file,{contentType:'application/pdf',upsert:false})
     if(error){alert('Envoi du PDF impossible : '+error.message);return}
-    f().insertContent([{type:'notePdf',attrs:{src:key,name:file.name}},{type:'paragraph'}]).run()
+    f().insertContent([{type:'notePdf',attrs:{src:key,name:file.name,width:640,align:'left'}},{type:'paragraph'}]).run()
    }}/></label>
    {B('Graphique',()=>f().insertContent({type:'chart'}).run(),false,'Insérer un graphique','tb-word')}
    <div className="tb-slot">

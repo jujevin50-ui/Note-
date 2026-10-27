@@ -89,10 +89,26 @@ button.ghost:hover{background:var(--hov)}
   transition:grid-template-columns .35s cubic-bezier(.22,1,.36,1);
 }
 
-/* ========== SIDEBAR (bandeau gauche) — style Apple ========== */
+/* ========== SIDEBAR — couleur inverse du thème ========== */
+/* Clair → sidebar sombre ; Sombre → sidebar claire */
 aside{
+  /* tokens inversés (thème clair → menu sombre) */
+  --side:#1c1c1e;
+  --fg:#f5f5f7;
+  --mut:#98989d;
+  --hov:rgba(255,255,255,.09);
+  --sel:rgba(255,255,255,.14);
+  --sel-fg:#f5f5f7;
+  --bd:#38383a;
+  --side-border:rgba(255,255,255,.1);
+  --ac:#f5f5f7;
+  --on-fg:#1c1c1e;
+  --bg:#2c2c2e;
+  --dzin:rgba(255,255,255,.18);
+
   position:relative;
   background:var(--side);
+  color:var(--fg);
   border-right:1px solid var(--side-border);
   padding:10px 8px 12px;
   display:flex;
@@ -100,13 +116,35 @@ aside{
   gap:6px;
   overflow:hidden;
   user-select:none;
-  transition:box-shadow .3s ease,background .25s ease;
+  transition:box-shadow .3s ease,background .25s ease,color .25s ease;
+}
+:root[data-theme=dark] aside{
+  /* thème sombre → menu clair */
+  --side:#f0f0f2;
+  --fg:#1d1d1f;
+  --mut:#6e6e73;
+  --hov:rgba(0,0,0,.06);
+  --sel:rgba(0,0,0,.09);
+  --sel-fg:#1d1d1f;
+  --bd:#d2d2d7;
+  --side-border:rgba(0,0,0,.1);
+  --ac:#1d1d1f;
+  --on-fg:#ffffff;
+  --bg:#ffffff;
+  --dzin:rgba(0,0,0,.12);
+  color:var(--fg);
+  background:var(--side);
 }
 aside.side-cols{
-  box-shadow:1px 0 0 var(--side-border),4px 0 24px rgba(0,0,0,.04);
+  box-shadow:1px 0 0 var(--side-border),6px 0 28px rgba(0,0,0,.18);
 }
 :root[data-theme=dark] aside.side-cols{
-  box-shadow:1px 0 0 var(--side-border),4px 0 28px rgba(0,0,0,.35);
+  box-shadow:1px 0 0 var(--side-border),6px 0 24px rgba(0,0,0,.06);
+}
+aside select,
+aside button,
+aside input{
+  color:inherit;
 }
 
 /* Header projet */
@@ -1363,15 +1401,15 @@ code,pre,.ProseMirror pre,kbd{
 .ed-wrap .pdf{height:calc(100vh - 160px);width:100%;border:1px solid var(--bd);border-radius:10px;background:var(--side)}
 @media(min-width:1180px){.ed-wrap.shift .pdf{height:calc(100vh - 160px)}}
 
-/* PDF embarqué dans l’éditeur */
-.note-pdf{
-  margin:16px 0;
+/* PDF embarqué — redimensionnable (même cadre que les images) */
+.note-pdf-wrap{margin:16px 0;display:block}
+.note-pdf-inner{
   border:1px solid var(--bd);
   border-radius:12px;
   overflow:hidden;
   background:var(--side);
+  line-height:1.4;
 }
-.note-pdf.sel{outline:2px solid var(--ac);outline-offset:1px}
 .note-pdf-bar{
   display:flex;
   align-items:center;
@@ -1387,22 +1425,15 @@ code,pre,.ProseMirror pre,kbd{
   font-size:13.5px;font-weight:550;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
-.note-pdf-dl{
-  font-size:12.5px;font-weight:500;
-  color:var(--ac);text-decoration:none;
-  padding:4px 8px;border-radius:7px;
+.note-pdf-dl-tool{
+  color:inherit;text-decoration:none;font-size:14px;padding:0 4px;opacity:.85;
 }
-.note-pdf-dl:hover{background:var(--hov)}
-.note-pdf-x{
-  width:28px;height:28px;padding:0;border:none;border-radius:7px;
-  color:var(--mut);font-size:13px;
-}
-.note-pdf-x:hover{background:var(--hov);color:var(--fg)}
+.note-pdf-dl-tool:hover{opacity:1}
 .note-pdf-pages{
   display:flex;
   flex-direction:column;
-  gap:12px;
-  padding:12px;
+  gap:10px;
+  padding:10px;
   background:#e8e8ed;
 }
 :root[data-theme=dark] .note-pdf-pages{background:#1a1a1c}
@@ -1416,7 +1447,7 @@ code,pre,.ProseMirror pre,kbd{
   image-rendering:-webkit-optimize-contrast;
 }
 .note-pdf-err{margin:12px 14px;font-size:13px}
-.note-pdf-frame{display:none}
+.note-image-frame .note-pdf-inner{width:100%}
 
 /* Surlignage moderne — adapté clair / sombre */
 .ProseMirror mark,

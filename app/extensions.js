@@ -34,10 +34,9 @@ export const PasteLink=Extension.create({name:'pasteLink',addProseMirrorPlugins(
 const PAL=['#29a9f0','#22c55e','#8b3adb','#f97316','#ef4444','#22c6c6','#facc15']
 const rid=()=>Math.random().toString(36).slice(2,8)
 const nf=(v,d)=>new Intl.NumberFormat('fr-FR',{minimumFractionDigits:d,maximumFractionDigits:d}).format(+v||0)
-const SAMPLE=[['Trading',104.6],['Transport',35],['Alimentation',27.89],['Shopping',26.54],['Santé',9.6],['Loisirs',7]].map(([l,v],i)=>({id:'s'+i,l,v,c:PAL[i]}))
 const NB='\u00a0'
 function ChartView({node,updateAttributes,deleteNode,selected,editor,getPos}){
- const [edit,setEdit]=useState(false)
+ const [edit,setEdit]=useState(()=>{try{return !(JSON.parse(node.attrs.data)||[]).length}catch{return false}})
  const {type,title,subtitle,unit,label}=node.attrs,align=node.attrs.align||'left'
  let D=[];try{D=JSON.parse(node.attrs.data)||[]}catch{}
  const set=d=>updateAttributes({data:JSON.stringify(d)})
@@ -54,8 +53,8 @@ function ChartView({node,updateAttributes,deleteNode,selected,editor,getPos}){
    :full?<circle cx={C} cy={C} r={(ro+ri)/2} fill="none" stroke={(D.find(d=>+d.v>0)||{}).c||PAL[0]} strokeWidth={ro-ri+10} style={glow((D.find(d=>+d.v>0)||{}).c||PAL[0])}/>
    :D.map((d,i)=>{const v=+d.v||0;if(v<=0)return null;const span=v/tot*2*Math.PI;let s=a0+pad,e=a0+span-pad;if(e-s<.03){const m=a0+span/2;s=m-.015;e=m+.015}
     a0+=span;return <path key={d.id||i} d={sec(s,e)} fill={d.c} stroke={d.c} strokeWidth="10" strokeLinejoin="round" style={glow(d.c)}/>})}
-   <text x={C} y={C+4} textAnchor="middle" fontSize="30" fontWeight="700" fill="#fff">{nf(tot,tot>=100?0:2)}{u}</text>
-   {label&&<text x={C} y={C+34} textAnchor="middle" fontSize="11" letterSpacing="2" fill="#8a8f98">{label.toUpperCase()}</text>}
+   {D.length?<text x={C} y={C+4} textAnchor="middle" fontSize="30" fontWeight="700" fill="#fff">{nf(tot,tot>=100?0:2)}{u}</text>:<text x={C} y={C+5} textAnchor="middle" fontSize="14" fill="#8a8f98">Aucune donnée</text>}
+   {D.length>0&&label&&<text x={C} y={C+34} textAnchor="middle" fontSize="11" letterSpacing="2" fill="#8a8f98">{label.toUpperCase()}</text>}
   </svg>}
  const W=480,H=240,bw=(W-40)/(D.length||1),max=Math.max(1,...D.map(d=>+d.v||0)),y=v=>H-40-((+v||0)/max)*(H-80)
  const lab=(d,i)=><text key={'t'+i} x={30+(i+.5)*bw} y={H-16} textAnchor="middle" fontSize="12" fill="#8a8f98">{d.l}</text>
@@ -85,12 +84,12 @@ function ChartView({node,updateAttributes,deleteNode,selected,editor,getPos}){
    {D.map((d,i)=><div className="crow" key={d.id||i}><input type="text" defaultValue={d.l} placeholder="Nom" style={{flex:1}} onChange={e=>row(i,{l:e.target.value})}/>
     <input type="number" step="any" defaultValue={d.v} style={{width:100}} onChange={e=>row(i,{v:e.target.value})}/>
     <input type="color" defaultValue={d.c} onChange={e=>row(i,{c:e.target.value})}/><button onClick={()=>set(D.filter((_,k)=>k!==i))}>✕</button></div>)}
-   <div className="crow"><button onClick={()=>set([...D,{id:rid(),l:'Nouveau',v:10,c:PAL[D.length%PAL.length]}])}>＋ Ligne de données</button><button className="on" onClick={()=>setEdit(false)}>✓ Terminé</button></div></div>}
+   <div className="crow"><button onClick={()=>set([...D,{id:rid(),l:'',v:'',c:PAL[D.length%PAL.length]}])}>＋ Ligne de données</button><button className="on" onClick={()=>setEdit(false)}>✓ Terminé</button></div></div>}
  </NodeViewWrapper>
 }
 export const Chart=Node.create({name:'chart',group:'block',atom:true,draggable:true,selectable:true,
- addAttributes(){return{type:{default:'pie'},title:{default:'Dépenses par catégorie'},subtitle:{default:'Répartition du mois'},unit:{default:'€'},label:{default:'Dépenses'},
-  width:{default:620},align:{default:'left'},data:{default:JSON.stringify(SAMPLE)}}},
+ addAttributes(){return{type:{default:'pie'},title:{default:''},subtitle:{default:''},unit:{default:''},label:{default:''},
+  width:{default:620},align:{default:'left'},data:{default:'[]'}}},
  parseHTML(){return[{tag:'div[data-chart]'}]},renderHTML(){return['div',{'data-chart':''}]},
  addNodeView(){return ReactNodeViewRenderer(ChartView)}})
 
@@ -152,4 +151,105 @@ export const ImagePaste=Extension.create({
   files.forEach(file=>{const reader=new FileReader();reader.onload=()=>editor.chain().focus().insertContent({type:'noteImage',attrs:{src:reader.result,width:600}}).run();reader.readAsDataURL(file)})
   return true
  }}})]}
+})
+
+// PDF embarqué : redimensionnable comme une image (Frame + poignées)
+function PdfEmbedView({node,updateAttributes,selected,deleteNode,editor,getPos}){
+ const [url,setUrl]=useState('')
+ const [pages,setPages]=useState([])
+ const [err,setErr]=useState('')
+ const [busy,setBusy]=useState(true)
+ const [nPages,setNPages]=useState(0)
+ const path=node.attrs.src, name=node.attrs.name||'document.pdf'
+ const align=node.attrs.align||'left'
+ const width=Number(node.attrs.width)||640
+ // buffer PDF en mémoire pour re-rendre au resize sans re-télécharger
+ const bufRef=useRef(null)
+
+ useEffect(()=>{
+  let x,off=false
+  if(!path)return
+  setBusy(true);setErr('');setPages([])
+  ;(async()=>{
+   try{
+    let blob
+    if(path.startsWith('blob:')||path.startsWith('data:')){
+     const r=await fetch(path);blob=await r.blob()
+     x=path.startsWith('blob:')?path:URL.createObjectURL(blob)
+    }else{
+     const {data,error}=await supabase.storage.from('pdfs').download(path)
+     if(error||!data)throw new Error(error?.message||'PDF introuvable')
+     blob=data
+     x=URL.createObjectURL(blob)
+    }
+    if(off)return
+    setUrl(x)
+    const buf=await blob.arrayBuffer()
+    bufRef.current=buf
+    const pdfjs=await import('pdfjs-dist')
+    if(pdfjs.GlobalWorkerOptions)pdfjs.GlobalWorkerOptions.workerSrc=`https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`
+    const doc=await pdfjs.getDocument({data:buf}).promise
+    if(off)return
+    setNPages(doc.numPages)
+    const cssW=Math.max(200,Math.min(width,1200))
+    const dpr=Math.min(Math.max(window.devicePixelRatio||1,2),3)
+    const out=[]
+    for(let i=1;i<=doc.numPages;i++){
+     const page=await doc.getPage(i)
+     const base=page.getViewport({scale:1})
+     const scale=(cssW/base.width)*dpr
+     const viewport=page.getViewport({scale})
+     const canvas=document.createElement('canvas')
+     canvas.width=Math.floor(viewport.width)
+     canvas.height=Math.floor(viewport.height)
+     const ctx=canvas.getContext('2d',{alpha:false})
+     ctx.fillStyle='#ffffff'
+     ctx.fillRect(0,0,canvas.width,canvas.height)
+     await page.render({canvasContext:ctx,viewport,intent:'print'}).promise
+     out.push(canvas.toDataURL('image/png'))
+     if(off)return
+     setPages([...out])
+    }
+    setBusy(false)
+   }catch(e){
+    if(!off){setErr(e.message||'Impossible d’afficher le PDF');setBusy(false)}
+   }
+  })()
+  return()=>{off=true;x&&x.startsWith('blob:')&&URL.revokeObjectURL(x)}
+ },[path,width])
+
+ return <NodeViewWrapper className={'note-pdf-wrap note-image-wrap'+(selected?' sel':'')} style={{textAlign:align}} contentEditable={false}>
+  <Frame editor={editor} getPos={getPos} selected={selected} width={width} align={align} min={220}
+   onCommit={w=>updateAttributes({width:w})} onAlign={a=>updateAttributes({align:a})} onDelete={deleteNode}
+   extra={url?<a href={url} download={name} className="note-pdf-dl-tool" onClick={e=>e.stopPropagation()} title="Télécharger">⬇</a>:null}>
+   {w=><div className="note-pdf-inner" data-drag-handle style={{width:'100%'}}>
+    <div className="note-pdf-bar">
+     <span className="note-pdf-ico">📄</span>
+     <span className="note-pdf-name">{name}{nPages?` · ${nPages} page${nPages>1?'s':''}`:''}</span>
+    </div>
+    <div className="note-pdf-pages">
+     {err&&<p className="muted note-pdf-err">{err}</p>}
+     {!err&&pages.map((src,i)=><img key={i} src={src} alt={`Page ${i+1}`} className="note-pdf-page" draggable="false" style={{width:'100%',height:'auto'}}/>)}
+     {busy&&!err&&<p className="muted note-pdf-err">Chargement…{nPages?` (${pages.length}/${nPages})`:''}</p>}
+    </div>
+   </div>}
+  </Frame>
+ </NodeViewWrapper>
+}
+export const NotePdf=Node.create({
+ name:'notePdf',group:'block',atom:true,draggable:true,selectable:true,
+ addAttributes(){return{
+  src:{default:null},
+  name:{default:'document.pdf'},
+  width:{default:640},
+  align:{default:'left',parseHTML:el=>el.getAttribute('data-align')||'left'}
+ }},
+ parseHTML(){return[{tag:'div[data-note-pdf]',getAttrs:el=>({
+  src:el.getAttribute('data-src'),
+  name:el.getAttribute('data-name')||'document.pdf',
+  width:Number(el.getAttribute('data-width'))||640,
+  align:el.getAttribute('data-align')||'left'
+ })}]},
+ renderHTML({node}){return['div',{'data-note-pdf':'1','data-src':node.attrs.src,'data-name':node.attrs.name,'data-width':node.attrs.width,'data-align':node.attrs.align}]},
+ addNodeView(){return ReactNodeViewRenderer(PdfEmbedView)}
 })
