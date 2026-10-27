@@ -59,6 +59,26 @@ const INV_SECTIONS=[
  {title:'Questions',icon:'❓',color:'#8e8e93'},
 ]
 
+function FolderView({folder,sibs,openItem,openFolder,show,items}){
+ const kids=sibs(folder.id)
+ const folders=kids.filter(i=>i.type==='folder'),files=kids.filter(i=>i.type!=='folder')
+ const path=i=>{const a=[];let c=items.find(x=>x.id===i.parent_id);while(c){a.unshift(c.title);c=items.find(x=>x.id===c.parent_id)}return a.join(' › ')}
+ return <div className="home">
+  <div className="hsec">
+   <h4>Contenu du dossier</h4>
+   {!kids.length?<p className="muted">Dossier vide — utilise ＋ dans la barre latérale ou le menu contextuel pour ajouter une page ou un sous-dossier.</p>
+   :<div className="hlist">
+    {folders.map(i=><div className="hrow hitem" key={i.id} onClick={()=>openFolder(i.id)} onContextMenu={e=>show(e,i)} style={{cursor:'pointer'}}>
+     <Ic i={i}/><span>{i.title}</span><small className="muted">dossier · {sibs(i.id).length} élément{sibs(i.id).length!==1?'s':''}</small>
+     <span className="hact"><b onClick={e=>show(e,i,'new')}>＋</b><b onClick={e=>show(e,i)}>⋯</b></span></div>)}
+    {files.map(i=><div className="hrow hitem" key={i.id} onClick={()=>openItem(i.id)} onContextMenu={e=>show(e,i)}>
+     <Ic i={i}/><span>{i.title}</span>{i.type==='pdf'&&<small className="muted">PDF</small>}
+     <span className="hact"><b onClick={e=>show(e,i)}>⋯</b></span></div>)}
+   </div>}
+  </div>
+ </div>
+}
+
 function NotesHome({items,sibs,openItem,show,projName}){
  const [q,setQ]=useState(''),[more,setMore]=useState({})
  const roots=sibs(null),folders=roots.filter(i=>i.type==='folder'),loose=roots.filter(i=>i.type!=='folder')
@@ -68,8 +88,8 @@ function NotesHome({items,sibs,openItem,show,projName}){
  const needle=q.trim().toLowerCase(),found=needle?items.filter(i=>(i.title||'').toLowerCase().includes(needle)):[]
  const plural=(n,w)=>n+' '+w+(n>1?'s':'')
  const Row=({i,d})=>i.type==='folder'
-  ?<div className="hrow hsub" style={{paddingLeft:6+d*16}} onContextMenu={e=>show(e,i)}><Ic i={i}/><b>{i.title}</b><small className="muted">{flat(i.id).filter(x=>x.i.type!=='folder').length}</small>
-    <span className="hact"><b onClick={e=>show(e,i,'new')}>＋</b><b onClick={e=>show(e,i)}>⋯</b></span></div>
+  ?<div className="hrow hsub" style={{paddingLeft:6+d*16,cursor:'pointer'}} onClick={()=>openItem(i.id)} onContextMenu={e=>show(e,i)}><Ic i={i}/><b>{i.title}</b><small className="muted">{flat(i.id).filter(x=>x.i.type!=='folder').length}</small>
+    <span className="hact"><b onClick={e=>{e.stopPropagation();show(e,i,'new')}}>＋</b><b onClick={e=>{e.stopPropagation();show(e,i)}}>⋯</b></span></div>
   :<div className="hrow hitem" style={{paddingLeft:6+d*16}} onClick={()=>openItem(i.id)} onContextMenu={e=>show(e,i)}><Ic i={i}/><span>{i.title}</span></div>
  const card=f=>{const all=flat(f.id),n=all.filter(x=>x.i.type!=='folder').length,sf=all.filter(x=>x.i.type==='folder').length,open=more[f.id],rows=open?all:all.slice(0,8)
   return <div className="hcard" key={f.id} style={{borderTopColor:f.color||'#007aff'}}>
@@ -181,14 +201,15 @@ function Login(){
 
 function Main({user}){
  const [projs,setProjs]=useState([]),[pid,setPid]=useState(null),[items,setItems]=useState([]),[sel,setSel]=useState(null)
- const [dlg,setDlg]=useState(null),[menu,setMenu]=useState(null),[tabs,setTabs]=useState([]),[open,setOpen]=useState(true),[drop,setDrop]=useState(null),[share,setShare]=useState(null),[settings,setSettings]=useState(false),[online,setOnline]=useState([]),[w,setW]=useState(290)
+ const [dlg,setDlg]=useState(null),[menu,setMenu]=useState(null),[tabs,setTabs]=useState([]),[open,setOpen]=useState(true),[drop,setDrop]=useState(null),[share,setShare]=useState(null),[settings,setSettings]=useState(false),[online,setOnline]=useState([]),[w,setW]=useState(220)
+ const [navPath,setNavPath]=useState([]) // ids des dossiers ouverts en colonnes
  const [space,setSpace]=useState(()=>{try{return localStorage.getItem('space')||'notes'}catch{return 'notes'}})
- const switchSpace=s=>{setSpace(s);try{localStorage.setItem('space',s)}catch{};setSel(null);setTabs([])}
+ const switchSpace=s=>{setSpace(s);try{localStorage.setItem('space',s)}catch{};setSel(null);setTabs([]);setNavPath([])}
  const fi=useRef(),pp=useRef(null),drag=useRef(null),pch=useRef(null)
  const loadP=async()=>{const {data}=await supabase.from('projects').select('*');setProjs(data||[]);if(!pid&&data?.[0])setPid(data[0].id)}
  const loadI=async()=>{if(!pid)return;const {data}=await supabase.from('items').select('id,parent_id,type,title,color,closed,icon,pos,created_at,space').eq('project_id',pid).order('created_at');setItems((data||[]).filter(x=>x.type!=='board').map(x=>({...x,space:x.space||'notes'})))}
  useEffect(()=>{loadP()},[])
- useEffect(()=>{setSel(null);setTabs([]);loadI();if(!pid)return
+ useEffect(()=>{setSel(null);setTabs([]);setNavPath([]);loadI();if(!pid)return
   const ch=supabase.channel('items:'+pid).on('postgres_changes',{event:'*',schema:'public',table:'items',filter:'project_id=eq.'+pid},loadI).subscribe()
   return()=>supabase.removeChannel(ch)},[pid])
 
@@ -200,7 +221,7 @@ function Main({user}){
    .subscribe(st=>{if(st==='SUBSCRIBED'){pch.current=ch;ch.track({id:user.id,name,color:colorOf(user.email),item:null})}})
   return()=>{pch.current=null;setOnline([]);supabase.removeChannel(ch)}},[pid])
  useEffect(()=>{pch.current?.track({id:user.id,name,color:colorOf(user.email),item:sel})},[sel,name])
- const startRz=e=>{e.preventDefault();const mv=ev=>{const n=Math.max(200,Math.min(560,ev.clientX));setW(n);localStorage.setItem('sbw',n)}
+ const startRz=e=>{e.preventDefault();const mv=ev=>{const n=Math.max(160,Math.min(320,ev.clientX/Math.max(1,navPath.length+1)));setW(n);localStorage.setItem('sbw',n)}
   const up=()=>{removeEventListener('mousemove',mv);removeEventListener('mouseup',up)};addEventListener('mousemove',mv);addEventListener('mouseup',up)}
  const ask=(label,value,ok)=>setDlg({label,value,ok,k:Math.random()})
  const insert=async row=>{const {data,error}=await supabase.from('items').insert({project_id:pid,pos:Date.now(),space,...row}).select().single();if(error){alert(error.message+(String(error.message).includes('space')?'\n\n→ Exécute supabase/space.sql dans Supabase.':''));return null}return data?{...data,space:data.space||space}:null}
@@ -234,8 +255,16 @@ function Main({user}){
  const onPdf=e=>{const f=e.target.files[0];e.target.value='';if(f)readPdf(f,pp.current)}
  const show=(e,i,mode)=>{e.preventDefault();e.stopPropagation();setMenu({x:Math.min(e.clientX,innerWidth-230),y:Math.min(e.clientY,innerHeight-340),i,mode})}
 
- const openItem=id=>{setSel(id);setTabs(t=>t.includes(id)?t:[...t,id])}
+ const pathTo=id=>{const chain=[];let c=items.find(x=>x.id===id);while(c){if(c.type==='folder')chain.unshift(c.id);c=items.find(x=>x.id===c.parent_id)}return chain}
+ const openItem=id=>{
+  setSel(id);setTabs(t=>t.includes(id)?t:[...t,id])
+  const it=items.find(x=>x.id===id)
+  if(it&&it.type!=='folder'){const p=pathTo(it.parent_id);if(p.length)setNavPath(p)}
+ }
  const closeTab=id=>{const n=tabs.filter(x=>x!==id);setTabs(n);if(sel===id)setSel(n[n.length-1]||null)}
+ // navigation colonnes : clic dossier → ouvre une colonne à droite
+ const goFolder=(folderId,depth)=>{setNavPath(p=>[...p.slice(0,depth),folderId])}
+ const openFolder=id=>{setNavPath(pathTo(id));openItem(id)}
  // ordre + déplacement par glisser-déposer
  const key=x=>x.pos??new Date(x.created_at).getTime()
  const spaceItems=items.filter(i=>(i.space||'notes')===space)
@@ -246,7 +275,7 @@ function Main({user}){
   if(tid&&isIn(tid,id))return
   const t=items.find(x=>x.id===tid)
   if(!t)return patch(id,{parent_id:null,pos:Date.now()})
-  if(zone==='in'){patch(id,{parent_id:t.id,pos:Date.now()});return patch(t.id,{closed:false})}
+  if(zone==='in'){patch(id,{parent_id:t.id,pos:Date.now()});return}
   const l=sibs(t.parent_id).filter(x=>x.id!==id),k=l.findIndex(x=>x.id===t.id)
   const a=zone==='before'?(l[k-1]?key(l[k-1]):key(t)-2000):key(t)
   const b=zone==='before'?key(t):(l[k+1]?key(l[k+1]):key(t)+2000)
@@ -255,42 +284,68 @@ function Main({user}){
  const cur=items.find(i=>i.id===sel&&(i.space||'notes')===space)
  const trail=i=>{const a=[];let c=items.find(x=>x.id===i.parent_id);while(c){a.unshift(c);c=items.find(x=>x.id===c.parent_id)}return a}
  const tabItems=tabs.map(id=>items.find(i=>i.id===id)).filter(i=>i&&(i.space||'notes')===space)
- const tree=parent=>sibs(parent).map(i=>{const f=i.type==='folder',z=drop&&drop.id===i.id?' dz-'+drop.zone:'';return <div key={i.id}>
-  <div className={'row'+(sel===i.id?' on':'')+z} draggable
+ // colonnes : racine + un panneau par dossier du chemin
+ const colParents=[null,...navPath]
+ const colCount=colParents.length
+ const sideW=open?Math.min(colCount*w+8,900):0
+ const ColRow=({i,depth,active})=>{
+  const f=i.type==='folder',z=drop&&drop.id===i.id?' dz-'+drop.zone:''
+  return <div className={'row'+(active?' on':'')+(sel===i.id?' on':'')+z} draggable
    onDragStart={e=>{drag.current=i.id;e.dataTransfer.setData('text/plain',i.id)}} onDragEnd={()=>{drag.current=null;setDrop(null)}}
    onDragOver={e=>{if(!drag.current)return;e.preventDefault();e.stopPropagation();setDrop({id:i.id,zone:zoneOf(e,f)})}}
    onDrop={e=>{if(!drag.current)return;e.preventDefault();e.stopPropagation();move(drag.current,i.id,zoneOf(e,f));drag.current=null;setDrop(null)}}
-   onClick={()=>f?patch(i.id,{closed:!i.closed}):openItem(i.id)} onContextMenu={e=>show(e,i)}>
-   <span className="t">{f&&<small>{i.closed?'▸':'▾'}</small>}<Ic i={i}/> {i.title}</span>
-   <span className="act">{f&&<b onClick={e=>show(e,i,'new')}>＋</b>}<b onClick={e=>show(e,i)}>⋯</b></span></div>
-  {f&&!i.closed&&<div className="kids">{tree(i.id)}</div>}</div>})
+   onClick={()=>f?goFolder(i.id,depth):openItem(i.id)} onContextMenu={e=>show(e,i)}>
+   <span className="t"><Ic i={i}/> {i.title}</span>
+   <span className="act">{f&&<b onClick={e=>show(e,i,'new')}>＋</b>}<b onClick={e=>show(e,i)}>⋯</b>{f&&<small className="chev">›</small>}</span>
+  </div>
+ }
  const news=p=>[['📄 Nouvelle page',()=>add('page',p)],['📁 Nouveau dossier',()=>add('folder',p)],['📎 Importer un PDF',()=>pick(p)]]
  const m=menu&&menu.i&&items.find(x=>x.id===menu.i.id)
  const titleOf=id=>items.find(x=>x.id===id)?.title
  const pres=<div className="pres">{online.map(u=><i key={u.id} style={{background:u.color}} title={u.name+(u.id===user.id?' (toi)':'')+(u.item&&titleOf(u.item)?' · '+titleOf(u.item):'')}>{(u.name||'?')[0].toUpperCase()}</i>)}{online.length>0&&<small className="muted">{online.length} en ligne</small>}</div>
- return <div className="app" style={{gridTemplateColumns:open?w+'px 1fr':'1fr'}}
+ return <div className="app" style={{gridTemplateColumns:open?sideW+'px 1fr':'1fr'}}
   onDragOver={e=>{if(pid&&[...e.dataTransfer.types].includes('Files'))e.preventDefault()}}
   onDrop={e=>{const f=[...e.dataTransfer.files].find(x=>x.type==='application/pdf');if(f&&pid){e.preventDefault();readPdf(f,null)}}}>
-  {open&&<aside>
+  {open&&<aside className="side-cols">
    <div className="rz" onMouseDown={startRz}/>
    <div className="head side-top"><img src="/logo-192.png" width="24" height="24" alt=""/><select value={pid||''} onChange={e=>setPid(e.target.value)}>{projs.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select>
     <button onClick={e=>show(e,null,'proj')} title="Nouveau projet ou rejoindre">＋</button>{pid&&<button onClick={invite} title="Partager (code)">👥</button>}
     <button className="ghost" onClick={()=>setOpen(false)} title="Masquer le menu">«</button></div>
    {pid&&<div className="side-spaces"><button type="button" className={space==='notes'?'on':''} onClick={()=>switchSpace('notes')}>📝 Notes</button><button type="button" className={space==='invest'?'on':''} onClick={()=>switchSpace('invest')}>📈 Invest</button></div>}
-   {pid&&<div className="head side-nav"><button className={sel?'ghost':'on'} onClick={()=>setSel(null)}>🏠 Accueil</button><button className="on" onClick={e=>show(e,null,'new')}>＋ Nouveau</button></div>}
+   {pid&&<div className="head side-nav"><button className={sel||navPath.length?'ghost':'on'} onClick={()=>{setSel(null);setNavPath([])}}>🏠 Accueil</button><button className="on" onClick={e=>show(e,null,'new')}>＋ Nouveau</button></div>}
    {pres}
-   <div className="tree" onContextMenu={e=>pid&&show(e,null,'new')} onDragOver={e=>drag.current&&e.preventDefault()}
-    onDrop={e=>{if(drag.current){e.preventDefault();move(drag.current,null);drag.current=null;setDrop(null)}}}>{tree(null)}</div>
+   <div className="cols" onContextMenu={e=>pid&&show(e,null,'new')}>
+    {colParents.map((parentId,depth)=>{
+     const list=sibs(parentId)
+     const activeId=navPath[depth]
+     const parentTitle=parentId?items.find(x=>x.id===parentId)?.title:'Racine'
+     return <div className="col" key={depth} style={{width:w,minWidth:w}}
+      onDragOver={e=>drag.current&&e.preventDefault()}
+      onDrop={e=>{if(drag.current){e.preventDefault();move(drag.current,parentId||null,'in');drag.current=null;setDrop(null)}}}>
+      <div className="col-hd"><span className="muted">{parentTitle}</span>
+       <b onClick={e=>show(e,parentId?items.find(x=>x.id===parentId):null,'new')} title="Ajouter ici">＋</b></div>
+      <div className="col-body">
+       {!list.length&&<p className="muted col-empty">Vide</p>}
+       {list.map(i=><ColRow key={i.id} i={i} depth={depth} active={activeId===i.id}/>)}
+      </div>
+     </div>
+    })}
+   </div>
    <div className="head side-foot"><button className="ghost" onClick={()=>setSettings(true)}>⚙️ Paramètres</button><button className="ghost" onClick={()=>supabase.auth.signOut()}>Déconnexion</button></div></aside>}
   <section className="mainc">
-   {!open&&<div className="tabs"><button className="ghost" onClick={()=>setOpen(true)} title="Afficher le menu">☰</button><button className="ghost" onClick={()=>setSel(null)} title="Accueil">🏠</button>
+   <div className="tabs">
+    {!open&&<button className="ghost" onClick={()=>setOpen(true)} title="Afficher le menu">☰</button>}
+    <button className={'ghost'+(sel? '':' on')} onClick={()=>setSel(null)} title="Accueil">🏠</button>
     {tabItems.map(t=><div key={t.id} className={'tab'+(sel===t.id?' on':'')} onClick={()=>setSel(t.id)}><Ic i={t}/><span>{t.title}</span>
-     <b onClick={e=>{e.stopPropagation();closeTab(t.id)}}>✕</b></div>)}<span style={{marginLeft:'auto'}}>{pres}</span></div>}
+     <b onClick={e=>{e.stopPropagation();closeTab(t.id)}}>✕</b></div>)}
+    {!open&&<span style={{marginLeft:'auto'}}>{pres}</span>}
+   </div>
    <main>{!pid?<p className="muted">Crée un projet, ou rejoins-en un avec un code, via « ＋ » en haut à gauche.</p>:!cur?(space==='invest'
      ?<InvestHome items={spaceItems} sibs={sibs} openItem={openItem} show={show} projName={projs.find(p=>p.id===pid)?.name||''} addCompany={addCompany} del={del}/>
      :<NotesHome items={spaceItems} sibs={sibs} openItem={openItem} show={show} projName={projs.find(p=>p.id===pid)?.name||''}/>)
-    :<><div className="crumb"><a onClick={()=>setSel(null)}>🏠 Accueil</a>{trail(cur).map(t=><span key={t.id}> › {t.title}</span>)}</div><h2><span className="ic" onClick={e=>show(e,cur,'icon')} title="Choisir une icône">{cur.icon||<span className="muted">☺</span>}</span> {cur.title}</h2>
-     {cur.type==='pdf'?<PdfView key={cur.id} id={cur.id} user={user} path={pid+'/'+cur.id+'.pdf'} title={cur.title}/>
+    :<><div className="crumb"><a onClick={()=>setSel(null)}>🏠 Accueil</a>{trail(cur).map(t=><span key={t.id} style={{cursor:t.type==='folder'?'pointer':undefined}} onClick={()=>t.type==='folder'&&openFolder(t.id)}> › {t.title}</span>)}</div><h2><span className="ic" onClick={e=>show(e,cur,'icon')} title="Choisir une icône">{cur.icon||<span className="muted">☺</span>}</span> {cur.title}</h2>
+     {cur.type==='folder'?<FolderView folder={cur} sibs={sibs} openItem={openItem} openFolder={openFolder} show={show} items={spaceItems}/>
+     :cur.type==='pdf'?<PdfView key={cur.id} id={cur.id} user={user} path={pid+'/'+cur.id+'.pdf'} title={cur.title}/>
      :<Editor key={cur.id} id={cur.id} user={user} projectId={pid}/>}</>}</main></section>
   <input ref={fi} type="file" accept="application/pdf" hidden onChange={onPdf}/>
   {menu&&<div className="ov" onClick={()=>setMenu(null)} onContextMenu={e=>{e.preventDefault();setMenu(null)}}>
