@@ -205,7 +205,7 @@ function Main({user}){
  const [navPath,setNavPath]=useState([]) // ids des dossiers ouverts en colonnes
  const [space,setSpace]=useState(()=>{try{return localStorage.getItem('space')||'notes'}catch{return 'notes'}})
  const switchSpace=s=>{setSpace(s);try{localStorage.setItem('space',s)}catch{};setSel(null);setTabs([]);setNavPath([])}
- const fi=useRef(),pp=useRef(null),drag=useRef(null),pch=useRef(null)
+ const fi=useRef(),pp=useRef(null),drag=useRef(null),pch=useRef(null),colsRef=useRef(null)
  const loadP=async()=>{const {data}=await supabase.from('projects').select('*');setProjs(data||[]);if(!pid&&data?.[0])setPid(data[0].id)}
  const loadI=async()=>{if(!pid)return;const {data}=await supabase.from('items').select('id,parent_id,type,title,color,closed,icon,pos,created_at,space').eq('project_id',pid).order('created_at');setItems((data||[]).filter(x=>x.type!=='board').map(x=>({...x,space:x.space||'notes'})))}
  useEffect(()=>{loadP()},[])
@@ -221,6 +221,11 @@ function Main({user}){
    .subscribe(st=>{if(st==='SUBSCRIBED'){pch.current=ch;ch.track({id:user.id,name,color:colorOf(user.email),item:null})}})
   return()=>{pch.current=null;setOnline([]);supabase.removeChannel(ch)}},[pid])
  useEffect(()=>{pch.current?.track({id:user.id,name,color:colorOf(user.email),item:sel})},[sel,name])
+ useEffect(()=>{
+  const el=colsRef.current
+  if(!el)return
+  requestAnimationFrame(()=>{el.scrollTo({left:el.scrollWidth,behavior:'smooth'})})
+ },[navPath])
  const startRz=e=>{e.preventDefault();const mv=ev=>{const n=Math.max(160,Math.min(320,ev.clientX/Math.max(1,navPath.length+1)));setW(n);localStorage.setItem('sbw',n)}
   const up=()=>{removeEventListener('mousemove',mv);removeEventListener('mouseup',up)};addEventListener('mousemove',mv);addEventListener('mouseup',up)}
  const ask=(label,value,ok)=>setDlg({label,value,ok,k:Math.random()})
@@ -314,15 +319,15 @@ function Main({user}){
    {pid&&<div className="side-spaces"><button type="button" className={space==='notes'?'on':''} onClick={()=>switchSpace('notes')}>📝 Notes</button><button type="button" className={space==='invest'?'on':''} onClick={()=>switchSpace('invest')}>📈 Invest</button></div>}
    {pid&&<div className="head side-nav"><button className={sel||navPath.length?'ghost':'on'} onClick={()=>{setSel(null);setNavPath([])}}>🏠 Accueil</button><button className="on" onClick={e=>show(e,null,'new')}>＋ Nouveau</button></div>}
    {pres}
-   <div className="cols" onContextMenu={e=>pid&&show(e,null,'new')}>
+   <div className="cols" ref={colsRef} onContextMenu={e=>pid&&show(e,null,'new')}>
     {colParents.map((parentId,depth)=>{
      const list=sibs(parentId)
      const activeId=navPath[depth]
      const parentTitle=parentId?items.find(x=>x.id===parentId)?.title:'Racine'
-     return <div className="col" key={depth} style={{width:w,minWidth:w}}
+     return <div className="col" key={parentId||'root'} style={{width:w,minWidth:w}}
       onDragOver={e=>drag.current&&e.preventDefault()}
       onDrop={e=>{if(drag.current){e.preventDefault();move(drag.current,parentId||null,'in');drag.current=null;setDrop(null)}}}>
-      <div className="col-hd"><span className="muted">{parentTitle}</span>
+      <div className="col-hd"><span>{parentTitle}</span>
        <b onClick={e=>show(e,parentId?items.find(x=>x.id===parentId):null,'new')} title="Ajouter ici">＋</b></div>
       <div className="col-body">
        {!list.length&&<p className="muted col-empty">Vide</p>}
