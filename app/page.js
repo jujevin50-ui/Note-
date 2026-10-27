@@ -403,7 +403,6 @@ function Main({user}){
     <button className="ghost" onClick={()=>setOpen(false)} title="Masquer le menu">«</button></div>
    {pid&&<div className="side-spaces"><button type="button" className={space==='notes'?'on':''} onClick={()=>switchSpace('notes')}>📝 Notes</button><button type="button" className={space==='invest'?'on':''} onClick={()=>switchSpace('invest')}>📈 Invest</button></div>}
    {pid&&<div className="head side-nav"><button className={sel||navPath.length?'ghost':'on'} onClick={()=>{setSel(null);setNavPath([])}}>🏠 Accueil</button><button className="on" onClick={e=>show(e,null,'new')}>＋ Nouveau</button></div>}
-   {pres}
    <div className="cols" ref={colsRef} onContextMenu={e=>pid&&show(e,null,'new')}>
     {colParents.map((parentId,depth)=>{
      const list=sibs(parentId)
@@ -421,7 +420,13 @@ function Main({user}){
      </div>
     })}
    </div>
-   <div className="head side-foot"><button className="ghost" onClick={()=>setSettings(true)}>⚙️ Paramètres</button><button className="ghost" onClick={()=>supabase.auth.signOut()}>Déconnexion</button></div></aside>}
+   <div className="side-foot">
+    {pres}
+    <div className="head side-foot-btns">
+     <button className="ghost" onClick={()=>setSettings(true)}>⚙️ Paramètres</button>
+     <button className="ghost" onClick={()=>supabase.auth.signOut()}>Déconnexion</button>
+    </div>
+   </div></aside>}
   <section className="mainc">
    <div className="tabs">
     {!open&&<button type="button" className="tab-icon" onClick={()=>setOpen(true)} title="Afficher le menu">☰</button>}

@@ -273,7 +273,6 @@ aside.side-cols{
 aside.side-cols .side-top,
 aside.side-cols .side-spaces,
 aside.side-cols .side-nav,
-aside.side-cols .pres,
 aside.side-cols .side-foot{
   padding-left:12px;
   padding-right:12px;
@@ -308,12 +307,11 @@ aside.side-cols .side-foot{
   scroll-behavior:smooth;
   -webkit-overflow-scrolling:touch;
 }
-/* séparateurs horizontaux arrondis au-dessus / en-dessous des colonnes */
-.cols::before,
-.cols::after{
+/* séparateur horizontal arrondi au-dessus des colonnes uniquement */
+.cols::before{
   content:'';
   position:absolute;
-  left:12px;right:12px;
+  left:12px;right:12px;top:0;
   height:3px;
   border-radius:99px;
   background:var(--side-border);
@@ -321,8 +319,6 @@ aside.side-cols .side-foot{
   pointer-events:none;
   z-index:2;
 }
-.cols::before{top:0}
-.cols::after{bottom:0}
 .cols:hover{scrollbar-color:var(--bd) transparent}
 .cols::-webkit-scrollbar{height:5px}
 .cols::-webkit-scrollbar-thumb{
@@ -576,28 +572,30 @@ aside .side-nav button{
 }
 aside .side-nav button:active{transform:scale(.97)}
 
-/* Footer sidebar */
+/* Footer sidebar — présence + paramètres */
 aside .side-foot{
-  padding:10px 4px 2px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  padding:8px 10px 6px;
   border-top:none;
   margin-top:auto;
+  flex-shrink:0;
+}
+aside .side-foot .pres{
+  padding:4px 2px 2px;
+  justify-content:flex-start;
+}
+aside .side-foot-btns{
+  display:flex;
   gap:4px;
-  position:relative;
+  width:100%;
 }
-aside .side-foot::before{
-  content:'';
-  position:absolute;
-  left:10px;right:10px;top:0;
-  height:3px;
-  border-radius:99px;
-  background:var(--side-border);
-  opacity:.95;
-}
-aside .side-foot button{
+aside .side-foot-btns button{
   flex:1;
-  height:30px;
+  height:32px;
   border:none;
-  border-radius:8px;
+  border-radius:10px;
   font-size:12.5px;
   font-weight:500;
   background:transparent;
@@ -606,8 +604,9 @@ aside .side-foot button{
   align-items:center;
   justify-content:center;
   gap:4px;
+  transition:background .15s ease,color .15s ease;
 }
-aside .side-foot button:hover{
+aside .side-foot-btns button:hover{
   background:var(--hov);
   color:var(--fg);
 }
@@ -640,7 +639,7 @@ aside:hover .rz{opacity:.4}
 }
 
 /* ========== Reste de l’app ========== */
-main{padding:28px 48px;overflow:auto;flex:1}
+main{padding:28px 48px 120px;overflow:auto;flex:1}
 .muted{color:var(--mut)}
 .ov{position:fixed;inset:0;z-index:10;background:rgba(0,0,0,.18);display:grid;place-items:center}
 .ov:has(.menu){background:transparent;display:block}
@@ -977,7 +976,7 @@ ul[data-type=taskList]{list-style:none;padding-left:4px}ul[data-type=taskList] l
 @media(prefers-reduced-motion:reduce){.bar button,.bar select,.bar .cl,.bar .image-upload{transition:none}}
 
 /* ========== Accueil dashboard (Notes / Invest) ========== */
-.home{max-width:1120px;margin:0 auto;padding:8px 4px 40px}
+.home{max-width:1120px;margin:0 auto;padding:8px 4px 100px}
 .home-in{animation:homeIn .4s cubic-bezier(.22,1,.36,1) both}
 @keyframes homeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 
