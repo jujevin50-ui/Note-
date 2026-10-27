@@ -62,20 +62,31 @@ const INV_SECTIONS=[
 function FolderView({folder,sibs,openItem,openFolder,show,items}){
  const kids=sibs(folder.id)
  const folders=kids.filter(i=>i.type==='folder'),files=kids.filter(i=>i.type!=='folder')
- const path=i=>{const a=[];let c=items.find(x=>x.id===i.parent_id);while(c){a.unshift(c.title);c=items.find(x=>x.id===c.parent_id)}return a.join(' › ')}
- return <div className="home">
-  <div className="hsec">
-   <h4>Contenu du dossier</h4>
-   {!kids.length?<p className="muted">Dossier vide — utilise ＋ dans la barre latérale ou le menu contextuel pour ajouter une page ou un sous-dossier.</p>
-   :<div className="hlist">
-    {folders.map(i=><div className="hrow hitem" key={i.id} onClick={()=>openFolder(i.id)} onContextMenu={e=>show(e,i)} style={{cursor:'pointer'}}>
-     <Ic i={i}/><span>{i.title}</span><small className="muted">dossier · {sibs(i.id).length} élément{sibs(i.id).length!==1?'s':''}</small>
-     <span className="hact"><b onClick={e=>show(e,i,'new')}>＋</b><b onClick={e=>show(e,i)}>⋯</b></span></div>)}
-    {files.map(i=><div className="hrow hitem" key={i.id} onClick={()=>openItem(i.id)} onContextMenu={e=>show(e,i)}>
-     <Ic i={i}/><span>{i.title}</span>{i.type==='pdf'&&<small className="muted">PDF</small>}
-     <span className="hact"><b onClick={e=>show(e,i)}>⋯</b></span></div>)}
-   </div>}
+ return <div className="home home-in">
+  <header className="dash-hd dash-hd-sm">
+   <div>
+    <p className="dash-kicker">Dossier</p>
+    <h1>{folder.title}</h1>
+    <p className="dash-sub muted">{kids.length?kids.length+' élément'+(kids.length>1?'s':''):'Aucun contenu'}</p>
+   </div>
+   <button type="button" className="btn-primary" onClick={e=>show(e,folder,'new')}>＋ Ajouter</button>
+  </header>
+  {!kids.length?<div className="dash-empty">
+   <div className="dash-empty-ico">📁</div>
+   <h3>Dossier vide</h3>
+   <p className="muted">Ajoute une page, un sous-dossier ou un PDF depuis la barre latérale ou le bouton ci-dessus.</p>
   </div>
+  :<div className="tile-grid">
+   {folders.map(i=><button type="button" className="tile tile-folder" key={i.id} onClick={()=>openFolder(i.id)} onContextMenu={e=>show(e,i)}>
+    <span className="tile-ico" style={{'--c':i.color||'#f59e0b'}}><Ic i={i}/></span>
+    <span className="tile-body"><b>{i.title}</b><small className="muted">{sibs(i.id).length} élément{sibs(i.id).length!==1?'s':''}</small></span>
+    <span className="tile-chev">›</span>
+   </button>)}
+   {files.map(i=><button type="button" className="tile" key={i.id} onClick={()=>openItem(i.id)} onContextMenu={e=>show(e,i)}>
+    <span className="tile-ico" style={{'--c':i.color||(i.type==='pdf'?'#ef4444':'#3b82f6')}}><Ic i={i}/></span>
+    <span className="tile-body"><b>{i.title}</b><small className="muted">{i.type==='pdf'?'PDF':'Page'}</small></span>
+   </button>)}
+  </div>}
  </div>
 }
 
@@ -88,23 +99,66 @@ function NotesHome({items,sibs,openItem,show,projName}){
  const needle=q.trim().toLowerCase(),found=needle?items.filter(i=>(i.title||'').toLowerCase().includes(needle)):[]
  const plural=(n,w)=>n+' '+w+(n>1?'s':'')
  const Row=({i,d})=>i.type==='folder'
-  ?<div className="hrow hsub" style={{paddingLeft:6+d*16,cursor:'pointer'}} onClick={()=>openItem(i.id)} onContextMenu={e=>show(e,i)}><Ic i={i}/><b>{i.title}</b><small className="muted">{flat(i.id).filter(x=>x.i.type!=='folder').length}</small>
+  ?<div className="hrow hsub" style={{paddingLeft:6+d*14,cursor:'pointer'}} onClick={()=>openItem(i.id)} onContextMenu={e=>show(e,i)}><Ic i={i}/><b>{i.title}</b><small className="muted">{flat(i.id).filter(x=>x.i.type!=='folder').length}</small>
     <span className="hact"><b onClick={e=>{e.stopPropagation();show(e,i,'new')}}>＋</b><b onClick={e=>{e.stopPropagation();show(e,i)}}>⋯</b></span></div>
-  :<div className="hrow hitem" style={{paddingLeft:6+d*16}} onClick={()=>openItem(i.id)} onContextMenu={e=>show(e,i)}><Ic i={i}/><span>{i.title}</span></div>
- const card=f=>{const all=flat(f.id),n=all.filter(x=>x.i.type!=='folder').length,sf=all.filter(x=>x.i.type==='folder').length,open=more[f.id],rows=open?all:all.slice(0,8)
-  return <div className="hcard" key={f.id} style={{borderTopColor:f.color||'#007aff'}}>
-   <div className="hhead" onContextMenu={e=>show(e,f)}><Ic i={f}/><div><h3>{f.title}</h3><small className="muted">{plural(n,'élément')}{sf>0&&' · '+plural(sf,'sous-dossier')}</small></div>
-    <span className="hact"><b onClick={e=>show(e,f,'new')} title="Ajouter">＋</b><b onClick={e=>show(e,f)}>⋯</b></span></div>
-   <div className="hbody">{rows.length?rows.map(r=><Row key={r.i.id} {...r}/>):<p className="muted" style={{margin:'4px 6px'}}>Dossier vide</p>}</div>
-   {all.length>8&&<button className="ghost hmore" onClick={()=>setMore({...more,[f.id]:!open})}>{open?'Réduire':'Afficher '+(all.length-8)+' de plus'}</button>}</div>}
- return <div className="home">
-  <div className="hhd"><div><h1>Notes</h1><p className="muted" style={{margin:'2px 0 0'}}>{projName} · {plural(nF,'dossier')} · {plural(nP,'page')}{nD>0&&' · '+plural(nD,'PDF')}</p></div>
-   <div className="hsearch"><input placeholder="Rechercher…" value={q} onChange={e=>setQ(e.target.value)}/><button className="on" onClick={e=>show(e,null,'new')}>＋ Nouveau</button></div></div>
-  {needle?<div className="hsec"><h4>Résultats ({found.length})</h4>{found.length?<div className="hlist">{found.map(i=><div className="hrow hitem hres" key={i.id} onClick={()=>i.type!=='folder'&&openItem(i.id)} onContextMenu={e=>show(e,i)}><Ic i={i}/><span>{i.title}</span><small className="muted">{path(i)}</small></div>)}</div>:<p className="muted">Aucun résultat.</p>}</div>
-  :!items.length?<div className="hempty"><p className="muted">Aucune note pour l’instant.</p><button className="on" onClick={e=>show(e,null,'new')}>＋ Créer une note</button></div>
+  :<div className="hrow hitem" style={{paddingLeft:6+d*14}} onClick={()=>openItem(i.id)} onContextMenu={e=>show(e,i)}><Ic i={i}/><span>{i.title}</span></div>
+ const card=f=>{const all=flat(f.id),n=all.filter(x=>x.i.type!=='folder').length,sf=all.filter(x=>x.i.type==='folder').length,open=more[f.id],rows=open?all:all.slice(0,6)
+  return <article className="hcard" key={f.id} style={{'--accent':f.color||'#007aff'}}>
+   <div className="hhead" onContextMenu={e=>show(e,f)}>
+    <span className="hcard-ico"><Ic i={f}/></span>
+    <div><h3>{f.title}</h3><small className="muted">{plural(n,'élément')}{sf>0&&' · '+plural(sf,'sous-dossier')}</small></div>
+    <span className="hact"><b onClick={e=>show(e,f,'new')} title="Ajouter">＋</b><b onClick={e=>show(e,f)}>⋯</b></span>
+   </div>
+   <div className="hbody">{rows.length?rows.map(r=><Row key={r.i.id} {...r}/>):<p className="hcard-empty muted">Dossier vide</p>}</div>
+   {all.length>6&&<button type="button" className="ghost hmore" onClick={()=>setMore({...more,[f.id]:!open})}>{open?'Réduire':'Voir '+(all.length-6)+' de plus'}</button>}
+  </article>}
+ return <div className="home home-in">
+  <header className="dash-hd">
+   <div>
+    <p className="dash-kicker">{projName||'Espace'}</p>
+    <h1>Notes</h1>
+    <div className="dash-stats">
+     <span className="stat-pill"><b>{nF}</b> dossier{nF!==1?'s':''}</span>
+     <span className="stat-pill"><b>{nP}</b> page{nP!==1?'s':''}</span>
+     {nD>0&&<span className="stat-pill"><b>{nD}</b> PDF</span>}
+    </div>
+   </div>
+   <div className="dash-actions">
+    <div className="search-wrap">
+     <span className="search-ico" aria-hidden>⌕</span>
+     <input placeholder="Rechercher une note…" value={q} onChange={e=>setQ(e.target.value)}/>
+    </div>
+    <button type="button" className="btn-primary" onClick={e=>show(e,null,'new')}>＋ Nouveau</button>
+   </div>
+  </header>
+
+  {needle?<section className="hsec">
+   <div className="sec-label"><h4>Résultats</h4><span className="muted">{found.length}</span></div>
+   {found.length?<div className="search-results">{found.map(i=><button type="button" className="result-row" key={i.id} onClick={()=>i.type!=='folder'&&openItem(i.id)} onContextMenu={e=>show(e,i)}>
+    <span className="tile-ico sm"><Ic i={i}/></span>
+    <span className="result-meta"><b>{i.title}</b><small className="muted">{path(i)||'Racine'} · {i.type}</small></span>
+   </button>)}</div>:<p className="muted dash-none">Aucun résultat pour « {q.trim()} ».</p>}
+  </section>
+  :!items.length?<div className="dash-empty">
+   <div className="dash-empty-ico">📝</div>
+   <h3>Commence à écrire</h3>
+   <p className="muted">Crée une page ou un dossier pour organiser tes idées.</p>
+   <button type="button" className="btn-primary" onClick={e=>show(e,null,'new')}>＋ Créer une note</button>
+  </div>
   :<>
-   {folders.length>0&&<div className="hsec"><h4>Dossiers</h4><div className="hgrid">{folders.map(card)}</div></div>}
-   {loose.length>0&&<div className="hsec"><h4>Hors dossier</h4><div className="hgrid hgrid-s">{loose.map(i=><div className="hmini" key={i.id} onClick={()=>openItem(i.id)} onContextMenu={e=>show(e,i)}><Ic i={i}/><span>{i.title}</span></div>)}</div></div>}
+   {folders.length>0&&<section className="hsec">
+    <div className="sec-label"><h4>Dossiers</h4><span className="muted">{folders.length}</span></div>
+    <div className="hgrid">{folders.map(card)}</div>
+   </section>}
+   {loose.length>0&&<section className="hsec">
+    <div className="sec-label"><h4>Pages libres</h4><span className="muted">{loose.length}</span></div>
+    <div className="tile-grid">
+     {loose.map(i=><button type="button" className="tile" key={i.id} onClick={()=>openItem(i.id)} onContextMenu={e=>show(e,i)}>
+      <span className="tile-ico" style={{'--c':i.color||(i.type==='pdf'?'#ef4444':'#3b82f6')}}><Ic i={i}/></span>
+      <span className="tile-body"><b>{i.title}</b><small className="muted">{i.type==='pdf'?'PDF':'Page'}</small></span>
+     </button>)}
+    </div>
+   </section>}
   </>}
  </div>
 }
@@ -135,49 +189,80 @@ function InvestHome({items,sibs,openItem,show,projName,addCompany,del}){
   return <section className="inv-sec" style={{'--inv':s.color}}>
    <header className="inv-head">
     <span className="inv-ico">{s.icon}</span>
-    <div className="inv-titles"><h3>{s.title}</h3><small className="muted">{folder?(kids.length?plural(kids.length,'élément'):'Vide'):'—'}</small></div>
+    <div className="inv-titles"><h3>{s.title}</h3><small className="muted">{folder?(kids.length?plural(kids.length,'élément'):'Vide'):'Non créé'}</small></div>
     <button type="button" className="ghost inv-add" onClick={e=>folder?show(e,folder,'new'):show(e,null,'new')} title="Ajouter">＋</button>
    </header>
    <div className="inv-body">
-    {folder?(kids.length?kids.map(i=><ItemRow key={i.id} i={i}/>):<p className="inv-empty muted">Vide</p>)
-     :<p className="inv-empty muted">Crée un dossier « {s.title} » ici pour le remplir.</p>}
+    {folder?(kids.length?kids.slice(0,8).map(i=><ItemRow key={i.id} i={i}/>):<p className="inv-empty muted">Rien pour l’instant</p>)
+     :<p className="inv-empty muted">Crée le dossier « {s.title} » pour commencer.</p>}
    </div>
   </section>
  }
 
- return <div className="home">
-  <div className="hhd"><div><h1>Invest</h1><p className="muted" style={{margin:'2px 0 0'}}>{projName} · espace investissement</p></div>
-   <div className="hsearch"><input placeholder="Rechercher…" value={q} onChange={e=>setQ(e.target.value)}/><button className="on" onClick={e=>show(e,null,'new')}>＋ Nouveau</button></div></div>
-  {needle?<div className="hsec"><h4>Résultats ({found.length})</h4>{found.length?<div className="hlist">{found.map(i=><div className="hrow hitem hres" key={i.id} onClick={()=>i.type!=='folder'&&openItem(i.id)} onContextMenu={e=>show(e,i)}><Ic i={i}/><span>{i.title}</span><small className="muted">{path(i)}</small></div>)}</div>:<p className="muted">Aucun résultat.</p>}</div>
+ return <div className="home home-in">
+  <header className="dash-hd">
+   <div>
+    <p className="dash-kicker">{projName||'Espace'}</p>
+    <h1>Invest</h1>
+    <p className="dash-sub muted">Suivi, analyses et portefeuille au même endroit</p>
+   </div>
+   <div className="dash-actions">
+    <div className="search-wrap">
+     <span className="search-ico" aria-hidden>⌕</span>
+     <input placeholder="Rechercher…" value={q} onChange={e=>setQ(e.target.value)}/>
+    </div>
+    <button type="button" className="btn-primary" onClick={e=>show(e,null,'new')}>＋ Nouveau</button>
+   </div>
+  </header>
+
+  {needle?<section className="hsec">
+   <div className="sec-label"><h4>Résultats</h4><span className="muted">{found.length}</span></div>
+   {found.length?<div className="search-results">{found.map(i=><button type="button" className="result-row" key={i.id} onClick={()=>i.type!=='folder'&&openItem(i.id)} onContextMenu={e=>show(e,i)}>
+    <span className="tile-ico sm"><Ic i={i}/></span>
+    <span className="result-meta"><b>{i.title}</b><small className="muted">{path(i)||'Racine'} · {i.type}</small></span>
+   </button>)}</div>:<p className="muted dash-none">Aucun résultat pour « {q.trim()} ».</p>}
+  </section>
   :<>
-   {/* Entreprises à suivre — liste simple de noms */}
-   <section className="co-sec">
-    <header className="co-head">
-     <div className="co-titles">
-      <span className="co-ico">📈</span>
+   <section className="watchlist">
+    <header className="watchlist-hd">
+     <div className="watchlist-titles">
+      <span className="watchlist-badge">📈</span>
       <div>
        <h2>Entreprises à suivre</h2>
-       <p className="muted">{companies.length?plural(companies.length,'entreprise'):'Ajoute les sociétés que tu veux suivre'}</p>
+       <p className="muted">{companies.length?plural(companies.length,'entreprise suivie'):'Construis ta watchlist'}</p>
       </div>
      </div>
-     <button type="button" className="on co-add" onClick={addCompany}>＋ Ajouter</button>
+     <button type="button" className="btn-primary" onClick={addCompany}>＋ Ajouter</button>
     </header>
-    {companies.length>0?<div className="co-list">
-     {companies.map(c=><div key={c.id} className="co-chip" onClick={()=>openItem(c.id)} onContextMenu={e=>show(e,c)}>
-      <span className="co-name">{c.title}</span>
-      <button type="button" className="ghost co-x" title="Retirer" onClick={e=>{e.stopPropagation();del(c)}}>✕</button>
+    {companies.length>0?<div className="watchlist-grid">
+     {companies.map(c=><div key={c.id} className="watch-card" onClick={()=>openItem(c.id)} onContextMenu={e=>show(e,c)}>
+      <span className="watch-avatar">{(c.title||'?').slice(0,1).toUpperCase()}</span>
+      <span className="watch-name">{c.title}</span>
+      <button type="button" className="ghost watch-x" title="Retirer" onClick={e=>{e.stopPropagation();del(c)}}>✕</button>
      </div>)}
-    </div>:<div className="co-empty muted">Aucune entreprise pour l’instant. Clique sur « ＋ Ajouter » pour en saisir une.</div>}
+    </div>:<div className="watchlist-empty">
+     <p className="muted">Aucune société suivie. Ajoute tes tickers ou noms d’entreprises pour y accéder vite.</p>
+    </div>}
    </section>
 
-   <div className="inv-grid" style={{marginTop:22}}>{otherSections.map(s=><Section key={s.title} s={s}/>)}</div>
-   {(otherFolders.length>0||loose.length>0)&&<div className="hsec" style={{marginTop:24}}>
-    <h4>Autres</h4>
-    <div className="hgrid hgrid-s">
-     {otherFolders.map(f=><div className="hmini" key={f.id} onContextMenu={e=>show(e,f)}><Ic i={f}/><span>{f.title}</span></div>)}
-     {loose.map(i=><div className="hmini" key={i.id} onClick={()=>openItem(i.id)} onContextMenu={e=>show(e,i)}><Ic i={i}/><span>{i.title}</span></div>)}
+   <section className="hsec">
+    <div className="sec-label"><h4>Espaces de travail</h4></div>
+    <div className="inv-grid">{otherSections.map(s=><Section key={s.title} s={s}/>)}</div>
+   </section>
+
+   {(otherFolders.length>0||loose.length>0)&&<section className="hsec">
+    <div className="sec-label"><h4>Autres</h4></div>
+    <div className="tile-grid">
+     {otherFolders.map(f=><button type="button" className="tile tile-folder" key={f.id} onContextMenu={e=>show(e,f)}>
+      <span className="tile-ico" style={{'--c':f.color||'#f59e0b'}}><Ic i={f}/></span>
+      <span className="tile-body"><b>{f.title}</b><small className="muted">Dossier</small></span>
+     </button>)}
+     {loose.map(i=><button type="button" className="tile" key={i.id} onClick={()=>openItem(i.id)} onContextMenu={e=>show(e,i)}>
+      <span className="tile-ico" style={{'--c':i.color||'#3b82f6'}}><Ic i={i}/></span>
+      <span className="tile-body"><b>{i.title}</b><small className="muted">{i.type==='pdf'?'PDF':'Page'}</small></span>
+     </button>)}
     </div>
-   </div>}
+   </section>}
   </>}
  </div>
 }
