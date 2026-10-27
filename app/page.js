@@ -37,14 +37,22 @@ function ShareDlg({code,pid,onNew,close}){
 }
 function Settings({user,close}){
  const [n,setN]=useState(user.user_metadata?.name||''),[st,setSt]=useState(''),[th,setTh]=useState(()=>localStorage.getItem('theme')||'light')
+ const [tb,setTb]=useState(()=>{try{return localStorage.getItem('tbpos')||'center'}catch{return 'center'}})
  const setTheme=t=>{setTh(t);localStorage.setItem('theme',t);document.documentElement.dataset.theme=t}
+ const setToolbar=p=>{setTb(p);try{localStorage.setItem('tbpos',p)}catch{};window.dispatchEvent(new Event('tbpos-change'))}
  const save=async()=>{const {error}=await supabase.auth.updateUser({data:{name:n.trim()}});setSt(error?error.message:'✓ Enregistré')}
- return <div className="ov" onClick={close}><div className="dlg" onClick={e=>e.stopPropagation()}>
+ return <div className="ov" onClick={close}><div className="dlg dlg-settings" onClick={e=>e.stopPropagation()}>
   <h3>⚙️ Paramètres</h3>
   <label className="muted">Nom d'utilisateur (affiché sur ton curseur et dans « en ligne »)</label>
   <input autoFocus autoComplete="off" name="nom-utilisateur" value={n} placeholder={user.email.split('@')[0]} onChange={e=>setN(e.target.value)} onKeyDown={e=>e.key==='Enter'&&save()}/>
   <label className="muted">Thème (sur cet appareil)</label>
   <div className="btns" style={{justifyContent:'flex-start'}}>{[['light','☀️ Clair'],['dark','🌙 Sombre']].map(([k,l])=><button key={k} className={th===k?'on':''} onClick={()=>setTheme(k)}>{l}</button>)}</div>
+  <label className="muted">Barre d’outils de l’éditeur</label>
+  <div className="btns tb-pos-btns" style={{justifyContent:'flex-start',flexWrap:'wrap'}}>
+   <button type="button" className={tb==='center'?'on':''} onClick={()=>setToolbar('center')}>⬛ Centre (haut)</button>
+   <button type="button" className={tb==='right'?'on':''} onClick={()=>setToolbar('right')}>▮ Droite (verticale)</button>
+  </div>
+  <p className="muted" style={{margin:0,fontSize:12.5}}>Centre : flottante en haut. Droite : barre verticale le long du bord droit.</p>
   <p className="muted" style={{margin:0}}>Compte : {user.email}</p>{st&&<p style={{margin:0}}>{st}</p>}
   <div className="btns"><button className="ghost" onClick={close}>Fermer</button><button className="on" onClick={save}>Enregistrer</button></div></div></div>
 }

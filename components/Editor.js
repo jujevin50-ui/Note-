@@ -39,6 +39,14 @@ export default function Editor({id,user,projectId}){
 function Tiptap({ydoc,provider,projectId}){
  const [sp,setSp]=useState(()=>{try{return localStorage.getItem('sp')==='1'}catch{return false}})
  const toggle=v=>{setSp(v);try{localStorage.setItem('sp',v?'1':'0')}catch{}}
+ const [spw,setSpw]=useState(()=>{try{return Math.max(280,Math.min(720,+localStorage.getItem('spw')||380))}catch{return 380}})
+ const [tbPos,setTbPos]=useState(()=>{try{return localStorage.getItem('tbpos')||'center'}catch{return 'center'}})
+ useEffect(()=>{
+  const sync=()=>{try{setTbPos(localStorage.getItem('tbpos')||'center')}catch{}}
+  window.addEventListener('storage',sync)
+  window.addEventListener('tbpos-change',sync)
+  return()=>{window.removeEventListener('storage',sync);window.removeEventListener('tbpos-change',sync)}
+ },[])
  const [hasSum,setHasSum]=useState(false)
  const [pop,setPop]=useState(null)
  useEffect(()=>{
@@ -80,7 +88,7 @@ function Tiptap({ydoc,provider,projectId}){
  const openPop=k=>e=>{e.preventDefault();e.stopPropagation();setPop(pop===k?null:k)}
  const Pop=({children})=><div className="tb-pop" onMouseDown={e=>e.stopPropagation()}>{children}</div>
  return <>
-  <div className={'ed-wrap'+(sp?' shift':'')}>
+  <div className={'ed-wrap'+(sp?' shift':'')+(tbPos==='right'?' tb-right':' tb-center')} style={sp?{'--spw':spw+'px'}:undefined}>
   <div className="bar">
    <div className="tb-slot">
     <button type="button" className={'tb-trigger'+(pop==='style'?' open':'')} onMouseDown={openPop('style')} title="Style de paragraphe">
@@ -168,19 +176,31 @@ function Tiptap({ydoc,provider,projectId}){
     {B('Suppr.',()=>f().deleteTable().run(),false,'Supprimer le tableau')}
    </div></BubbleMenu>
   <EditorContent editor={ed}/></div>
-  <SidePanel ydoc={ydoc} open={sp} onClose={()=>toggle(false)}/></>
+  <SidePanel ydoc={ydoc} open={sp} onClose={()=>toggle(false)} width={spw} onWidth={w=>{setSpw(w);try{localStorage.setItem('spw',String(w))}catch{}}}/></>
 }
 
-export function SidePanel({ydoc,open,onClose}){
+export function SidePanel({ydoc,open,onClose,width=380,onWidth}){
  const [tab,setTab]=useState('summary')
  const ed=useEditor({immediatelyRender:false,extensions:[StarterKit.configure({history:false}),
   Collaboration.configure({document:ydoc,field:tab}),TaskList,TaskItem.configure({nested:true})]},[tab])
  useEffect(()=>{if(open&&ed&&!ed.isDestroyed){const t=setTimeout(()=>{try{ed.commands.focus('end')}catch{}},380);return()=>clearTimeout(t)}},[open,tab,ed])
+ const startResize=e=>{
+  e.preventDefault();e.stopPropagation()
+  const x0=e.clientX,w0=width
+  const move=ev=>{
+   const next=Math.max(280,Math.min(720,Math.round(w0-(ev.clientX-x0))))
+   onWidth?.(next)
+  }
+  const up=()=>{window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);document.body.classList.remove('resizing-sp')}
+  document.body.classList.add('resizing-sp')
+  window.addEventListener('pointermove',move);window.addEventListener('pointerup',up)
+ }
  const words=ed&&!ed.isDestroyed?ed.getText().trim().split(/\s+/).filter(Boolean).length:0
  const f=()=>ed.chain().focus()
  const T=(l,fn,a,t)=><button type="button" title={t} className={a?'on':''} onMouseDown={e=>e.preventDefault()} onClick={fn}>{l}</button>
- return <div className={'sp'+(open?' open':'')} aria-hidden={!open} onKeyDown={e=>{if(e.key==='Escape')onClose()}}>
-  <div className="sp-head"><div><h2>Résumé & notes</h2><p>Synchronisé en temps réel</p></div>
+ return <div className={'sp'+(open?' open':'')} style={{width:Math.min(width,typeof window!=='undefined'?window.innerWidth-24:width),'--spw':width+'px'}} aria-hidden={!open} onKeyDown={e=>{if(e.key==='Escape')onClose()}}>
+  <div className="sp-rz" onPointerDown={startResize} title="Redimensionner"/>
+  <div className="sp-head"><div><h2>Résumé & notes</h2><p>Synchronisé en temps réel · glisse le bord gauche</p></div>
    <button type="button" className="sp-x" onClick={onClose} aria-label="Fermer">✕</button></div>
   <div className="sp-seg">{[['summary','Résumé'],['notes','Notes']].map(([k,l])=><button type="button" key={k} className={tab===k?'on':''} onClick={()=>setTab(k)}>{l}</button>)}</div>
   {ed&&<div className="sp-tools">

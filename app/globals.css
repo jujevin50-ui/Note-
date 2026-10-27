@@ -1135,19 +1135,71 @@ ul[data-type=taskList]{list-style:none;padding-left:4px}ul[data-type=taskList] l
 .chart-legend span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.chart-legend b{font-weight:500;font-variant-numeric:tabular-nums;white-space:nowrap}
 .chart-wrap .cedit{text-align:left;margin-top:10px}
 
-/* Panneau latéral « Résumé & notes » — inspiré d’iPadOS / macOS */
-.ed-wrap{transition:margin-right .45s cubic-bezier(.32,.72,0,1)}
-@media(min-width:1180px){.ed-wrap.shift{margin-right:404px}}
+/* Panneau latéral « Résumé & notes » — redimensionnable */
+.ed-wrap{transition:margin-right .35s cubic-bezier(.32,.72,0,1),padding-right .35s ease}
+@media(min-width:1180px){.ed-wrap.shift{margin-right:calc(var(--spw,380px) + 24px)}}
 .bar .sum-btn{margin-left:auto;display:inline-flex;align-items:center;gap:7px;border-radius:999px;padding:5px 14px 5px 11px;background:var(--side);font-weight:500;position:relative}
 .bar .sum-btn.active{background:var(--sel);color:var(--ac);border-color:color-mix(in srgb,var(--ac) 28%,transparent)}
 .sum-btn i{width:7px;height:7px;border-radius:50%;background:#ff9f0a;position:absolute;top:5px;right:7px}
-.sp{position:fixed;top:12px;right:12px;bottom:12px;width:min(380px,calc(100vw - 24px));z-index:30;display:flex;flex-direction:column;border-radius:22px;overflow:hidden;
+
+/* Barre d’outils — mode droite verticale */
+.ed-wrap.tb-right .bar{
+  position:fixed;
+  top:72px;
+  right:12px;
+  bottom:16px;
+  width:54px;
+  max-width:54px;
+  margin:0;
+  flex-direction:column;
+  flex-wrap:nowrap;
+  align-items:center;
+  justify-content:flex-start;
+  overflow-x:hidden;
+  overflow-y:auto;
+  padding:8px 6px;
+  gap:4px;
+  border-radius:16px;
+  z-index:25;
+  scrollbar-width:thin;
+}
+.ed-wrap.tb-right .bar .tb-sep{
+  width:70%;height:1px;margin:4px 0;
+  background:var(--bd);align-self:center;
+}
+.ed-wrap.tb-right .bar .sum-btn{
+  margin:8px 0 0;padding:8px;width:40px;height:40px;
+  border-radius:12px;justify-content:center;
+  font-size:0;gap:0;
+}
+.ed-wrap.tb-right .bar .sum-btn svg{margin:0}
+.ed-wrap.tb-right .bar .tb-slot{position:relative}
+.ed-wrap.tb-right .bar .tb-pop{
+  left:auto;right:calc(100% + 8px);top:0;bottom:auto;
+}
+.ed-wrap.tb-right{padding-right:72px}
+.ed-wrap.tb-right.shift .bar{right:calc(var(--spw,380px) + 28px)}
+@media(max-width:900px){
+  .ed-wrap.tb-right .bar{display:none}
+  .ed-wrap.tb-right{padding-right:0}
+}
+
+.sp{position:fixed;top:12px;right:12px;bottom:12px;width:min(var(--spw,380px),calc(100vw - 24px));z-index:30;display:flex;flex-direction:column;border-radius:22px;overflow:hidden;
  font-family:"Universal Sans",-apple-system,system-ui,sans-serif;letter-spacing:-.003em;
  background:rgba(255,255,255,.76);-webkit-backdrop-filter:blur(32px) saturate(180%);backdrop-filter:blur(32px) saturate(180%);
  border:1px solid rgba(0,0,0,.07);box-shadow:0 0 0 .5px rgba(0,0,0,.05),0 28px 64px -14px rgba(0,0,0,.3),0 8px 20px rgba(0,0,0,.08);
- transform:translateX(calc(100% + 28px));opacity:0;visibility:hidden;transition:transform .45s cubic-bezier(.32,.72,0,1),opacity .3s ease,visibility 0s linear .45s}
+ transform:translateX(calc(100% + 28px));opacity:0;visibility:hidden;transition:transform .45s cubic-bezier(.32,.72,0,1),opacity .3s ease,visibility 0s linear .45s,width .05s linear}
 .sp.open{transform:none;opacity:1;visibility:visible;transition:transform .45s cubic-bezier(.32,.72,0,1),opacity .3s ease,visibility 0s}
 :root[data-theme=dark] .sp{background:rgba(36,37,41,.74);border-color:rgba(255,255,255,.09);box-shadow:0 0 0 .5px rgba(255,255,255,.06),0 28px 64px -14px rgba(0,0,0,.7)}
+.sp-rz{
+  position:absolute;left:0;top:0;bottom:0;width:8px;cursor:ew-resize;z-index:5;
+  background:transparent;
+}
+.sp-rz:hover,.sp-rz:active{background:color-mix(in srgb,var(--ac) 18%,transparent)}
+body.resizing-sp{cursor:ew-resize!important;user-select:none!important}
+body.resizing-sp *{cursor:ew-resize!important}
+.dlg-settings{width:min(400px,92vw)}
+.tb-pos-btns button{font-size:13px}
 .sp-head{display:flex;justify-content:space-between;align-items:flex-start;padding:18px 18px 10px}
 .sp-head h2{margin:0;font-size:18px;font-weight:700;letter-spacing:-.02em}.sp-head p{margin:2px 0 0;font-size:12px;color:var(--mut)}
 .sp .sp-x{width:26px;height:26px;padding:0;border:0;border-radius:50%;background:rgba(120,120,128,.16);color:var(--mut);font-size:11px;line-height:26px;text-align:center}
