@@ -424,11 +424,15 @@ function Main({user}){
    <div className="head side-foot"><button className="ghost" onClick={()=>setSettings(true)}>⚙️ Paramètres</button><button className="ghost" onClick={()=>supabase.auth.signOut()}>Déconnexion</button></div></aside>}
   <section className="mainc">
    <div className="tabs">
-    {!open&&<button className="ghost" onClick={()=>setOpen(true)} title="Afficher le menu">☰</button>}
-    <button className={'ghost'+(sel? '':' on')} onClick={()=>setSel(null)} title="Accueil">🏠</button>
-    {tabItems.map(t=><div key={t.id} className={'tab'+(sel===t.id?' on':'')} onClick={()=>setSel(t.id)}><Ic i={t}/><span>{t.title}</span>
-     <b onClick={e=>{e.stopPropagation();closeTab(t.id)}}>✕</b></div>)}
-    {!open&&<span style={{marginLeft:'auto'}}>{pres}</span>}
+    {!open&&<button type="button" className="tab-icon" onClick={()=>setOpen(true)} title="Afficher le menu">☰</button>}
+    <div className={'tab tab-home'+(sel?'':' on')} onClick={()=>setSel(null)} title="Accueil">
+     <span className="tab-ico">🏠</span><span>Accueil</span>
+    </div>
+    {tabItems.map(t=><div key={t.id} className={'tab'+(sel===t.id?' on':'')} onClick={()=>setSel(t.id)} title={t.title}>
+     <span className="tab-ico"><Ic i={t}/></span><span>{t.title}</span>
+     <button type="button" className="tab-close" title="Fermer" onClick={e=>{e.stopPropagation();closeTab(t.id)}}>✕</button>
+    </div>)}
+    {!open&&<span className="tabs-pres">{pres}</span>}
    </div>
    <main>{!pid?<p className="muted">Crée un projet, ou rejoins-en un avec un code, via « ＋ » en haut à gauche.</p>:!cur?(space==='invest'
      ?<InvestHome items={spaceItems} sibs={sibs} openItem={openItem} show={show} projName={projs.find(p=>p.id===pid)?.name||''} addCompany={addCompany} del={del}/>
