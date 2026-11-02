@@ -4,6 +4,7 @@ import {supabase} from '../lib/supabase'
 import {colorOf} from '../lib/provider'
 import Editor from '../components/Editor'
 import PdfView from '../components/PdfView'
+import {FxRoot,TextGenerate,Ticker,FxSearch} from '../components/Fx'
 
 /** Tooltip liquid-glass style Aceternity Animated Tooltip — pure React + CSS, no motion */
 function SpaceBtn({active,onClick,ico,label,name}){
@@ -99,10 +100,10 @@ function FolderView({folder,sibs,openItem,openFolder,show,items}){
   <header className="dash-hd dash-hd-sm">
    <div>
     <p className="dash-kicker">Dossier</p>
-    <h1>{folder.title}</h1>
+    <h1><TextGenerate text={folder.title}/></h1>
     <p className="dash-sub muted">{kids.length?kids.length+' élément'+(kids.length>1?'s':''):'Aucun contenu'}</p>
    </div>
-   <button type="button" className="btn-primary" onClick={e=>show(e,folder,'new')}>＋ Ajouter</button>
+   <button type="button" className="btn-primary btn-glow" onClick={e=>show(e,folder,'new')}>＋ Ajouter</button>
   </header>
   {!kids.length?<div className="dash-empty">
    <div className="dash-empty-ico">📁</div>
@@ -149,19 +150,16 @@ function NotesHome({items,sibs,openItem,show,projName}){
   <header className="dash-hd">
    <div>
     <p className="dash-kicker">{projName||'Espace'}</p>
-    <h1>Notes</h1>
+    <h1><TextGenerate text="Notes"/></h1>
     <div className="dash-stats">
-     <span className="stat-pill"><b>{nF}</b> dossier{nF!==1?'s':''}</span>
-     <span className="stat-pill"><b>{nP}</b> page{nP!==1?'s':''}</span>
-     {nD>0&&<span className="stat-pill"><b>{nD}</b> PDF</span>}
+     <span className="stat-pill"><Ticker value={nF}/> dossier{nF!==1?'s':''}</span>
+     <span className="stat-pill"><Ticker value={nP}/> page{nP!==1?'s':''}</span>
+     {nD>0&&<span className="stat-pill"><Ticker value={nD}/> PDF</span>}
     </div>
    </div>
    <div className="dash-actions">
-    <div className="search-wrap">
-     <span className="search-ico" aria-hidden>⌕</span>
-     <input placeholder="Rechercher une note…" value={q} onChange={e=>setQ(e.target.value)}/>
-    </div>
-    <button type="button" className="btn-primary" onClick={e=>show(e,null,'new')}>＋ Nouveau</button>
+    <FxSearch value={q} onChange={e=>setQ(e.target.value)} placeholders={['Rechercher une note…','Un cours, une réunion…','Un PDF, un dossier…','Une idée à retrouver…']}/>
+    <button type="button" className="btn-primary btn-glow" onClick={e=>show(e,null,'new')}>＋ Nouveau</button>
    </div>
   </header>
 
@@ -176,7 +174,7 @@ function NotesHome({items,sibs,openItem,show,projName}){
    <div className="dash-empty-ico">📝</div>
    <h3>Commence à écrire</h3>
    <p className="muted">Crée une page ou un dossier pour organiser tes idées.</p>
-   <button type="button" className="btn-primary" onClick={e=>show(e,null,'new')}>＋ Créer une note</button>
+   <button type="button" className="btn-primary btn-glow" onClick={e=>show(e,null,'new')}>＋ Créer une note</button>
   </div>
   :<>
    {folders.length>0&&<section className="hsec">
@@ -236,15 +234,12 @@ function InvestHome({items,sibs,openItem,show,projName,addCompany,del}){
   <header className="dash-hd">
    <div>
     <p className="dash-kicker">{projName||'Espace'}</p>
-    <h1>Invest</h1>
+    <h1><TextGenerate text="Invest"/></h1>
     <p className="dash-sub muted">Suivi, analyses et portefeuille au même endroit</p>
    </div>
    <div className="dash-actions">
-    <div className="search-wrap">
-     <span className="search-ico" aria-hidden>⌕</span>
-     <input placeholder="Rechercher…" value={q} onChange={e=>setQ(e.target.value)}/>
-    </div>
-    <button type="button" className="btn-primary" onClick={e=>show(e,null,'new')}>＋ Nouveau</button>
+    <FxSearch value={q} onChange={e=>setQ(e.target.value)} placeholders={['Rechercher…','Une entreprise suivie…','Une analyse, une source…']}/>
+    <button type="button" className="btn-primary btn-glow" onClick={e=>show(e,null,'new')}>＋ Nouveau</button>
    </div>
   </header>
 
@@ -265,7 +260,7 @@ function InvestHome({items,sibs,openItem,show,projName,addCompany,del}){
        <p className="muted">{companies.length?plural(companies.length,'entreprise suivie'):'Construis ta watchlist'}</p>
       </div>
      </div>
-     <button type="button" className="btn-primary" onClick={addCompany}>＋ Ajouter</button>
+     <button type="button" className="btn-primary btn-glow" onClick={addCompany}>＋ Ajouter</button>
     </header>
     {companies.length>0?<div className="watchlist-grid">
      {companies.map(c=><div key={c.id} className="watch-card" onClick={()=>openItem(c.id)} onContextMenu={e=>show(e,c)}>
@@ -305,16 +300,25 @@ export default function App(){
  useEffect(()=>{supabase.auth.getSession().then(({data})=>{setS(data.session);setReady(true)})
   const {data}=supabase.auth.onAuthStateChange((_,x)=>setS(x));return()=>data.subscription.unsubscribe()},[])
  if(!ready)return null
- return s?<Main user={s.user}/>:<Login/>
+ return <><FxRoot/>{s?<Main user={s.user}/>:<Login/>}</>
 }
 
 function Login(){
- const [e,setE]=useState(''),[p,setP]=useState('')
- const go=async up=>{const a={email:e,password:p};const {error}=await(up?supabase.auth.signUp(a):supabase.auth.signInWithPassword(a));if(error)alert(error.message)}
- return <div className="login" style={{maxWidth:320}}><h1 style={{display:'flex',alignItems:'center',gap:10}}><img src="/logo-192.png" width="48" height="48" alt=""/> Notes</h1>
-  <input placeholder="Email" value={e} onChange={x=>setE(x.target.value)}/>
-  <input type="password" placeholder="Mot de passe" value={p} onChange={x=>setP(x.target.value)} onKeyDown={x=>x.key==='Enter'&&go(0)}/>
-  <button className="on" onClick={()=>go(0)}>Connexion</button><button className="ghost" onClick={()=>go(1)}>Créer un compte</button></div>
+ const [e,setE]=useState(''),[p,setP]=useState(''),[busy,setBusy]=useState(0)
+ const go=async up=>{setBusy(up?2:1);const a={email:e,password:p};const {error}=await(up?supabase.auth.signUp(a):supabase.auth.signInWithPassword(a));setBusy(0);if(error)alert(error.message)}
+ return <div className="login-stage">
+  <div className="aurora" aria-hidden/>
+  <div className="beams" aria-hidden>{Array.from({length:7},(_,i)=><i key={i} style={{'--b':i}}/>)}</div>
+  <div className="login-grid" aria-hidden/>
+  <form className="login login-card" onSubmit={x=>{x.preventDefault();go(0)}}>
+   <div className="login-brand"><img src="/logo-192.png" width="44" height="44" alt=""/><h1><TextGenerate text="Notes"/></h1></div>
+   <p className="login-lead"><TextGenerate text="Prends des notes, apprends et suis tes projets — à plusieurs, en temps réel." step={45}/></p>
+   <input placeholder="Email" type="email" autoComplete="email" value={e} onChange={x=>setE(x.target.value)}/>
+   <input type="password" placeholder="Mot de passe" autoComplete="current-password" value={p} onChange={x=>setP(x.target.value)}/>
+   <button type="submit" className="on btn-glow" disabled={!!busy}><span>{busy===1?'Connexion…':'Connexion'}</span></button>
+   <button type="button" className="ghost" disabled={!!busy} onClick={()=>go(1)}>{busy===2?'Création…':'Créer un compte'}</button>
+  </form>
+ </div>
 }
 
 function Main({user}){
@@ -478,7 +482,7 @@ function Main({user}){
    <main>{!pid?<p className="muted">Crée un projet, ou rejoins-en un avec un code, via « ＋ » en haut à gauche.</p>:!cur?(space==='invest'
      ?<InvestHome items={spaceItems} sibs={sibs} openItem={openItem} show={show} projName={projs.find(p=>p.id===pid)?.name||''} addCompany={addCompany} del={del}/>
      :<NotesHome items={spaceItems} sibs={sibs} openItem={openItem} show={show} projName={projs.find(p=>p.id===pid)?.name||''}/>)
-    :<><div className="crumb"><a onClick={()=>setSel(null)}>🏠 Accueil</a>{trail(cur).map(t=><span key={t.id} style={{cursor:t.type==='folder'?'pointer':undefined}} onClick={()=>t.type==='folder'&&openFolder(t.id)}> › {t.title}</span>)}</div><h2><span className="ic" onClick={e=>show(e,cur,'icon')} title="Choisir une icône">{cur.icon||<span className="muted">☺</span>}</span> {cur.title}</h2>
+    :<><div className="crumb"><a onClick={()=>setSel(null)}>🏠 Accueil</a>{trail(cur).map(t=><span key={t.id} style={{cursor:t.type==='folder'?'pointer':undefined}} onClick={()=>t.type==='folder'&&openFolder(t.id)}> › {t.title}</span>)}</div><h2><span className="ic" onClick={e=>show(e,cur,'icon')} title="Choisir une icône">{cur.icon||<span className="muted">☺</span>}</span> <TextGenerate text={cur.title} step={60}/></h2>
      {cur.type==='folder'?<FolderView folder={cur} sibs={sibs} openItem={openItem} openFolder={openFolder} show={show} items={spaceItems}/>
      :cur.type==='pdf'?<PdfView key={cur.id} id={cur.id} user={user} path={pid+'/'+cur.id+'.pdf'} title={cur.title}/>
      :<Editor key={cur.id} id={cur.id} user={user} projectId={pid}/>}</>}</main></section>
