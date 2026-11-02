@@ -1,4 +1,5 @@
 import './globals.css'
+import './sidebar-slider.css'
 export const metadata={title:'Notes'}
 export default function L({children}){return <html lang="fr" suppressHydrationWarning><head><script dangerouslySetInnerHTML={{__html:"try{document.documentElement.dataset.theme=localStorage.getItem('theme')||'light'}catch(e){}"}}/></head><body>
 {/* SVG filter for liquid-glass refraction (Chromium / Edge / Arc). Safari & Firefox fall back to frosted blur. */}

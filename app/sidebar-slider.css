@@ -1,0 +1,9 @@
+/* Aceternity-inspired compare-slider handle for the resizable sidebar */
+.rz{width:10px;margin-right:-5px}
+.rz::before{content:'';position:absolute;top:0;bottom:0;left:50%;width:2px;transform:translateX(-50%);border-radius:999px;background:linear-gradient(180deg,transparent,var(--bd) 18%,var(--bd) 82%,transparent);opacity:.55;transition:opacity .25s ease,background .25s ease,box-shadow .25s ease}
+.rz::after{content:'⟨ ⟩';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(.85);display:grid;place-items:center;width:26px;height:34px;border-radius:999px;background:color-mix(in srgb,var(--bg) 82%,transparent);border:1px solid var(--glass-border);box-shadow:0 6px 18px rgba(0,0,0,.16),inset 0 1px 0 var(--glass-highlight);color:var(--fg);font-size:11px;font-weight:700;letter-spacing:-.04em;opacity:0;pointer-events:none;backdrop-filter:blur(14px) saturate(1.4);-webkit-backdrop-filter:blur(14px) saturate(1.4);transition:opacity .22s cubic-bezier(.22,1,.36,1),transform .22s cubic-bezier(.22,1,.36,1),box-shadow .22s ease}
+aside:hover .rz::before{opacity:.9}
+.rz:hover::before,.rz:active::before{background:linear-gradient(180deg,transparent,var(--ac) 18%,var(--ac) 82%,transparent);opacity:1;box-shadow:0 0 0 1px color-mix(in srgb,var(--ac) 22%,transparent),0 0 18px color-mix(in srgb,var(--ac) 32%,transparent)}
+.rz:hover::after,.rz:active::after{opacity:1;transform:translate(-50%,-50%) scale(1);box-shadow:0 8px 24px color-mix(in srgb,var(--ac) 24%,transparent),inset 0 1px 0 var(--glass-highlight)}
+.rz:active::after{transform:translate(-50%,-50%) scale(.96)}
+@media (prefers-reduced-motion:reduce){.rz::after{transition:none}}
