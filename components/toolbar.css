@@ -1,1 +1,127 @@
-SAME_AS_BRANCH_COMMIT_80b5ee6
+/* Toolbar — design segmenté type React Bits.
+   Ce fichier est importé après globals.css : il remplace uniquement l’apparence de .bar. */
+
+.ed-wrap .bar{
+  flex-wrap:nowrap;
+  gap:4px;
+  padding:6px;
+  border-radius:16px;
+  border:1px solid color-mix(in srgb,var(--bd) 60%,transparent);
+  background:color-mix(in srgb,var(--bg) 78%,transparent);
+  -webkit-backdrop-filter:blur(22px) saturate(180%);
+  backdrop-filter:blur(22px) saturate(180%);
+  box-shadow:0 10px 30px rgba(0,0,0,.08),inset 0 1px 0 rgba(255,255,255,.32);
+  overflow-x:auto;
+  scrollbar-width:none;
+}
+.ed-wrap .bar::-webkit-scrollbar{display:none}
+
+/* Boutons compacts et homogènes */
+.ed-wrap .bar button,
+.ed-wrap .bar .image-upload{
+  min-height:32px;
+  min-width:32px;
+  border:0;
+  border-radius:9px;
+  background:transparent;
+  color:var(--fg);
+  font-size:12.5px;
+  font-weight:560;
+  line-height:1;
+  white-space:nowrap;
+  transition:background .16s ease,color .16s ease,transform .12s ease;
+}
+.ed-wrap .bar button{
+  padding:0 8px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
+.ed-wrap .bar .image-upload{
+  padding:0 10px;
+  gap:5px;
+}
+.ed-wrap .bar button:hover,
+.ed-wrap .bar .image-upload:hover{
+  background:var(--hov);
+}
+.ed-wrap .bar button:active{
+  transform:scale(.95);
+}
+.ed-wrap .bar button.on{
+  background:var(--ac);
+  color:var(--on-fg,#fff);
+  box-shadow:0 2px 6px color-mix(in srgb,var(--ac) 25%,transparent);
+}
+
+/* Séparateurs verticaux entre groupes */
+.ed-wrap .bar .tb-sep{
+  flex:none;
+  width:1px;
+  height:20px;
+  margin:0 3px;
+  border-radius:99px;
+  background:color-mix(in srgb,var(--bd) 75%,transparent);
+}
+
+/* Trigger / menus */
+.ed-wrap .bar .tb-trigger,
+.ed-wrap .bar .tb-swatch{
+  min-width:34px;
+  padding:0 9px;
+  gap:5px;
+}
+.ed-wrap .bar .tb-trigger{
+  justify-content:space-between;
+  min-width:104px;
+}
+.ed-wrap .bar .tb-trigger span{
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+/* Position à droite : la barre suit réellement le bord droit */
+.ed-wrap.tb-right .bar{
+  margin-left:auto;
+  margin-right:0;
+}
+.ed-wrap.tb-center .bar{
+  margin-left:auto;
+  margin-right:auto;
+}
+
+/* Les menus ne débordent pas lorsque la toolbar est à droite */
+.ed-wrap.tb-right .tb-pop{
+  left:auto;
+  right:0;
+}
+
+/* Bouton Résumé : action secondaire distincte */
+.ed-wrap .bar .sum-btn{
+  margin-left:4px;
+  padding:0 10px;
+  gap:6px;
+  border-radius:10px;
+  background:color-mix(in srgb,var(--ac) 8%,transparent);
+}
+.ed-wrap .bar .sum-btn.active{
+  background:var(--ac);
+  color:var(--on-fg,#fff);
+}
+
+/* Petit écran : la toolbar reste sur une ligne et défile */
+@media (max-width:760px){
+  .ed-wrap .bar{
+    max-width:calc(100% - 16px);
+    margin-left:8px !important;
+    margin-right:8px !important;
+  }
+  .ed-wrap .bar .tb-trigger span,
+  .ed-wrap .bar .image-upload,
+  .ed-wrap .bar .tb-word span{
+    display:none;
+  }
+  .ed-wrap .bar .tb-trigger{
+    min-width:34px;
+  }
+}
