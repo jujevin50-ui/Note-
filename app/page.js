@@ -122,14 +122,13 @@ function Settings({ user, close }) {
   </div></div>
 }
 
-function Hero({ kicker, name, sub, stats, actions, quick }) {
+function Hero({ kicker, name, stats, actions, quick }) {
   const h = new Date().getHours()
   const hello = h >= 18 || h < 5 ? 'Bonsoir,' : 'Bonjour,'
   return <section className="hero">
     <LiquidBackground />
     <span className="hero-kicker"><ShinyText>{kicker}</ShinyText></span>
     <h1 className="hero-title"><BlurText text={hello} /> <GradientText>{name}</GradientText></h1>
-    <p className="hero-sub"><BlurText text={sub} step={40} /></p>
     {stats && <div className="hero-stats">{stats}</div>}
     <div className="hero-actions">{actions}</div>
     {quick?.length > 0 && <div className="qa-row">{quick.map(([label, fn]) => {
@@ -201,7 +200,7 @@ function NotesHome({ items, sibs, openItem, show, projName, name, quick }) {
     const n = all.filter(x => x.i.type !== 'folder').length
     const sf = all.filter(x => x.i.type === 'folder').length
     const open = more[f.id]
-    const rows = open ? all : all.slice(0, 6)
+    const rows = all
     return <article className="hcard" key={f.id} style={{ '--accent': f.color || '#007aff' }}>
       <div className="hhead" onContextMenu={e => show(e, f)}>
         <span className="hcard-ico"><Ic i={f} /></span>
@@ -209,11 +208,10 @@ function NotesHome({ items, sibs, openItem, show, projName, name, quick }) {
         <span className="hact"><b onClick={e => show(e, f, 'new')} title="Ajouter">＋</b><b onClick={e => show(e, f)}>⋮</b></span>
       </div>
       <div className="hbody">{rows.length ? rows.map(r => <Row key={r.i.id} {...r} />) : <p className="hcard-empty muted">Dossier vide</p>}</div>
-      {all.length > 6 && <button type="button" className="ghost hmore" onClick={() => setMore({ ...more, [f.id]: !open })}>{open ? 'Réduire' : 'Voir ' + (all.length - 6) + ' de plus'}</button>}
     </article>
   }
   return <div className="home home-in">
-    <Hero kicker={projName || 'Espace'} name={name} sub="Tes notes, tes dossiers et tes PDF, synchronisés en temps réel." quick={quick}
+    <Hero kicker={projName || 'Espace'} name={name} quick={quick}
       stats={<>
         <span className="stat-pill"><Ticker value={nF} /> dossier{nF !== 1 ? 's' : ''}</span>
         <span className="stat-pill"><Ticker value={nP} /> page{nP !== 1 ? 's' : ''}</span>
@@ -282,13 +280,13 @@ function InvestHome({ items, sibs, openItem, show, projName, addCompany, del, na
         <button type="button" className="ghost inv-add" onClick={e => folder ? show(e, folder, 'new') : show(e, null, 'new')} title="Ajouter">＋</button>
       </header>
       <div className="inv-body">
-        {folder ? (kids.length ? kids.slice(0, 8).map(i => <ItemRow key={i.id} i={i} />) : <p className="inv-empty muted">Rien pour l'instant</p>)
+        {folder ? (kids.length ? kids.map(i => <ItemRow key={i.id} i={i} />) : <p className="inv-empty muted">Rien pour l'instant</p>)
           : <p className="inv-empty muted">Crée le dossier « {s.title} » pour commencer.</p>}
       </div>
     </section>
   }
   return <div className="home home-in">
-    <Hero kicker={projName || 'Espace'} name={name} sub="Suivi, analyses et portefeuille au même endroit." quick={quick}
+    <Hero kicker={projName || 'Espace'} name={name} quick={quick}
       actions={<>
         <FxSearch value={q} onChange={e => setQ(e.target.value)} placeholders={['Rechercher…', 'Une entreprise suivie…', 'Une analyse, une source…']} />
         <button type="button" className="btn-primary btn-glow" onClick={e => show(e, null, 'new')}>＋ Nouveau</button>
@@ -544,7 +542,7 @@ function Main({ user }) {
             <span className="tab-close" onClick={e => { e.stopPropagation(); closeTab(t.id) }}>✕</span>
           </div>)}
         </div>}
-        <main>
+        <main className={cur && (cur.type === 'page' || cur.type === 'pdf') ? 'paper' : ''}>
           <div className="workspace">
             {!pid ? <div className="dash-empty">
               <div className="dash-empty-ico">🚀</div>

@@ -173,3 +173,22 @@ body{background:var(--bg);color:var(--fg);transition:background .3s ease,color .
 
 @media(prefers-reduced-motion:reduce){.bt>span{animation:none;opacity:1;filter:none;transform:none}.shiny,.grad-text,.prs-live,.hero-kicker::before{animation:none}}
 @media(max-width:720px){.topbar{padding:0 8px}.prs-count{display:none}.crumbs{font-size:12.5px}}
+
+/* ── Page de contenu : toujours en blanc (mode clair), même si l'app est en sombre ── */
+.paper{color-scheme:light;
+  --bg:#ffffff;--fg:#1d1d1f;--mut:#86868b;--bd:#d2d2d7;--side:#f5f5f7;--hov:rgba(0,0,0,.05);--ac:#1d1d1f;--sel:rgba(0,0,0,.08);--sel-fg:#1d1d1f;
+  --dzin:rgba(0,0,0,.12);--on-fg:#ffffff;--cb:#c7c7cc;--side-border:rgba(0,0,0,.08);--dot:rgba(15,23,42,.10);--ink-strong:#0b0b0f;
+  --shadow:0 1px 3px rgba(0,0,0,.06),0 4px 12px rgba(0,0,0,.04);
+  --glass-bg:.56;--glass-tint:rgba(255,255,255,.42);--glass-border:rgba(255,255,255,.35);--glass-highlight:rgba(255,255,255,.55);
+  --glass-shadow:0 8px 32px rgba(0,0,0,.08),inset 0 1px 0 rgba(255,255,255,.4);
+  background:#fff;color:#1d1d1f}
+:root[data-theme=dark] .mainc>main.paper{background:#fff}
+:root[data-theme=dark] .paper .sp{background:rgba(255,255,255,.76);border-color:rgba(0,0,0,.07);box-shadow:0 0 0 .5px rgba(0,0,0,.05),0 28px 64px -14px rgba(0,0,0,.3),0 8px 20px rgba(0,0,0,.08)}
+:root[data-theme=dark] .paper .sp .sp-seg button.on{background:var(--bg);color:var(--fg)}
+:root[data-theme=dark] .paper button.on{box-shadow:0 1px 2px rgba(0,0,0,.18)}
+:root[data-theme=dark] .paper .tb-pop{background:color-mix(in srgb,#fff 88%,transparent);border-color:rgba(0,0,0,.08)}
+:root[data-theme=dark] .paper .bar .tb-dot{box-shadow:inset 0 0 0 2px #fff;border-color:rgba(0,0,0,.12) !important}
+:root[data-theme=dark] .paper .note-pdf-pages{background:#e8e8ed}
+:root[data-theme=dark] .paper .ProseMirror mark,
+:root[data-theme=dark] .paper .ProseMirror mark.hl{box-shadow:inset 0 -.06em 0 rgba(0,0,0,.04);filter:none}
+:root[data-theme=dark] .paper .bar .tb-hl-chip i{box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
