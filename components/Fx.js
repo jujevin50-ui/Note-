@@ -8,9 +8,9 @@
    - Stagger : apparition en cascade des listes */
 import {useEffect,useRef,useState} from 'react'
 
-const SPOT='.hcard,.tile,.inv-sec,.watch-card,.result-row,.dash-empty,.dlg,.login-card,.row,.stat-pill'
+const SPOT='.hv-card,.hv-rcard,.hcard,.tile,.inv-sec,.watch-card,.result-row,.dash-empty,.dlg,.login-card,.row,.stat-pill'
 const TILT='.tile,.watch-card'
-const STAGGER='.hgrid,.tile-grid,.inv-grid,.watchlist-grid,.col-body,.hbody,.search-results,.member-list,.inv-body,.dash-stats'
+const STAGGER='.hv-grid,.hv-recent,.hv-folders,.hgrid,.tile-grid,.inv-grid,.watchlist-grid,.col-body,.hbody,.search-results,.member-list,.inv-body,.dash-stats'
 
 export function FxRoot(){
  useEffect(()=>{

@@ -4,6 +4,7 @@ import {supabase} from '../lib/supabase'
 import {colorOf} from '../lib/provider'
 import Editor from '../components/Editor'
 import PdfView from '../components/PdfView'
+import HomeView from '../components/HomeView'
 import {FxRoot,TextGenerate,Ticker,FxSearch} from '../components/Fx'
 
 /** Tooltip liquid-glass style Aceternity Animated Tooltip — pure React + CSS, no motion */
@@ -481,7 +482,7 @@ function Main({user}){
    </div>
    <main>{!pid?<p className="muted">Crée un projet, ou rejoins-en un avec un code, via « ＋ » en haut à gauche.</p>:!cur?(space==='invest'
      ?<InvestHome items={spaceItems} sibs={sibs} openItem={openItem} show={show} projName={projs.find(p=>p.id===pid)?.name||''} addCompany={addCompany} del={del}/>
-     :<NotesHome items={spaceItems} sibs={sibs} openItem={openItem} show={show} projName={projs.find(p=>p.id===pid)?.name||''}/>)
+     :<HomeView items={spaceItems} sibs={sibs} openItem={openItem} show={show} projName={projs.find(p=>p.id===pid)?.name||''} name={name} add={add} pick={pick}/>)
     :<><div className="crumb"><a onClick={()=>setSel(null)}>🏠 Accueil</a>{trail(cur).map(t=><span key={t.id} style={{cursor:t.type==='folder'?'pointer':undefined}} onClick={()=>t.type==='folder'&&openFolder(t.id)}> › {t.title}</span>)}</div><h2><span className="ic" onClick={e=>show(e,cur,'icon')} title="Choisir une icône">{cur.icon||<span className="muted">☺</span>}</span> <TextGenerate text={cur.title} step={60}/></h2>
      {cur.type==='folder'?<FolderView folder={cur} sibs={sibs} openItem={openItem} openFolder={openFolder} show={show} items={spaceItems}/>
      :cur.type==='pdf'?<PdfView key={cur.id} id={cur.id} user={user} path={pid+'/'+cur.id+'.pdf'} title={cur.title}/>
