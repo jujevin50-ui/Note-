@@ -168,3 +168,25 @@ export function Presence({ online, me, titleOf }) {
     </div>
   )
 }
+
+/* Folder (React Bits) — dossier animé : le rabat s'ouvre et les feuilles sortent */
+const darken = (hex, k = 0.25) => {
+  let c = String(hex || '#3b82f6').replace('#', '')
+  if (c.length === 3) c = c.split('').map(x => x + x).join('')
+  if (!/^[0-9a-f]{6}$/i.test(c)) return '#2b5fc4'
+  const n = parseInt(c, 16)
+  const f = v => Math.max(0, Math.min(255, Math.floor(v * (1 - k))))
+  return '#' + ((1 << 24) + (f((n >> 16) & 255) << 16) + (f((n >> 8) & 255) << 8) + f(n & 255)).toString(16).slice(1)
+}
+export function FolderBits({ color = '#3b82f6', size = 0.5, open = false, className = '' }) {
+  return (
+    <span className={'rbf-box ' + className} style={{ '--s': size }} aria-hidden>
+      <span className={'rbf' + (open ? ' open' : '')} style={{ '--fc': color, '--fb': darken(color) }}>
+        <span className="rbf-back">
+          <i className="rbf-paper p1" /><i className="rbf-paper p2" /><i className="rbf-paper p3" />
+          <i className="rbf-front" /><i className="rbf-front right" />
+        </span>
+      </span>
+    </span>
+  )
+}
