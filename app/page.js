@@ -181,7 +181,10 @@ function FolderView({ folder, sibs, openItem, openFolder, show, items }) {
 }
 
 function NotesHome({ items, sibs, openItem, show, projName, name, quick }) {
-  const [q, setQ] = useState(''), [more, setMore] = useState({})
+  const [q, setQ] = useState('')
+  const [shut, setShut] = useState(() => { try { return JSON.parse(localStorage.getItem('homeShut') || '{}') } catch { return {} } })
+  useEffect(() => { try { localStorage.setItem('homeShut', JSON.stringify(shut)) } catch {} }, [shut])
+  const tgl = id => setShut(x => ({ ...x, [id]: !x[id] }))
   const roots = sibs(null)
   const folders = roots.filter(i => i.type === 'folder')
   const loose = roots.filter(i => i.type !== 'folder')
@@ -190,24 +193,26 @@ function NotesHome({ items, sibs, openItem, show, projName, name, quick }) {
   const nD = items.filter(i => i.type === 'pdf').length
   const path = i => { const a = []; let c = items.find(x => x.id === i.parent_id); while (c) { a.unshift(c.title); c = items.find(x => x.id === c.parent_id) }; return a.join(' › ') }
   const flat = (id, d = 0) => sibs(id).flatMap(c => [{ i: c, d }, ...(c.type === 'folder' ? flat(c.id, d + 1) : [])])
+  const flatVis = (id, d = 0) => sibs(id).flatMap(c => [{ i: c, d }, ...(c.type === 'folder' && !shut[c.id] ? flatVis(c.id, d + 1) : [])])
   const needle = q.trim().toLowerCase()
   const found = needle ? items.filter(i => (i.title || '').toLowerCase().includes(needle)) : []
   const plural = (n, w) => n + ' ' + w + (n > 1 ? 's' : '')
-  const Row = ({ i, d }) => i.type === 'folder' ? <div className="hrow hsub" style={{ paddingLeft: 6 + d * 14, cursor: 'pointer' }} onClick={() => openItem(i.id)} onContextMenu={e => show(e, i)}><Ic i={i} /><b>{i.title}</b><small className="muted">{flat(i.id).filter(x => x.i.type !== 'folder').length}</small>
+  const Row = ({ i, d }) => i.type === 'folder' ? <div className="hrow hsub" style={{ paddingLeft: 6 + d * 14, cursor: 'pointer' }} onClick={() => tgl(i.id)} onDoubleClick={() => openItem(i.id)} onContextMenu={e => show(e, i)}><small className={'hchev' + (shut[i.id] ? '' : ' open')}>›</small><Ic i={i} /><b>{i.title}</b><small className="muted">{flat(i.id).filter(x => x.i.type !== 'folder').length}</small>
     <span className="hact"><b onClick={e => { e.stopPropagation(); show(e, i, 'new') }}>＋</b><b onClick={e => { e.stopPropagation(); show(e, i) }}>⋮</b></span></div> : <div className="hrow hitem" style={{ paddingLeft: 6 + d * 14 }} onClick={() => openItem(i.id)} onContextMenu={e => show(e, i)}><Ic i={i} /><span>{i.title}</span></div>
   const card = f => {
     const all = flat(f.id)
     const n = all.filter(x => x.i.type !== 'folder').length
     const sf = all.filter(x => x.i.type === 'folder').length
-    const open = more[f.id]
-    const rows = all
-    return <article className="hcard" key={f.id} style={{ '--accent': f.color || '#007aff' }}>
-      <div className="hhead" onContextMenu={e => show(e, f)}>
+    const closed = !!shut[f.id]
+    const rows = flatVis(f.id)
+    return <article className={'hcard' + (closed ? ' shut' : '')} key={f.id} style={{ '--accent': f.color || '#007aff' }}>
+      <div className="hhead" onClick={() => tgl(f.id)} onContextMenu={e => show(e, f)} title={closed ? 'Déplier' : 'Replier'}>
+        <small className={'hchev' + (closed ? '' : ' open')}>›</small>
         <span className="hcard-ico"><Ic i={f} /></span>
         <div><h3>{f.title}</h3><small className="muted">{plural(n, 'élément')}{sf > 0 && ' · ' + plural(sf, 'sous-dossier')}</small></div>
         <span className="hact"><b onClick={e => show(e, f, 'new')} title="Ajouter">＋</b><b onClick={e => show(e, f)}>⋮</b></span>
       </div>
-      <div className="hbody">{rows.length ? rows.map(r => <Row key={r.i.id} {...r} />) : <p className="hcard-empty muted">Dossier vide</p>}</div>
+      {!closed && <div className="hbody">{rows.length ? rows.map(r => <Row key={r.i.id} {...r} />) : <p className="hcard-empty muted">Dossier vide</p>}</div>}
     </article>
   }
   return <div className="home home-in">
@@ -234,7 +239,7 @@ function NotesHome({ items, sibs, openItem, show, projName, name, quick }) {
       <button type="button" className="btn-primary btn-glow" onClick={e => show(e, null, 'new')}>＋ Créer une note</button>
     </div> : <>
       {folders.length > 0 && <section className="hsec">
-        <div className="sec-label"><h4>📁 Dossiers</h4><span className="muted">{folders.length}</span></div>
+        <div className="sec-label"><h4>📁 Dossiers</h4><span className="muted">{folders.length}</span><button type="button" className="ghost hmore" style={{ marginLeft: 'auto' }} onClick={() => { const all = items.filter(x => x.type === 'folder'), every = all.every(x => shut[x.id]); setShut(Object.fromEntries(all.map(x => [x.id, !every]))) }}>{items.filter(x => x.type === 'folder').every(x => shut[x.id]) ? 'Tout déplier' : 'Tout replier'}</button></div>
         <div className="hgrid">{folders.map(card)}</div>
       </section>}
       {loose.length > 0 && <section className="hsec">
@@ -393,11 +398,13 @@ function Main({ user }) {
   const [share, setShare] = useState(null)
   const [settings, setSettings] = useState(false)
   const [online, setOnline] = useState([])
-  const [w, setW] = useState(220)
-  const [navPath, setNavPath] = useState([])
+  const [w, setW] = useState(280)
+  const [collapsed, setCollapsed] = useState(() => { try { return JSON.parse(localStorage.getItem('collapsed') || '{}') } catch { return {} } })
+  useEffect(() => { try { localStorage.setItem('collapsed', JSON.stringify(collapsed)) } catch {} }, [collapsed])
+  const toggle = id => setCollapsed(c => ({ ...c, [id]: !c[id] }))
   const [space, setSpace] = useState(() => { try { return localStorage.getItem('space') || 'notes' } catch { return 'notes' } })
-  const switchSpace = s => { setSpace(s); try { localStorage.setItem('space', s) } catch {}; setSel(null); setTabs([]); setNavPath([]) }
-  const fi = useRef(), pp = useRef(null), drag = useRef(null), pch = useRef(null), colsRef = useRef(null)
+  const switchSpace = s => { setSpace(s); try { localStorage.setItem('space', s) } catch {}; setSel(null); setTabs([]) }
+  const fi = useRef(), pp = useRef(null), drag = useRef(null), pch = useRef(null)
   const loadP = async () => { const { data } = await supabase.from('projects').select('*'); setProjs(data || []); if (!pid && data?.[0]) setPid(data[0].id) }
   const loadI = async () => {
     if (!pid) return
@@ -405,9 +412,9 @@ function Main({ user }) {
     setItems((data || []).filter(x => x.type !== 'board').map(x => ({ ...x, space: x.space || 'notes' })))
   }
   useEffect(() => { loadP() }, [])
-  useEffect(() => { setSel(null); setTabs([]); setNavPath([]); loadI(); if (!pid) return; const ch = supabase.channel('items:' + pid).on('postgres_changes', { event: '*', schema: 'public', table: 'items', filter: 'project_id=eq.' + pid }, loadI).subscribe(); return () => supabase.removeChannel(ch) }, [pid])
+  useEffect(() => { setSel(null); setTabs([]); loadI(); if (!pid) return; const ch = supabase.channel('items:' + pid).on('postgres_changes', { event: '*', schema: 'public', table: 'items', filter: 'project_id=eq.' + pid }, loadI).subscribe(); return () => supabase.removeChannel(ch) }, [pid])
   const name = user.user_metadata?.name || user.email.split('@')[0]
-  useEffect(() => { const v = +localStorage.getItem('sbw'); if (v) setW(v) }, [])
+  useEffect(() => { const v = +localStorage.getItem('sbw'); if (v) setW(Math.max(240, Math.min(440, v))) }, [])
   useEffect(() => {
     if (!pid) return
     const ch = supabase.channel('presence:' + pid, { config: { presence: { key: user.id } } })
@@ -416,8 +423,7 @@ function Main({ user }) {
     return () => { pch.current = null; setOnline([]); supabase.removeChannel(ch) }
   }, [pid])
   useEffect(() => { pch.current?.track({ id: user.id, name, color: colorOf(user.email), item: sel }) }, [sel, name])
-  useEffect(() => { const el = colsRef.current; if (!el) return; requestAnimationFrame(() => { el.scrollTo({ left: el.scrollWidth, behavior: 'smooth' }) }) }, [navPath])
-  const startRz = e => { e.preventDefault(); const mv = ev => { const n = Math.max(160, Math.min(320, ev.clientX / Math.max(1, navPath.length + 1))); setW(n); localStorage.setItem('sbw', n) }; const up = () => { removeEventListener('mousemove', mv); removeEventListener('mouseup', up) }; addEventListener('mousemove', mv); addEventListener('mouseup', up) }
+  const startRz = e => { e.preventDefault(); const mv = ev => { const n = Math.max(240, Math.min(440, ev.clientX)); setW(n); localStorage.setItem('sbw', n) }; const up = () => { removeEventListener('mousemove', mv); removeEventListener('mouseup', up) }; addEventListener('mousemove', mv); addEventListener('mouseup', up) }
   const ask = (label, value, ok) => setDlg({ label, value, ok, k: Math.random() })
   const insert = async row => { const { data, error } = await supabase.from('items').insert({ project_id: pid, pos: Date.now(), space, ...row }).select().single(); if (error) { alert(error.message + (String(error.message).includes('space') ? '\n\n→ Exécute supabase/space.sql dans Supabase.' : '')); return null }; return data ? { ...data, space: data.space || space } : null }
   const patch = (id, p) => { setItems(l => l.map(x => x.id === id ? { ...x, ...p } : x)); supabase.from('items').update(p).eq('id', id).then(err) }
@@ -440,10 +446,9 @@ function Main({ user }) {
   const onPdf = e => { const f = e.target.files[0]; e.target.value = ''; if (f) readPdf(f, pp.current) }
   const show = (e, i, mode) => { e.preventDefault(); e.stopPropagation(); setMenu({ x: Math.min(e.clientX, innerWidth - 230), y: Math.min(e.clientY, innerHeight - 340), i, mode }) }
   const pathTo = id => { const chain = []; let c = items.find(x => x.id === id); while (c) { if (c.type === 'folder') chain.unshift(c.id); c = items.find(x => x.id === c.parent_id) }; return chain }
-  const openItem = id => { setSel(id); setTabs(t => t.includes(id) ? t : [...t, id]); const it = items.find(x => x.id === id); if (it && it.type !== 'folder') { const p = pathTo(it.parent_id); if (p.length) setNavPath(p) } }
+  const openItem = id => { setSel(id); setTabs(t => t.includes(id) ? t : [...t, id]); const it = items.find(x => x.id === id); if (it) { const p = pathTo(it.parent_id); if (p.length) setCollapsed(c => { const n = { ...c }; p.forEach(x => { delete n[x] }); return n }) } }
   const closeTab = id => { const n = tabs.filter(x => x !== id); setTabs(n); if (sel === id) setSel(n[n.length - 1] || null) }
-  const goFolder = (folderId, depth) => { setNavPath(p => [...p.slice(0, depth), folderId]) }
-  const openFolder = id => { setNavPath(pathTo(id)); openItem(id) }
+  const openFolder = id => openItem(id)
   const key = x => x.pos ?? new Date(x.created_at).getTime()
   const spaceItems = items.filter(i => (i.space || 'notes') === space)
   const sibs = p => spaceItems.filter(i => i.parent_id === p).sort((a, b) => key(a) - key(b))
@@ -462,21 +467,28 @@ function Main({ user }) {
   const cur = items.find(i => i.id === sel && (i.space || 'notes') === space)
   const trail = i => { const a = []; let c = items.find(x => x.id === i.parent_id); while (c) { a.unshift(c); c = items.find(x => x.id === c.parent_id) }; return a }
   const tabItems = tabs.map(id => items.find(i => i.id === id)).filter(i => i && (i.space || 'notes') === space)
-  const colParents = [null, ...navPath]
-  const colCount = colParents.length
-  const sideW = open ? Math.min(colCount * w + 8, 900) : 0
-  const ColRow = ({ i, depth, active }) => {
-    const f = i.type === 'folder', z = drop && drop.id === i.id ? ' dz-' + drop.zone : ''
-    return <div className={'row' + (active ? ' on' : '') + (sel === i.id ? ' on' : '') + z} draggable
-      onDragStart={e => { drag.current = i.id; e.dataTransfer.setData('text/plain', i.id) }}
-      onDragEnd={() => { drag.current = null; setDrop(null) }}
-      onDragOver={e => { if (!drag.current) return; e.preventDefault(); e.stopPropagation(); setDrop({ id: i.id, zone: zoneOf(e, f) }) }}
-      onDrop={e => { if (!drag.current) return; e.preventDefault(); e.stopPropagation(); move(drag.current, i.id, zoneOf(e, f)); drag.current = null; setDrop(null) }}
-      onClick={() => f ? goFolder(i.id, depth) : openItem(i.id)} onContextMenu={e => show(e, i)}>
-      <span className="t"><Ic i={i} /> {i.title}</span>
-      <span className="act">{f && <b onClick={e => show(e, i, 'new')}>＋</b>}<b onClick={e => show(e, i)}>⋮</b>{f && <small className="chev">›</small>}</span>
+  const sideW = open ? w : 0
+  const renderTree = (parentId, depth) => sibs(parentId).map(i => {
+    const f = i.type === 'folder', shut = !!collapsed[i.id], z = drop && drop.id === i.id ? ' dz-' + drop.zone : ''
+    return <div key={i.id} className="tnode">
+      <div className={'row trow' + (sel === i.id ? ' on' : '') + z} style={{ paddingLeft: 6 + depth * 14 }} draggable
+        onDragStart={e => { drag.current = i.id; e.dataTransfer.setData('text/plain', i.id) }}
+        onDragEnd={() => { drag.current = null; setDrop(null) }}
+        onDragOver={e => { if (!drag.current) return; e.preventDefault(); e.stopPropagation(); setDrop({ id: i.id, zone: zoneOf(e, f) }) }}
+        onDrop={e => { if (!drag.current) return; e.preventDefault(); e.stopPropagation(); move(drag.current, i.id, zoneOf(e, f)); drag.current = null; setDrop(null) }}
+        onClick={() => f ? toggle(i.id) : openItem(i.id)} onDoubleClick={() => f && openItem(i.id)} onContextMenu={e => show(e, i)}>
+        <span className="t">
+          {f ? <small className={'tchev' + (shut ? '' : ' open')}>›</small> : <small className="tchev ph" />}
+          <Ic i={i} /> {i.title}
+        </span>
+        <span className="act">{f && <small className="tcount">{sibs(i.id).length}</small>}{f && <b onClick={e => show(e, i, 'new')}>＋</b>}<b onClick={e => show(e, i)}>⋮</b></span>
+      </div>
+      {f && !shut && <div className="tchildren">{renderTree(i.id, depth + 1)}</div>}
     </div>
-  }
+  })
+  const allFolders = spaceItems.filter(i => i.type === 'folder')
+  const allShut = allFolders.length > 0 && allFolders.every(f => collapsed[f.id])
+  const toggleAll = () => setCollapsed(c => { const n = { ...c }; allFolders.forEach(f => { n[f.id] = !allShut }); return n })
   const news = p => [['📄 Nouvelle page', () => add('page', p)], ['📁 Nouveau dossier', () => add('folder', p)], ['📎 Importer un PDF', () => pick(p)]]
   const m = menu && menu.i && items.find(x => x.id === menu.i.id)
   const titleOf = id => items.find(x => x.id === id)?.title
@@ -495,22 +507,14 @@ function Main({ user }) {
           <SpaceBtn active={space === 'notes'} onClick={() => switchSpace('notes')} ico="📝" label="Notes" name="Notes" />
           <SpaceBtn active={space === 'invest'} onClick={() => switchSpace('invest')} ico="📈" label="Invest" name="Invest" />
         </div>}
-        {pid && <div className="head side-nav"><button className={sel || navPath.length ? 'ghost' : 'on'} onClick={() => { setSel(null); setNavPath([]) }}>🏠 Accueil</button><button className="on" onClick={e => show(e, null, 'new')}>＋ Nouveau</button></div>}
-        <div className="cols" ref={colsRef} onContextMenu={e => pid && show(e, null, 'new')}>
-          {colParents.map((parentId, depth) => {
-            const list = sibs(parentId)
-            const activeId = navPath[depth]
-            const parentTitle = parentId ? items.find(x => x.id === parentId)?.title : 'Racine'
-            return <div className="col" key={parentId || 'root'} style={{ width: w, minWidth: w }}
-              onDragOver={e => drag.current && e.preventDefault()}
-              onDrop={e => { if (drag.current) { e.preventDefault(); move(drag.current, parentId || null, 'in'); drag.current = null; setDrop(null) } }}>
-              <div className="col-hd"><span>{parentTitle}</span><b onClick={e => show(e, parentId ? items.find(x => x.id === parentId) : null, 'new')} title="Ajouter ici">＋</b></div>
-              <div className="col-body">
-                {!list.length && <p className="muted col-empty">Vide</p>}
-                {list.map(i => <ColRow key={i.id} i={i} depth={depth} active={activeId === i.id} />)}
-              </div>
-            </div>
-          })}
+        {pid && <div className="head side-nav"><button className={sel ? 'ghost' : 'on'} onClick={() => setSel(null)}>🏠 Accueil</button><button className="on" onClick={e => show(e, null, 'new')}>＋ Nouveau</button></div>}
+        {pid && <div className="tree-hd"><span>Fichiers</span>{allFolders.length > 0 && <button type="button" onClick={toggleAll} title={allShut ? 'Tout déplier' : 'Tout replier'}>{allShut ? 'Tout déplier' : 'Tout replier'}</button>}</div>}
+        <div className="tree"
+          onDragOver={e => drag.current && e.preventDefault()}
+          onDrop={e => { if (drag.current) { e.preventDefault(); move(drag.current, null, 'in'); drag.current = null; setDrop(null) } }}
+          onContextMenu={e => pid && show(e, null, 'new')}>
+          {!sibs(null).length && <p className="muted col-empty">Aucun fichier</p>}
+          {renderTree(null, 0)}
         </div>
         <div className="side-foot">
           <SquishSwitch />
@@ -552,7 +556,7 @@ function Main({ user }) {
                 <button className="btn-primary btn-glow" onClick={newProj}>＋ Nouveau projet</button>
                 <button className="ghost" onClick={joinProj}>🔗 Rejoindre un projet</button>
               </div>
-            </div> : !sel && navPath.length === 0 ? (space === 'invest' ? <InvestHome items={items} sibs={sibs} openItem={openItem} show={show} projName={projName} addCompany={addCompany} del={del} name={name} quick={news(null)} /> : <NotesHome items={items} sibs={sibs} openItem={openItem} show={show} projName={projName} name={name} quick={news(null)} />) : cur?.type === 'pdf' ? <PdfView key={cur.id} id={cur.id} user={user} path={pid + '/' + cur.id + '.pdf'} title={cur.title} /> : cur?.type === 'page' ? <Editor key={cur.id} id={cur.id} user={user} projectId={pid} /> : cur?.type === 'folder' ? <FolderView folder={cur} sibs={sibs} openItem={openItem} openFolder={openFolder} show={show} items={items} /> : null}
+            </div> : !sel ? (space === 'invest' ? <InvestHome items={items} sibs={sibs} openItem={openItem} show={show} projName={projName} addCompany={addCompany} del={del} name={name} quick={news(null)} /> : <NotesHome items={items} sibs={sibs} openItem={openItem} show={show} projName={projName} name={name} quick={news(null)} />) : cur?.type === 'pdf' ? <PdfView key={cur.id} id={cur.id} user={user} path={pid + '/' + cur.id + '.pdf'} title={cur.title} /> : cur?.type === 'page' ? <Editor key={cur.id} id={cur.id} user={user} projectId={pid} /> : cur?.type === 'folder' ? <FolderView folder={cur} sibs={sibs} openItem={openItem} openFolder={openFolder} show={show} items={items} /> : null}
           </div>
         </main>
       </div>
