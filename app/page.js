@@ -554,7 +554,7 @@ function Main({ user }) {
                 <button className="btn-primary btn-glow" onClick={newProj}>＋ Nouveau projet</button>
                 <button className="ghost" onClick={joinProj}>🔗 Rejoindre un projet</button>
               </div>
-            </div> : !sel && navPath.length === 0 ? (space === 'invest' ? <InvestHome items={items} sibs={sibs} openItem={openItem} show={show} projName={projName} addCompany={addCompany} del={del} name={name} quick={news(null)} /> : <NotesHome items={items} sibs={sibs} openItem={openItem} show={show} projName={projName} name={name} quick={news(null)} />) : cur?.type === 'pdf' ? <PdfView item={cur} patch={patch} show={show} /> : cur?.type === 'page' ? <Editor item={cur} patch={patch} show={show} /> : cur?.type === 'folder' ? <FolderView folder={cur} sibs={sibs} openItem={openItem} openFolder={openFolder} show={show} items={items} /> : null}
+            </div> : !sel && navPath.length === 0 ? (space === 'invest' ? <InvestHome items={items} sibs={sibs} openItem={openItem} show={show} projName={projName} addCompany={addCompany} del={del} name={name} quick={news(null)} /> : <NotesHome items={items} sibs={sibs} openItem={openItem} show={show} projName={projName} name={name} quick={news(null)} />) : cur?.type === 'pdf' ? <PdfView key={cur.id} id={cur.id} user={user} path={pid + '/' + cur.id + '.pdf'} title={cur.title} /> : cur?.type === 'page' ? <Editor key={cur.id} id={cur.id} user={user} projectId={pid} /> : cur?.type === 'folder' ? <FolderView folder={cur} sibs={sibs} openItem={openItem} openFolder={openFolder} show={show} items={items} /> : null}
           </div>
         </main>
       </div>
