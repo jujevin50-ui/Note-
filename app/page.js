@@ -197,8 +197,8 @@ function NotesHome({ items, sibs, openItem, show, projName, name, quick }) {
   const needle = q.trim().toLowerCase()
   const found = needle ? items.filter(i => (i.title || '').toLowerCase().includes(needle)) : []
   const plural = (n, w) => n + ' ' + w + (n > 1 ? 's' : '')
-  const Row = ({ i, d }) => i.type === 'folder' ? <div className="hrow hsub" style={{ paddingLeft: 6 + d * 14, cursor: 'pointer' }} onClick={() => tgl(i.id)} onDoubleClick={() => openItem(i.id)} onContextMenu={e => show(e, i)}><small className={'hchev' + (shut[i.id] ? '' : ' open')}>›</small><Ic i={i} /><b>{i.title}</b><small className="muted">{flat(i.id).filter(x => x.i.type !== 'folder').length}</small>
-    <span className="hact"><b onClick={e => { e.stopPropagation(); show(e, i, 'new') }}>＋</b><b onClick={e => { e.stopPropagation(); show(e, i) }}>⋮</b></span></div> : <div className="hrow hitem" style={{ paddingLeft: 6 + d * 14 }} onClick={() => openItem(i.id)} onContextMenu={e => show(e, i)}><Ic i={i} /><span>{i.title}</span></div>
+  const Row = ({ i, d }) => i.type === 'folder' ? <div className="hrow hsub" style={{ paddingLeft: 6 + d * 14, '--dep': d, cursor: 'pointer' }} onClick={() => tgl(i.id)} onDoubleClick={() => openItem(i.id)} onContextMenu={e => show(e, i)}><small className={'hchev' + (shut[i.id] ? '' : ' open')}>›</small><Ic i={i} /><b>{i.title}</b><small className="muted">{flat(i.id).filter(x => x.i.type !== 'folder').length}</small>
+    <span className="hact"><b onClick={e => { e.stopPropagation(); show(e, i, 'new') }}>＋</b><b onClick={e => { e.stopPropagation(); show(e, i) }}>⋮</b></span></div> : <div className="hrow hitem" style={{ paddingLeft: 6 + d * 14, '--dep': d }} onClick={() => openItem(i.id)} onContextMenu={e => show(e, i)}><Ic i={i} /><span>{i.title}</span></div>
   const card = f => {
     const all = flat(f.id)
     const n = all.filter(x => x.i.type !== 'folder').length
@@ -471,19 +471,20 @@ function Main({ user }) {
   const renderTree = (parentId, depth) => sibs(parentId).map(i => {
     const f = i.type === 'folder', shut = !!collapsed[i.id], z = drop && drop.id === i.id ? ' dz-' + drop.zone : ''
     return <div key={i.id} className="tnode">
-      <div className={'row trow' + (sel === i.id ? ' on' : '') + z} style={{ paddingLeft: 6 + depth * 14 }} draggable
+      <div className={'row trow' + (sel === i.id ? ' on' : '') + z} style={{ paddingLeft: 6 + depth * 14, '--dep': depth }} draggable
         onDragStart={e => { drag.current = i.id; e.dataTransfer.setData('text/plain', i.id) }}
         onDragEnd={() => { drag.current = null; setDrop(null) }}
         onDragOver={e => { if (!drag.current) return; e.preventDefault(); e.stopPropagation(); setDrop({ id: i.id, zone: zoneOf(e, f) }) }}
         onDrop={e => { if (!drag.current) return; e.preventDefault(); e.stopPropagation(); move(drag.current, i.id, zoneOf(e, f)); drag.current = null; setDrop(null) }}
         onClick={() => f ? toggle(i.id) : openItem(i.id)} onDoubleClick={() => f && openItem(i.id)} onContextMenu={e => show(e, i)}>
+        {depth > 0 && <i className="tick" aria-hidden />}
         <span className="t">
           {f ? <small className={'tchev' + (shut ? '' : ' open')}>›</small> : <small className="tchev ph" />}
           <Ic i={i} /> {i.title}
         </span>
         <span className="act">{f && <small className="tcount">{sibs(i.id).length}</small>}{f && <b onClick={e => show(e, i, 'new')}>＋</b>}<b onClick={e => show(e, i)}>⋮</b></span>
       </div>
-      {f && !shut && <div className="tchildren">{renderTree(i.id, depth + 1)}</div>}
+      {f && !shut && <div className="tchildren" style={{ '--dep': depth, ...(i.color ? { '--tc': i.color } : {}) }}>{renderTree(i.id, depth + 1)}</div>}
     </div>
   })
   const allFolders = spaceItems.filter(i => i.type === 'folder')

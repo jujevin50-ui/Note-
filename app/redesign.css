@@ -212,3 +212,19 @@ body{background:var(--bg);color:var(--fg);transition:background .3s ease,color .
 .hcard.shut .hhead{margin-bottom:0}
 .hcard.shut{padding-bottom:12px}
 .hsub .hchev{margin-right:2px}
+
+/* ── Liens de hiérarchie : on voit à quel dossier appartient chaque fichier ── */
+.tree .trow{position:relative}
+.tchildren{position:relative}
+.tchildren::before{content:'';position:absolute;top:0;bottom:8px;left:calc(13px + var(--dep,0) * 14px);width:1.5px;border-radius:2px;
+  background:color-mix(in srgb,var(--tc,var(--mut)) 38%,transparent);transition:background .2s}
+.tnode:hover>.tchildren::before{background:color-mix(in srgb,var(--tc,var(--brand,#2f7bff)) 85%,transparent)}
+.tick{position:absolute;top:50%;left:calc(13px + (var(--dep,1) - 1) * 14px);width:8px;height:1.5px;border-radius:2px;pointer-events:none;
+  background:color-mix(in srgb,var(--mut) 38%,transparent)}
+.tnode:hover>.trow .tick{background:color-mix(in srgb,var(--brand,#2f7bff) 70%,transparent)}
+/* accueil : traits verticaux à chaque niveau d'imbrication */
+.hbody{gap:0}
+.hrow{--gl:color-mix(in srgb,var(--accent,var(--mut)) 42%,transparent)}
+.hrow[style*="--dep"]{background-image:repeating-linear-gradient(90deg,transparent 0 7px,var(--gl) 7px 8.5px,transparent 8.5px 14px);
+  background-size:calc(var(--dep) * 14px) 100%;background-position:6px 0;background-repeat:no-repeat}
+.hrow[style*="--dep: 0"]{background-image:none}
