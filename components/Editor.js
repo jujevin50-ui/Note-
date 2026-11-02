@@ -1,4 +1,5 @@
 'use client'
+import './toolbar.css'
 import {useEffect,useState} from 'react'
 import * as Y from 'yjs'
 import {useEditor,EditorContent,BubbleMenu} from '@tiptap/react'
