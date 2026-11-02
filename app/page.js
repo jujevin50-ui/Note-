@@ -396,7 +396,7 @@ function Main({ user }) {
   })
   const ren = i => ask('Renommer', i.title, title => patch(i.id, { title }))
   const del = i => setDlg({ label: `Supprimer « ${i.title} » et son contenu ?`, confirm: true, k: Math.random(), ok: async () => { if (i.type === 'pdf') supabase.storage.from('pdfs').remove([pid + '/' + i.id + '.pdf']); await supabase.from('items').delete().eq('id', i.id); if (sel === i.id) setSel(null) } })
-  const readPdf = async (f, parent_id) => { const row = await insert({ type: 'pdf', title: f.name.replace(/\.pdf$/i, ''), parent_id }); if (!row) return; const { error } = await supabase.storage.from('pdfs').upload(pid + '/' + row.id + '.pdf', f, { contentType: 'application/pdf' }); if (error) { alert("Envoi du PDF impossible : " + error.message); await supabase.from('items').delete().eq('id', row.id) } }
+  const readPdf = async (f, parent_id) => { const row = await insert({ type: 'pdf', title: f.name.replace(/.pdf$/i, ''), parent_id }); if (!row) return; const { error } = await supabase.storage.from('pdfs').upload(pid + '/' + row.id + '.pdf', f, { contentType: 'application/pdf' }); if (error) { alert("Envoi du PDF impossible : " + error.message); await supabase.from('items').delete().eq('id', row.id) } }
   const pick = p => { pp.current = p; fi.current.click() }
   const onPdf = e => { const f = e.target.files[0]; e.target.value = ''; if (f) readPdf(f, pp.current) }
   const show = (e, i, mode) => { e.preventDefault(); e.stopPropagation(); setMenu({ x: Math.min(e.clientX, innerWidth - 230), y: Math.min(e.clientY, innerHeight - 340), i, mode }) }
@@ -499,4 +499,24 @@ function Main({ user }) {
         {menu.mode === 'new' ? news(menu.i?.id).map(([l, a]) => <div key={l} className="ctx-item" onClick={e => { e.stopPropagation(); a(); setMenu(null) }}><span>{l}</span></div>) : menu.mode === 'proj' ? <>
           <div className="ctx-item" onClick={e => { e.stopPropagation(); newProj(); setMenu(null) }}><span>＋ Nouveau projet</span></div>
           <div className="ctx-item" onClick={e => { e.stopPropagation(); joinProj(); setMenu(null) }}><span>🔗 Rejoindre un projet</span></div>
-          {pid && <div className="ctx-item" onClick={e => { e.stopPropagation(); invite(); setMenu(null) }}><span>👥 Part
+          {pid && <div className="ctx-item" onClick={e => { e.stopPropagation(); invite(); setMenu(null) }}><span>👥 Partager</span></div>
+        </> : m && <>
+          <div className="ctx-item" onClick={e => { e.stopPropagation(); openItem(m.id); setMenu(null) }}><span>👁️ Ouvrir</span></div>
+          {m.type !== 'folder' && <div className="ctx-item" onClick={e => { e.stopPropagation(); ren(m); setMenu(null) }}><span>✏️ Renommer</span></div>}
+          <div className="ctx-item" onClick={e => { e.stopPropagation(); del(m); setMenu(null) }}><span style={{ color: '#ef4444' }}>🗑️ Supprimer</span></div>
+          {m.type === 'folder' && <>
+            <div className="ctx-item" onClick={e => { e.stopPropagation(); add('page', m.id); setMenu(null) }}><span>📄 Nouvelle page</span></div>
+            <div className="ctx-item" onClick={e => { e.stopPropagation(); add('folder', m.id); setMenu(null) }}><span>📁 Nouveau dossier</span></div>
+            <div className="ctx-item" onClick={e => { e.stopPropagation(); pick(m.id); setMenu(null) }}><span>📎 Importer PDF</span></div>
+          </>}
+        </>}
+        <div className="ctx-item" onClick={e => { e.stopPropagation(); setMenu(null) }}><span>✕ Annuler</span></div>
+      </div>}
+      {dlg && <Dlg d={dlg} close={() => setDlg(null)} />}
+      {share && <ShareDlg code={share} pid={pid} onNew={newCode} close={() => setShare(null)} />}
+      {settings && <Settings user={user} close={() => setSettings(false)} />}
+      <button className="floating-settings" onClick={() => setSettings(true)} title="Paramètres">⚙️</button>
+      <input type="file" accept=".pdf" ref={fi} onChange={onPdf} style={{ display: 'none' }} />
+    </div>
+  )
+}
