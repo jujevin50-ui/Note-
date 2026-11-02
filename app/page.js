@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 import { colorOf } from '../lib/provider'
 import Editor from '../components/Editor'
 import PdfView from '../components/PdfView'
-import HomeView from '../components/HomeView'
+import { LiquidBackground, SquishSwitch, BlurText, ShinyText, GradientText, Presence, useTheme } from '../components/Bits'
 import { FxRoot, TextGenerate, Ticker, FxSearch } from '../components/Fx'
 
 // Composant Bouton Espace avec animation
@@ -65,26 +65,78 @@ function ShareDlg({ code, pid, onNew, close }) {
     <div className="btns"><button className="on" onClick={close}>Fermer</button></div></div></div>
 }
 
+const SET_SECS = [['profil', '👤', 'Profil'], ['apparence', '🎨', 'Apparence'], ['editeur', '✍️', 'Éditeur']]
+
 function Settings({ user, close }) {
-  const [n, setN] = useState(user.user_metadata?.name || ''), [st, setSt] = useState(''), [th, setTh] = useState(() => localStorage.getItem('theme') || 'light')
+  const [sec, setSec] = useState('profil')
+  const [n, setN] = useState(user.user_metadata?.name || ''), [st, setSt] = useState('')
+  const [th, setTheme] = useTheme()
   const [tb, setTb] = useState(() => { try { return localStorage.getItem('tbpos') || 'center' } catch { return 'center' } })
-  const setTheme = t => { setTh(t); localStorage.setItem('theme', t); document.documentElement.dataset.theme = t }
   const setToolbar = p => { setTb(p); try { localStorage.setItem('tbpos', p) } catch {}; window.dispatchEvent(new Event('tbpos-change')) }
   const save = async () => { const { error } = await supabase.auth.updateUser({ data: { name: n.trim() } }); setSt(error ? error.message : '✓ Enregistré') }
-  return <div className="ov" onClick={close}><div className="dlg dlg-settings" onClick={e => e.stopPropagation()}>
-    <h3>⚙️ Paramètres</h3>
-    <label className="muted">Nom d'utilisateur (affiché sur ton curseur et dans « en ligne »)</label>
-    <input autoFocus autoComplete="off" name="nom-utilisateur" value={n} placeholder={user.email.split('@')[0]} onChange={e => setN(e.target.value)} onKeyDown={e => e.key === 'Enter' && save()} />
-    <label className="muted">Thème (sur cet appareil)</label>
-    <div className="btns" style={{ justifyContent: 'flex-start' }}>{[['light', '☀️ Clair'], ['dark', '🌙 Sombre']].map(([k, l]) => <button key={k} className={th === k ? 'on' : ''} onClick={() => setTheme(k)}>{l}</button>)}</div>
-    <label className="muted">Barre d'outils de l'éditeur</label>
-    <div className="btns tb-pos-btns" style={{ justifyContent: 'flex-start', flexWrap: 'wrap' }}>
-      <button type="button" className={tb === 'center' ? 'on' : ''} onClick={() => setToolbar('center')}>⬍ Centre (haut)</button>
-      <button type="button" className={tb === 'right' ? 'on' : ''} onClick={() => setToolbar('right')}>▮ Droite (verticale)</button>
+  const shown = n.trim() || user.email.split('@')[0]
+  useEffect(() => { const k = e => e.key === 'Escape' && close(); addEventListener('keydown', k); return () => removeEventListener('keydown', k) }, [])
+  return <div className="ov" onClick={close}><div className="st-sheet" onClick={e => e.stopPropagation()}>
+    <nav className="st-nav">
+      <h3>Paramètres</h3>
+      {SET_SECS.map(([k, ico, l]) => <button key={k} type="button" className={sec === k ? 'on' : ''} onClick={() => setSec(k)}><span>{ico}</span>{l}</button>)}
+      <button type="button" className="st-out" onClick={() => supabase.auth.signOut()}><span>↪</span>Se déconnecter</button>
+    </nav>
+    <div className="st-main">
+      <div className="st-body">
+        {sec === 'profil' && <>
+          <h2>Profil</h2>
+          <p className="st-sub">Ton nom apparaît sur ton curseur et dans la liste « en ligne ».</p>
+          <div className="st-profile">
+            <span className="me-av" style={{ background: colorOf(user.email) }}>{shown[0].toUpperCase()}</span>
+            <div><b style={{ fontSize: 17 }}>{shown}</b><div className="muted" style={{ fontSize: 13 }}>{user.email}</div></div>
+          </div>
+          <div className="st-field"><label>Nom d'utilisateur</label>
+            <input autoFocus autoComplete="off" name="nom-utilisateur" value={n} placeholder={user.email.split('@')[0]} onChange={e => setN(e.target.value)} onKeyDown={e => e.key === 'Enter' && save()} /></div>
+          <div className="st-field"><label>Email</label><input readOnly value={user.email} /></div>
+        </>}
+        {sec === 'apparence' && <>
+          <h2>Apparence</h2>
+          <p className="st-sub">Le thème est enregistré sur cet appareil.</p>
+          <div className="st-cards">
+            {[['light', 'Clair'], ['dark', 'Sombre']].map(([k, l]) => <button key={k} type="button" className={'st-card' + (th === k ? ' on' : '')} onClick={() => setTheme(k)}>
+              <span className={'st-prev ' + k}><i /><i /></span>{l}</button>)}
+          </div>
+          <div className="st-field"><label>Raccourci</label><div style={{ display: 'flex', alignItems: 'center', gap: 12 }}><SquishSwitch /><span className="muted" style={{ fontSize: 13 }}>Disponible aussi en bas à gauche du menu.</span></div></div>
+        </>}
+        {sec === 'editeur' && <>
+          <h2>Éditeur</h2>
+          <p className="st-sub">Choisis où s'affiche la barre d'outils pendant que tu écris.</p>
+          <div className="st-cards">
+            <button type="button" className={'st-card' + (tb === 'center' ? ' on' : '')} onClick={() => setToolbar('center')}><span className="st-prev tb-c"><b /></span>Centre (en haut)</button>
+            <button type="button" className={'st-card' + (tb === 'right' ? ' on' : '')} onClick={() => setToolbar('right')}><span className="st-prev tb-r"><b /></span>Droite (verticale)</button>
+          </div>
+        </>}
+      </div>
+      <div className="st-foot">
+        <span className="st-msg">{st}</span>
+        <button type="button" className="st-btn" onClick={close}>Fermer</button>
+        {sec === 'profil' && <button type="button" className="st-btn pri" onClick={save}>Enregistrer</button>}
+      </div>
     </div>
-    <p className="muted" style={{ margin: 0, fontSize: 12.5 }}>Centre : flottante en haut. Droite : barre verticale le long du bord droit.</p>
-    <p className="muted" style={{ margin: 0 }}>Compte : {user.email}</p>{st && <p style={{ margin: 0 }}>{st}</p>}
-    <div className="btns"><button className="ghost" onClick={close}>Fermer</button><button className="on" onClick={save}>Enregistrer</button></div></div></div>
+  </div></div>
+}
+
+function Hero({ kicker, name, sub, stats, actions, quick }) {
+  const h = new Date().getHours()
+  const hello = h >= 18 || h < 5 ? 'Bonsoir,' : 'Bonjour,'
+  return <section className="hero">
+    <LiquidBackground />
+    <span className="hero-kicker"><ShinyText>{kicker}</ShinyText></span>
+    <h1 className="hero-title"><BlurText text={hello} /> <GradientText>{name}</GradientText></h1>
+    <p className="hero-sub"><BlurText text={sub} step={40} /></p>
+    {stats && <div className="hero-stats">{stats}</div>}
+    <div className="hero-actions">{actions}</div>
+    {quick?.length > 0 && <div className="qa-row">{quick.map(([label, fn]) => {
+      const [ico, ...r] = label.split(' ')
+      return <button type="button" key={label} className="qa" onClick={fn}><span className="qa-ico">{ico}</span><span>{r.join(' ')}</span></button>
+    })}</div>}
+  </section>
 }
 
 const INV_SECTIONS = [
@@ -129,7 +181,7 @@ function FolderView({ folder, sibs, openItem, openFolder, show, items }) {
   </div>
 }
 
-function NotesHome({ items, sibs, openItem, show, projName }) {
+function NotesHome({ items, sibs, openItem, show, projName, name, quick }) {
   const [q, setQ] = useState(''), [more, setMore] = useState({})
   const roots = sibs(null)
   const folders = roots.filter(i => i.type === 'folder')
@@ -161,21 +213,16 @@ function NotesHome({ items, sibs, openItem, show, projName }) {
     </article>
   }
   return <div className="home home-in">
-    <header className="dash-hd">
-      <div>
-        <p className="dash-kicker">{projName || 'Espace'}</p>
-        <h1><TextGenerate text="Notes" /></h1>
-        <div className="dash-stats">
-          <span className="stat-pill"><Ticker value={nF} /> dossier{nF !== 1 ? 's' : ''}</span>
-          <span className="stat-pill"><Ticker value={nP} /> page{nP !== 1 ? 's' : ''}</span>
-          {nD > 0 && <span className="stat-pill"><Ticker value={nD} /> PDF</span>}
-        </div>
-      </div>
-      <div className="dash-actions">
+    <Hero kicker={projName || 'Espace'} name={name} sub="Tes notes, tes dossiers et tes PDF, synchronisés en temps réel." quick={quick}
+      stats={<>
+        <span className="stat-pill"><Ticker value={nF} /> dossier{nF !== 1 ? 's' : ''}</span>
+        <span className="stat-pill"><Ticker value={nP} /> page{nP !== 1 ? 's' : ''}</span>
+        {nD > 0 && <span className="stat-pill"><Ticker value={nD} /> PDF</span>}
+      </>}
+      actions={<>
         <FxSearch value={q} onChange={e => setQ(e.target.value)} placeholders={['Rechercher une note…', 'Un cours, une réunion…', 'Un PDF, un dossier…', 'Une idée à retrouver…']} />
         <button type="button" className="btn-primary btn-glow" onClick={e => show(e, null, 'new')}>＋ Nouveau</button>
-      </div>
-    </header>
+      </>} />
     {needle ? <section className="hsec">
       <div className="sec-label"><h4>Résultats</h4><span className="muted">{found.length}</span></div>
       {found.length ? <div className="search-results">{found.map(i => <button type="button" className="result-row" key={i.id} onClick={() => i.type !== 'folder' && openItem(i.id)} onContextMenu={e => show(e, i)}>
@@ -205,7 +252,7 @@ function NotesHome({ items, sibs, openItem, show, projName }) {
   </div>
 }
 
-function InvestHome({ items, sibs, openItem, show, projName, addCompany, del }) {
+function InvestHome({ items, sibs, openItem, show, projName, addCompany, del, name, quick }) {
   const [q, setQ] = useState('')
   const roots = sibs(null)
   const path = i => { const a = []; let c = items.find(x => x.id === i.parent_id); while (c) { a.unshift(c.title); c = items.find(x => x.id === c.parent_id) }; return a.join(' › ') }
@@ -241,17 +288,11 @@ function InvestHome({ items, sibs, openItem, show, projName, addCompany, del }) 
     </section>
   }
   return <div className="home home-in">
-    <header className="dash-hd">
-      <div>
-        <p className="dash-kicker">{projName || 'Espace'}</p>
-        <h1><TextGenerate text="Invest" /></h1>
-        <p className="dash-sub muted">Suivi, analyses et portefeuille au même endroit</p>
-      </div>
-      <div className="dash-actions">
+    <Hero kicker={projName || 'Espace'} name={name} sub="Suivi, analyses et portefeuille au même endroit." quick={quick}
+      actions={<>
         <FxSearch value={q} onChange={e => setQ(e.target.value)} placeholders={['Rechercher…', 'Une entreprise suivie…', 'Une analyse, une source…']} />
         <button type="button" className="btn-primary btn-glow" onClick={e => show(e, null, 'new')}>＋ Nouveau</button>
-      </div>
-    </header>
+      </>} />
     {needle ? <section className="hsec">
       <div className="sec-label"><h4>Résultats</h4><span className="muted">{found.length}</span></div>
       {found.length ? <div className="search-results">{found.map(i => <button type="button" className="result-row" key={i.id} onClick={() => i.type !== 'folder' && openItem(i.id)} onContextMenu={e => show(e, i)}>
@@ -315,8 +356,8 @@ function Login() {
   return (
     <div className="login-stage">
       <div className="aurora" aria-hidden />
-      <div className="beams" aria-hidden>{Array.from({ length: 7 }, (_, i) => <i key={i} style={{ '--b': i }} />)}</div>
-      <div className="login-grid" aria-hidden />
+      <LiquidBackground />
+      <div style={{ position: 'absolute', left: 20, bottom: 20, zIndex: 3 }}><SquishSwitch /></div>
       <form className="login login-card" onSubmit={x => { x.preventDefault(); go(0) }}>
         <div className="login-brand">
           <img src="/logo-192.png" width="44" height="44" alt="" />
@@ -441,7 +482,7 @@ function Main({ user }) {
   const news = p => [['📄 Nouvelle page', () => add('page', p)], ['📁 Nouveau dossier', () => add('folder', p)], ['📎 Importer un PDF', () => pick(p)]]
   const m = menu && menu.i && items.find(x => x.id === menu.i.id)
   const titleOf = id => items.find(x => x.id === id)?.title
-  const pres = <div className="pres">{online.map(u => <i key={u.id} style={{ background: u.color }} title={u.name + (u.id === user.id ? ' (toi)' : '') + (u.item && titleOf(u.item) ? ' · ' + titleOf(u.item) : '')}>{(u.name || '?')[0].toUpperCase()}</i>)}{online.length > 0 && <small className="muted">{online.length} en ligne</small>}</div>
+  const projName = projs.find(p => p.id === pid)?.name
   return (
     <div className="app" style={{ gridTemplateColumns: open ? sideW + 'px 1fr' : '1fr' }}
       onDragOver={e => { if (pid && [...e.dataTransfer.types].includes('Files')) e.preventDefault() }}
@@ -473,8 +514,29 @@ function Main({ user }) {
             </div>
           })}
         </div>
+        <div className="side-foot">
+          <SquishSwitch />
+          <button type="button" className="me" onClick={() => setSettings(true)} title="Paramètres">
+            <span className="me-av" style={{ background: colorOf(user.email) }}>{name[0].toUpperCase()}</span>
+            <span className="me-name">{name}<small>Paramètres</small></span>
+          </button>
+        </div>
       </aside>}
-      <main className="main">
+      <div className="mainc">
+        <div className="topbar">
+          <button type="button" className="tb-ico" onClick={() => setOpen(o => !o)} title={open ? 'Masquer le menu' : 'Afficher le menu'}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="16" rx="3" /><path d="M9 4v16" /></svg>
+          </button>
+          <div className="crumbs">
+            <span>{projName || 'Aucun projet'}</span>
+            {cur ? <>{trail(cur).map(t => <span key={t.id}><i>›</i> {t.title}</span>)}<i>›</i><b>{cur.title}</b></> : <><i>›</i><b>Accueil</b></>}
+          </div>
+          <div className="tb-spacer" />
+          <Presence online={online} me={user.id} titleOf={titleOf} />
+          <button type="button" className="tb-ico" onClick={() => setSettings(true)} title="Paramètres">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" /></svg>
+          </button>
+        </div>
         {tabs.length > 0 && <div className="tabs">
           {tabItems.map(t => <div key={t.id} className={'tab' + (sel === t.id ? ' on' : '')} onClick={() => openItem(t.id)}>
             <span className="tab-ico"><Ic i={t} /></span>
@@ -482,19 +544,20 @@ function Main({ user }) {
             <span className="tab-close" onClick={e => { e.stopPropagation(); closeTab(t.id) }}>✕</span>
           </div>)}
         </div>}
-        <div className="workspace">
-          {!pid ? <div className="dash-empty">
-            <div className="dash-empty-ico">🚀</div>
-            <h3>Bienvenue !</h3>
-            <p className="muted">Crée un projet ou rejoins-en un pour commencer.</p>
-            <div className="btns">
-              <button className="btn-primary btn-glow" onClick={newProj}>＋ Nouveau projet</button>
-              <button className="ghost" onClick={joinProj}>🔗 Rejoindre un projet</button>
-            </div>
-          </div> : !sel && navPath.length === 0 ? (space === 'invest' ? <InvestHome items={items} sibs={sibs} openItem={openItem} show={show} projName={projs.find(p => p.id === pid)?.name} addCompany={addCompany} del={del} /> : <NotesHome items={items} sibs={sibs} openItem={openItem} show={show} projName={projs.find(p => p.id === pid)?.name} />) : cur?.type === 'pdf' ? <PdfView item={cur} patch={patch} show={show} /> : cur?.type === 'page' ? <Editor item={cur} patch={patch} show={show} /> : cur?.type === 'folder' ? <FolderView folder={cur} sibs={sibs} openItem={openItem} openFolder={openFolder} show={show} items={items} /> : null}
-        </div>
-        {pres}
-      </main>
+        <main>
+          <div className="workspace">
+            {!pid ? <div className="dash-empty">
+              <div className="dash-empty-ico">🚀</div>
+              <h3>Bienvenue !</h3>
+              <p className="muted">Crée un projet ou rejoins-en un pour commencer.</p>
+              <div className="btns">
+                <button className="btn-primary btn-glow" onClick={newProj}>＋ Nouveau projet</button>
+                <button className="ghost" onClick={joinProj}>🔗 Rejoindre un projet</button>
+              </div>
+            </div> : !sel && navPath.length === 0 ? (space === 'invest' ? <InvestHome items={items} sibs={sibs} openItem={openItem} show={show} projName={projName} addCompany={addCompany} del={del} name={name} quick={news(null)} /> : <NotesHome items={items} sibs={sibs} openItem={openItem} show={show} projName={projName} name={name} quick={news(null)} />) : cur?.type === 'pdf' ? <PdfView item={cur} patch={patch} show={show} /> : cur?.type === 'page' ? <Editor item={cur} patch={patch} show={show} /> : cur?.type === 'folder' ? <FolderView folder={cur} sibs={sibs} openItem={openItem} openFolder={openFolder} show={show} items={items} /> : null}
+          </div>
+        </main>
+      </div>
       {menu && <div className="ctx-menu" style={{ left: menu.x, top: menu.y }} onClick={() => setMenu(null)}>
         {menu.mode === 'new' ? news(menu.i?.id).map(([l, a]) => <div key={l} className="ctx-item" onClick={e => { e.stopPropagation(); a(); setMenu(null) }}><span>{l}</span></div>) : menu.mode === 'proj' ? <>
           <div className="ctx-item" onClick={e => { e.stopPropagation(); newProj(); setMenu(null) }}><span>＋ Nouveau projet</span></div>
@@ -515,7 +578,6 @@ function Main({ user }) {
       {dlg && <Dlg d={dlg} close={() => setDlg(null)} />}
       {share && <ShareDlg code={share} pid={pid} onNew={newCode} close={() => setShare(null)} />}
       {settings && <Settings user={user} close={() => setSettings(false)} />}
-      <button className="floating-settings" onClick={() => setSettings(true)} title="Paramètres">⚙️</button>
       <input type="file" accept=".pdf" ref={fi} onChange={onPdf} style={{ display: 'none' }} />
     </div>
   )

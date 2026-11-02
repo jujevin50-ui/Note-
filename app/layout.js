@@ -1,6 +1,7 @@
 import './globals.css'
 import './sidebar-slider.css'
 import './aceternity.css'
+import './redesign.css'
 import {Plus_Jakarta_Sans,Bricolage_Grotesque} from 'next/font/google'
 const sans=Plus_Jakarta_Sans({subsets:['latin'],variable:'--font-sans',display:'swap'})
 const display=Bricolage_Grotesque({subsets:['latin'],variable:'--font-display-face',display:'swap'})
