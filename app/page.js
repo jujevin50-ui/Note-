@@ -6,7 +6,7 @@ import Editor from '../components/Editor'
 import PdfView from '../components/PdfView'
 
 /** Tooltip liquid-glass style Aceternity Animated Tooltip — pure React + CSS, no motion */
-function SpaceBtn({active,onClick,ico,label,name,disabled}){
+function SpaceBtn({active,onClick,ico,label,name}){
   const [show,setShow]=useState(false)
   const [tilt,setTilt]=useState({tx:0,ry:0})
   const btnRef=useRef(null)
@@ -17,11 +17,9 @@ function SpaceBtn({active,onClick,ico,label,name,disabled}){
     setTilt({tx:x*12,ry:x*18})
   },[])
   return (
-    <button type="button" ref={btnRef} className={active?'on':''} onClick={disabled?undefined:onClick}
-      disabled={disabled}
+    <button type="button" ref={btnRef} className={active?'on':''} onClick={onClick}
       onMouseEnter={()=>setShow(true)} onMouseLeave={()=>{setShow(false);setTilt({tx:0,ry:0})}}
-      onMouseMove={onMove} style={disabled?{opacity:.55,cursor:'default'}:undefined}
-      title={name}>
+      onMouseMove={onMove} title={name}>
       {ico} {label}
       <span className={'liq-tooltip'+(show?' show':'')}
         style={{'--tx':tilt.tx+'px','--ry':tilt.ry+'deg'}}>
@@ -437,9 +435,8 @@ function Main({user}){
     <button onClick={e=>show(e,null,'proj')} title="Nouveau projet ou rejoindre">＋</button>{pid&&<button onClick={invite} title="Partager (code)">👥</button>}
     <button className="ghost" onClick={()=>setOpen(false)} title="Masquer le menu">«</button></div>
    {pid&&<div className="side-spaces">
-     <SpaceBtn active={space==='notes'} onClick={()=>switchSpace('notes')} ico="📝" label="Tâches" name="Tâches"/>
-     <SpaceBtn active={space==='invest'} onClick={()=>switchSpace('invest')} ico="📈" label="My Finance" name="My Finance"/>
-     <SpaceBtn active={false} onClick={()=>{}} ico="📊" label="Track Record" name="Track Record" disabled/>
+     <SpaceBtn active={space==='notes'} onClick={()=>switchSpace('notes')} ico="📝" label="Notes" name="Notes"/>
+     <SpaceBtn active={space==='invest'} onClick={()=>switchSpace('invest')} ico="📈" label="Invest" name="Invest"/>
     </div>}
    {pid&&<div className="head side-nav"><button className={sel||navPath.length?'ghost':'on'} onClick={()=>{setSel(null);setNavPath([])}}>🏠 Accueil</button><button className="on" onClick={e=>show(e,null,'new')}>＋ Nouveau</button></div>}
    <div className="cols" ref={colsRef} onContextMenu={e=>pid&&show(e,null,'new')}>
