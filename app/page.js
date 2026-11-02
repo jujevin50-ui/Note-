@@ -1,9 +1,36 @@
 'use client'
-import {useEffect,useRef,useState} from 'react'
+import {useEffect,useRef,useState,useCallback} from 'react'
 import {supabase} from '../lib/supabase'
 import {colorOf} from '../lib/provider'
 import Editor from '../components/Editor'
 import PdfView from '../components/PdfView'
+
+/** Tooltip liquid-glass style Aceternity Animated Tooltip — pure React + CSS, no motion */
+function SpaceBtn({active,onClick,ico,label,name,disabled}){
+  const [show,setShow]=useState(false)
+  const [tilt,setTilt]=useState({tx:0,ry:0})
+  const btnRef=useRef(null)
+  const onMove=useCallback(e=>{
+    if(!btnRef.current)return
+    const r=btnRef.current.getBoundingClientRect()
+    const x=(e.clientX-r.left)/r.width-0.5
+    setTilt({tx:x*12,ry:x*18})
+  },[])
+  return (
+    <button type="button" ref={btnRef} className={active?'on':''} onClick={disabled?undefined:onClick}
+      disabled={disabled}
+      onMouseEnter={()=>setShow(true)} onMouseLeave={()=>{setShow(false);setTilt({tx:0,ry:0})}}
+      onMouseMove={onMove} style={disabled?{opacity:.55,cursor:'default'}:undefined}
+      title={name}>
+      {ico} {label}
+      <span className={'liq-tooltip'+(show?' show':'')}
+        style={{'--tx':tilt.tx+'px','--ry':tilt.ry+'deg'}}>
+        <span className="liq-ico">{ico}</span>
+        {name}
+      </span>
+    </button>
+  )
+}
 
 const COLORS=['#f59e0b','#ef4444','#22c55e','#3b82f6','#8b5cf6','#ec4899','#64748b']
 const NAMES={page:'Nom de la page',folder:'Nom du dossier'}
@@ -409,7 +436,11 @@ function Main({user}){
    <div className="head side-top"><img src="/logo-192.png" width="24" height="24" alt=""/><select value={pid||''} onChange={e=>setPid(e.target.value)}>{projs.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select>
     <button onClick={e=>show(e,null,'proj')} title="Nouveau projet ou rejoindre">＋</button>{pid&&<button onClick={invite} title="Partager (code)">👥</button>}
     <button className="ghost" onClick={()=>setOpen(false)} title="Masquer le menu">«</button></div>
-   {pid&&<div className="side-spaces"><button type="button" className={space==='notes'?'on':''} onClick={()=>switchSpace('notes')}>📝 Notes</button><button type="button" className={space==='invest'?'on':''} onClick={()=>switchSpace('invest')}>📈 Invest</button></div>}
+   {pid&&<div className="side-spaces">
+     <SpaceBtn active={space==='notes'} onClick={()=>switchSpace('notes')} ico="📝" label="Tâches" name="Tâches"/>
+     <SpaceBtn active={space==='invest'} onClick={()=>switchSpace('invest')} ico="📈" label="My Finance" name="My Finance"/>
+     <SpaceBtn active={false} onClick={()=>{}} ico="📊" label="Track Record" name="Track Record" disabled/>
+    </div>}
    {pid&&<div className="head side-nav"><button className={sel||navPath.length?'ghost':'on'} onClick={()=>{setSel(null);setNavPath([])}}>🏠 Accueil</button><button className="on" onClick={e=>show(e,null,'new')}>＋ Nouveau</button></div>}
    <div className="cols" ref={colsRef} onContextMenu={e=>pid&&show(e,null,'new')}>
     {colParents.map((parentId,depth)=>{

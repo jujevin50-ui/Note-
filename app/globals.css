@@ -55,6 +55,69 @@
   --shadow:0 1px 3px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25);
 }
 
+/* ===== LIQUID GLASS =====
+   Cartes / widgets : verre dépoli (fond visible + flou + teinte)
+   Pills menu haut : + réfraction liquide (Chromium / Edge / Arc)
+   Dialogs : plus opaques pour la lisibilité
+   Réglages : --glass-bg (transparence) et --glass-blur (flou)
+   Baisse --glass-bg pour voir plus le fond ; monte pour plus de lisibilité.
+   prefers-reduced-transparency → opaque
+*/
+:root{
+  --glass-bg:0.56;
+  --glass-blur:18px;
+  --glass-tint:rgba(255,255,255,0.42);
+  --glass-border:rgba(255,255,255,0.35);
+  --glass-highlight:rgba(255,255,255,0.55);
+  --glass-shadow:0 8px 32px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.4);
+}
+:root[data-theme=dark]{
+  --glass-bg:0.46;
+  --glass-blur:20px;
+  --glass-tint:rgba(30,30,32,0.55);
+  --glass-border:rgba(255,255,255,0.12);
+  --glass-highlight:rgba(255,255,255,0.12);
+  --glass-shadow:0 8px 32px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08);
+}
+@media (prefers-reduced-transparency: reduce){
+  :root,:root[data-theme=dark]{
+    --glass-bg:0.92;
+    --glass-blur:0px;
+  }
+}
+
+.glass{
+  background:color-mix(in srgb, var(--glass-tint) calc(var(--glass-bg) * 100%), transparent);
+  backdrop-filter:blur(var(--glass-blur)) saturate(1.4);
+  -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(1.4);
+  border:1px solid var(--glass-border);
+  box-shadow:var(--glass-shadow);
+  position:relative;
+}
+/* Réfraction liquide (Chromium only — Safari/Firefox = frosted simple) */
+@supports (backdrop-filter: url(#liquid-glass-filter)){
+  .glass-liquid{
+    backdrop-filter:url(#liquid-glass-filter) blur(var(--glass-blur)) saturate(1.35);
+    -webkit-backdrop-filter:url(#liquid-glass-filter) blur(var(--glass-blur)) saturate(1.35);
+  }
+}
+.glass-liquid::before{
+  content:'';
+  position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:0;
+  background:linear-gradient(135deg, var(--glass-highlight) 0%, transparent 42%, transparent 58%, rgba(0,0,0,0.04) 100%);
+  opacity:0.7;
+}
+.glass > *{position:relative;z-index:1}
+
+/* Dialogs plus opaques */
+.glass-dlg{
+  --glass-bg:0.78;
+  --glass-blur:24px;
+}
+:root[data-theme=dark] .glass-dlg{
+  --glass-bg:0.72;
+}
+
 *{box-sizing:border-box}
 body{
   margin:0;
@@ -644,13 +707,17 @@ main{padding:28px 48px 120px;overflow:auto;flex:1}
 .ov{position:fixed;inset:0;z-index:10;background:rgba(0,0,0,.18);display:grid;place-items:center}
 .ov:has(.menu){background:transparent;display:block}
 .dlg{
-  background:var(--bg);
   padding:22px;
   border-radius:18px;
   width:340px;
   display:grid;
   gap:12px;
-  box-shadow:0 20px 50px rgba(0,0,0,.18),0 0 0 .5px rgba(0,0,0,.06);
+  /* liquid glass plus opaque */
+  background:color-mix(in srgb, var(--glass-tint) calc(var(--glass-bg) * 100% + 22%), transparent);
+  backdrop-filter:blur(24px) saturate(1.35);
+  -webkit-backdrop-filter:blur(24px) saturate(1.35);
+  border:1px solid var(--glass-border);
+  box-shadow:0 20px 50px rgba(0,0,0,.18),0 0 0 .5px rgba(0,0,0,.06), inset 0 1px 0 var(--glass-highlight);
 }
 .dlg h3{margin:0;font-size:17px;font-weight:650;letter-spacing:-.02em}
 .dlg input{border-radius:12px}
@@ -1039,11 +1106,16 @@ ul[data-type=taskList]{list-style:none;padding-left:4px}ul[data-type=taskList] l
 
 .hgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;align-items:start}
 .hcard{
-  background:var(--side);border:1px solid var(--side-border);border-radius:16px;
+  border-radius:16px;
   padding:14px 12px 10px;display:flex;flex-direction:column;gap:6px;
-  box-shadow:0 1px 2px rgba(0,0,0,.03);
   transition:transform .2s cubic-bezier(.22,1,.36,1),box-shadow .2s ease,border-color .2s ease;
   position:relative;overflow:hidden;
+  /* liquid glass */
+  background:color-mix(in srgb, var(--glass-tint) calc(var(--glass-bg) * 100%), transparent);
+  backdrop-filter:blur(var(--glass-blur)) saturate(1.35);
+  -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(1.35);
+  border:1px solid var(--glass-border);
+  box-shadow:var(--glass-shadow);
 }
 .hcard::before{
   content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
@@ -1077,10 +1149,16 @@ ul[data-type=taskList]{list-style:none;padding-left:4px}ul[data-type=taskList] l
 .tile-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
 .tile{
   display:flex;align-items:center;gap:12px;text-align:left;
-  padding:12px 14px;border-radius:14px;border:1px solid var(--side-border);
-  background:var(--side);cursor:pointer;min-width:0;
+  padding:12px 14px;border-radius:14px;
+  cursor:pointer;min-width:0;
   transition:transform .18s cubic-bezier(.22,1,.36,1),box-shadow .18s ease,border-color .18s ease,background .15s ease;
   font:inherit;color:inherit;
+  /* liquid glass */
+  background:color-mix(in srgb, var(--glass-tint) calc(var(--glass-bg) * 100%), transparent);
+  backdrop-filter:blur(var(--glass-blur)) saturate(1.3);
+  -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(1.3);
+  border:1px solid var(--glass-border);
+  box-shadow:var(--glass-shadow);
 }
 .tile:hover{
   transform:translateY(-1px);background:var(--bg);
@@ -1442,42 +1520,96 @@ button.on{
   font-size:13.5px;
 }
 
-/* Bascule Notes / Invest */
+/* Bascule Notes / Invest — liquid glass pills */
 .side-spaces{
   display:flex;
-  gap:3px;
-  padding:3px;
+  gap:4px;
+  padding:4px;
   margin:2px 2px 6px;
-  border-radius:11px;
-  background:rgba(120,120,128,.12);
+  border-radius:14px;
   flex-shrink:0;
   transition:background .25s ease;
+  /* liquid glass container */
+  background:color-mix(in srgb, var(--glass-tint) calc(var(--glass-bg) * 70%), transparent);
+  backdrop-filter:blur(var(--glass-blur)) saturate(1.4);
+  -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(1.4);
+  border:1px solid var(--glass-border);
+  box-shadow:var(--glass-shadow);
 }
 .side-spaces button{
   flex:1;
   border:0;
   background:none;
-  border-radius:8px;
-  padding:7px 0;
+  border-radius:10px;
+  padding:8px 0;
   font-size:13px;
   font-weight:550;
   color:var(--mut);
   letter-spacing:-.01em;
-  transition:background .22s cubic-bezier(.22,1,.36,1),color .2s ease,transform .15s ease,box-shadow .22s ease;
+  transition:background .22s cubic-bezier(.22,1,.36,1),color .2s ease,transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .22s ease;
+  position:relative;
 }
-.side-spaces button:hover{background:rgba(0,0,0,.04);color:var(--fg)}
+.side-spaces button:hover{background:rgba(0,0,0,.04);color:var(--fg);transform:scale(1.04)}
 :root[data-theme=dark] .side-spaces button:hover{background:rgba(255,255,255,.06)}
 .side-spaces button.on{
-  background:var(--bg);
+  background:color-mix(in srgb, var(--glass-tint) 90%, transparent);
   color:var(--fg);
-  box-shadow:0 1px 3px rgba(0,0,0,.1),0 0 0 .5px rgba(0,0,0,.04);
+  box-shadow:0 2px 8px rgba(0,0,0,.12), inset 0 1px 0 var(--glass-highlight);
   font-weight:600;
+  backdrop-filter:blur(8px);
 }
 .side-spaces button:active{transform:scale(.97)}
 :root[data-theme=dark] .side-spaces button.on{
-  background:#636366;
+  background:rgba(99,99,102,.85);
   color:#fff;
-  box-shadow:0 1px 3px rgba(0,0,0,.35);
+  box-shadow:0 2px 8px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.1);
+}
+
+/* Animated tooltip (liquid glass bubble) — pure CSS + React */
+.liq-tooltip{
+  position:absolute;
+  left:50%;
+  bottom:calc(100% + 10px);
+  transform:translateX(-50%) translateY(8px) scale(0.92);
+  opacity:0;
+  pointer-events:none;
+  z-index:50;
+  padding:8px 12px;
+  border-radius:14px;
+  white-space:nowrap;
+  font-size:12.5px;
+  font-weight:600;
+  letter-spacing:-.01em;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  /* liquid glass */
+  background:color-mix(in srgb, var(--glass-tint) calc(var(--glass-bg) * 100% + 10%), transparent);
+  backdrop-filter:blur(20px) saturate(1.5);
+  -webkit-backdrop-filter:blur(20px) saturate(1.5);
+  border:1px solid var(--glass-border);
+  box-shadow:0 10px 28px rgba(0,0,0,.14), inset 0 1px 0 var(--glass-highlight);
+  transition:opacity .28s cubic-bezier(.22,1,.36,1), transform .38s cubic-bezier(.34,1.56,.64,1);
+}
+.liq-tooltip.show{
+  opacity:1;
+  transform:translateX(-50%) translateY(0) scale(1);
+}
+.liq-tooltip .liq-ico{
+  width:22px;height:22px;border-radius:7px;
+  display:grid;place-items:center;font-size:13px;
+  background:color-mix(in srgb, var(--ac) 18%, transparent);
+}
+.liq-tooltip-wrap{position:relative;display:contents}
+.side-spaces button:hover .liq-tooltip,
+.side-spaces button:focus-visible .liq-tooltip{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}
+/* tilt follows mouse via CSS vars set by React */
+.liq-tooltip{
+  --tx:0px; --ry:0deg;
+  transform:translateX(calc(-50% + var(--tx))) translateY(8px) scale(0.92) rotateY(var(--ry));
+}
+.liq-tooltip.show{
+  transform:translateX(calc(-50% + var(--tx))) translateY(0) scale(1) rotateY(var(--ry));
 }
 
 /* Force Universal Sans partout */
