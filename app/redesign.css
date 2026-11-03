@@ -37,13 +37,12 @@ body{background:var(--bg);color:var(--fg);transition:background .3s ease,color .
 .tb-spacer{flex:1}
 
 /* ── Sidebar : suit le thème, verre dépoli, pied de page ── */
-.app aside.side-cols,:root[data-theme=dark] .app aside.side-cols{--side:#07070d;--fg:#f5f5f7;--mut:#b4b4c0;--hov:rgba(255,255,255,.10);--sel:rgba(255,255,255,.18);--sel-fg:#fff;--bd:rgba(255,255,255,.16);--side-border:rgba(255,255,255,.10);--ac:#f5f5f7;--on-fg:#111;--bg:#1c1c24;--dzin:rgba(255,255,255,.22);
-  position:relative;overflow:hidden;background:var(--side);color:var(--fg);box-shadow:1px 0 0 var(--side-border)}
+.app aside.side-cols,:root[data-theme=dark] .app aside.side-cols{--side:#ffffff;--fg:#1d1d1f;--mut:#6e6e73;--hov:rgba(0,0,0,.055);--sel:rgba(0,0,0,.075);--sel-fg:#111;--bd:#dcdce2;--side-border:rgba(0,0,0,.08);--ac:#1d1d1f;--on-fg:#fff;--bg:#fff;--dzin:rgba(0,0,0,.14);
+  position:relative;overflow:hidden;background:#fff;color:var(--fg);box-shadow:1px 0 0 var(--side-border)}
 .app aside.side-cols>*:not(.plasma-wrap):not(.rz){position:relative;z-index:1}
-.app aside.side-cols select option{background:#1c1c24;color:#f5f5f7}
 .plasma-wrap{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden}
 .plasma{position:absolute;inset:0;width:100%;height:100%;display:block}
-.plasma-veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(7,7,13,.62) 0%,rgba(7,7,13,.38) 45%,rgba(7,7,13,.62) 100%)}
+.plasma-veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,.25) 50%,rgba(255,255,255,.5))}
 .side-foot{margin-top:auto;display:flex;align-items:center;gap:10px;padding:10px 6px 2px;border-top:1px solid var(--side-border)}
 .side-foot .me{flex:1;min-width:0;display:flex;align-items:center;gap:8px;border:0;background:transparent;padding:4px 6px;border-radius:10px;cursor:pointer;color:inherit;text-align:left}
 .side-foot .me:hover{background:var(--hov)}
@@ -235,12 +234,23 @@ body{background:var(--bg);color:var(--fg);transition:background .3s ease,color .
 .hcard-folder{margin:8px 6px 0 2px}
 .tree .trow .rbf-box{margin:3px 2px 0 0}
 
-/* ── Menu de gauche : contenu d'un dossier regroupé dans un panneau teinté ── */
+/* ── Menu de gauche : liens gris entre dossier et fichiers ; le chemin de la page ouverte prend la couleur du dossier + flux de lumière ── */
 .tree .trow{position:relative}
-.tchildren{margin:2px 2px 6px 14px;padding:2px 0;border-radius:11px;
-  background:color-mix(in srgb,var(--tc,var(--mut)) 9%,transparent);
-  box-shadow:inset 2px 0 0 color-mix(in srgb,var(--tc,var(--mut)) 45%,transparent)}
-.tchildren .tchildren{background:color-mix(in srgb,var(--tc,var(--mut)) 8%,transparent)}
+.tnode{position:relative}
+.tchildren{margin:0 0 0 14px;padding:0;--lg:rgba(120,120,135,.38)}
+.ln{position:absolute;pointer-events:none;border-radius:2px;background:var(--lg)}
+.ln.up{left:-1px;top:0;width:1.5px;height:16px}
+.ln.dn{left:-1px;top:16px;bottom:0;width:1.5px}
+.ln.tk{left:-1px;top:15.25px;width:7px;height:1.5px}
+.ln.lit{background:color-mix(in srgb,var(--tc,#3b82f6) 38%,transparent);box-shadow:0 0 7px color-mix(in srgb,var(--tc,#3b82f6) 65%,transparent);z-index:2;overflow:visible}
+.ln.lit::after{content:'';position:absolute;inset:0;border-radius:inherit;
+  background:linear-gradient(180deg,transparent 0%,var(--tc,#3b82f6) 50%,transparent 100%);background-size:100% 260%;animation:lnFlowV 1.5s linear infinite}
+.ln.tk.lit::after{background:linear-gradient(90deg,transparent 0%,var(--tc,#3b82f6) 50%,transparent 100%);background-size:260% 100%;animation-name:lnFlowH}
+.ln.tk.lit::before{content:'';position:absolute;right:-2px;top:-1.5px;width:4.5px;height:4.5px;border-radius:50%;background:var(--tc,#3b82f6);box-shadow:0 0 9px var(--tc,#3b82f6)}
+@keyframes lnFlowV{from{background-position:0 -130%}to{background-position:0 230%}}
+@keyframes lnFlowH{from{background-position:-130% 0}to{background-position:230% 0}}
+.tree .trow.on{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--tc,#3b82f6) 45%,transparent)}
+@media(prefers-reduced-motion:reduce){.ln.lit::after{animation:none}}
 
 /* ── Plus de contour bleu autour du texte quand on écrit (éditeur, résumé, note, champs) ── */
 .ProseMirror,.ProseMirror:focus,.ProseMirror:focus-visible,.ProseMirror-focused,

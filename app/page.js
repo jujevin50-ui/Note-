@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 import { colorOf } from '../lib/provider'
 import Editor from '../components/Editor'
 import PdfView from '../components/PdfView'
-import { LiquidBackground, SquishSwitch, BlurText, ShinyText, GradientText, Presence, useTheme, FolderBits, PlasmaBg } from '../components/Bits'
+import { LiquidBackground, SquishSwitch, BlurText, ShinyText, GradientText, Presence, useTheme, FolderBits, GradientWaves } from '../components/Bits'
 import { FxRoot, TextGenerate, Ticker, FxSearch } from '../components/Fx'
 
 // Composant Bouton Espace avec animation
@@ -468,9 +468,16 @@ function Main({ user }) {
   const trail = i => { const a = []; let c = items.find(x => x.id === i.parent_id); while (c) { a.unshift(c); c = items.find(x => x.id === c.parent_id) }; return a }
   const tabItems = tabs.map(id => items.find(i => i.id === id)).filter(i => i && (i.space || 'notes') === space)
   const sideW = open ? w : 0
-  const renderTree = (parentId, depth) => sibs(parentId).map(i => {
+  const selItem = items.find(x => x.id === sel)
+  const chain = selItem ? [...pathTo(selItem.parent_id), selItem.id] : []
+  const renderTree = (parentId, depth) => { const kids = sibs(parentId), act = depth > 0 ? kids.findIndex(k => chain.includes(k.id)) : -1; return kids.map((i, idx) => {
     const f = i.type === 'folder', shut = !!collapsed[i.id], z = drop && drop.id === i.id ? ' dz-' + drop.zone : ''
     return <div key={i.id} className="tnode">
+      {depth > 0 && <>
+        <i className={'ln up' + (act >= 0 && idx <= act ? ' lit' : '')} />
+        {idx < kids.length - 1 && <i className={'ln dn' + (idx < act ? ' lit' : '')} />}
+        <i className={'ln tk' + (idx === act ? ' lit' : '')} />
+      </>}
       <div className={'row trow' + (sel === i.id ? ' on' : '') + z} style={{ paddingLeft: 6 }} draggable
         onDragStart={e => { drag.current = i.id; e.dataTransfer.setData('text/plain', i.id) }}
         onDragEnd={() => { drag.current = null; setDrop(null) }}
@@ -483,9 +490,9 @@ function Main({ user }) {
         </span>
         <span className="act">{f && <small className="tcount">{sibs(i.id).length}</small>}{f && <b onClick={e => show(e, i, 'new')}>＋</b>}<b onClick={e => show(e, i)}>⋮</b></span>
       </div>
-      {f && !shut && <div className="tchildren" style={i.color ? { '--tc': i.color } : undefined}>{renderTree(i.id, depth + 1)}</div>}
+      {f && !shut && <div className="tchildren" style={{ '--tc': i.color || '#3b82f6' }}>{renderTree(i.id, depth + 1)}</div>}
     </div>
-  })
+  }) }
   const allFolders = spaceItems.filter(i => i.type === 'folder')
   const allShut = allFolders.length > 0 && allFolders.every(f => collapsed[f.id])
   const toggleAll = () => setCollapsed(c => { const n = { ...c }; allFolders.forEach(f => { n[f.id] = !allShut }); return n })
@@ -498,7 +505,7 @@ function Main({ user }) {
       onDragOver={e => { if (pid && [...e.dataTransfer.types].includes('Files')) e.preventDefault() }}
       onDrop={e => { const f = [...e.dataTransfer.files].find(x => x.type === 'application/pdf'); if (f && pid) { e.preventDefault(); readPdf(f, null) } }}>
       {open && <aside className="side-cols">
-        <div className="plasma-wrap" aria-hidden><PlasmaBg /><span className="plasma-veil" /></div>
+        <div className="plasma-wrap" aria-hidden><GradientWaves /><span className="plasma-veil" /></div>
         <div className="rz" onMouseDown={startRz} />
         <div className="head side-top"><img src="/logo-192.png" width="24" height="24" alt="" />
           <select value={pid || ''} onChange={e => setPid(e.target.value)}>{projs.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select>

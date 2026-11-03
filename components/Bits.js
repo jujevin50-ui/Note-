@@ -191,59 +191,70 @@ export function FolderBits({ color = '#3b82f6', size = 0.5, open = false, classN
   )
 }
 
-/* Plasma (React Bits · Backgrounds) — shader WebGL2 en plein écran, sans dépendance (pas besoin d'OGL) */
-const PLASMA_FRAG = `#version 300 es
+/* Gradient Waves (React Bits · Backgrounds) — vagues satinées blanches, éclairées par une lumière qui suit le curseur
+   et gonfle au clic. Shader WebGL2 sans dépendance (pas besoin d'OGL). */
+const WAVES_FRAG = `#version 300 es
 precision highp float;
-uniform vec2 iResolution;
-uniform float iTime;
-uniform float uSpeed;
-uniform float uScale;
-uniform float uOpacity;
-uniform vec3 uColor;
-uniform float uUseColor;
+uniform vec2 uRes;
+uniform float uTime;
+uniform vec2 uMouse;
+uniform float uSwell;
 out vec4 fragColor;
 
+float hgt(vec2 p, float t) {
+  float h = 0.0;
+  h += sin(p.x * 1.3 + p.y * 0.9 + t * 0.7) * 0.50;
+  h += sin(p.x * 2.1 - p.y * 1.4 + t * 1.0) * 0.28;
+  h += sin(p.x * 0.7 + p.y * 2.3 - t * 0.55) * 0.35;
+  h += sin(p.x * 3.7 + p.y * 2.9 + t * 1.5) * 0.07;
+  return h;
+}
+
 void main() {
-  vec2 C = gl_FragCoord.xy;
-  vec2 r = iResolution.xy;
-  vec2 center = r * 0.5;
-  C = (C - center) / uScale + center;
-  float T = iTime * uSpeed;
-  float d = 0.0, z = 0.0;
-  vec3 O = vec3(0.0), p = vec3(0.0), S = vec3(0.0);
-  vec4 o = vec4(0.0);
-  for (float i = 1.0; i < 60.0; i++) {
-    p = z * normalize(vec3(C - 0.5 * r, r.y));
-    p.z -= 4.0;
-    S = p;
-    d = p.y - T;
-    p.x += 0.4 * (1.0 + p.y) * sin(d + p.x * 0.1) * cos(0.34 * d + p.x * 0.05);
-    mat2 m = mat2(cos(p.y + vec4(0.0, 11.0, 33.0, 0.0) - T));
-    p.xz = p.xz * m;
-    vec2 Q = p.xz;
-    d = abs(sqrt(length(Q * Q)) - 0.25 * (5.0 + S.y)) / 3.0 + 8e-4;
-    z += d;
-    o = 1.0 + sin(S.y + p.z * 0.5 + S.z - length(S - p) + vec4(2.0, 1.0, 0.0, 8.0));
-    O += o.w / d * o.xyz;
-  }
-  vec3 rgb = tanh(O / 1e4);
-  if (any(isnan(rgb)) || any(isinf(rgb))) rgb = vec3(0.0);
-  float k = (rgb.r + rgb.g + rgb.b) / 3.0;
-  vec3 col = mix(rgb, k * uColor, step(0.5, uUseColor));
-  fragColor = vec4(col, clamp(length(rgb) * uOpacity, 0.0, 1.0));
+  vec2 uv = gl_FragCoord.xy / uRes;
+  float hor = 0.80;
+  float dy = hor - uv.y;
+  float depth = 1.0 / (max(dy, 0.0) * 3.0 + 0.14);
+  vec2 p = vec2((uv.x - 0.5) * depth * 6.0, depth * 3.2) * 1.9;
+  float e = 0.06;
+  float h0 = hgt(p, uTime);
+  float hx = hgt(p + vec2(e, 0.0), uTime);
+  float hz = hgt(p + vec2(0.0, e), uTime);
+  vec3 n = normalize(vec3(-(hx - h0) / e * 0.34, 1.0, -(hz - h0) / e * 0.34));
+
+  vec3 L = normalize(vec3((uMouse.x - 0.5) * 2.2, 0.55 + uMouse.y * 0.6, 0.55));
+  vec3 V = normalize(vec3(0.0, 0.55, 1.0));
+  float diff = clamp(dot(n, L), 0.0, 1.0);
+  vec3 H = normalize(L + V);
+  float spec = pow(clamp(dot(n, H), 0.0, 1.0), 38.0);
+
+  vec2 d2 = vec2((uv.x - uMouse.x) * (uRes.x / uRes.y), uv.y - uMouse.y);
+  float glow = exp(-dot(d2, d2) * 5.0) * (0.6 + uSwell * 1.4);
+
+  vec3 shadow = vec3(0.83, 0.85, 0.92);
+  vec3 lit = vec3(1.0);
+  vec3 col = mix(shadow, lit, diff * 0.85 + 0.15);
+  col += vec3(0.03, 0.0, 0.06) * n.x;
+  col += vec3(1.0) * spec * 0.55 + vec3(0.9, 0.93, 1.0) * glow * 0.25;
+
+  vec3 haze = vec3(1.0);
+  float f = smoothstep(0.0, 0.42, dy);
+  col = mix(haze, col, f);
+  vec3 sky = mix(vec3(1.0), vec3(0.93, 0.95, 1.0), smoothstep(0.0, 0.2, -dy));
+  col = mix(col, sky, step(dy, 0.0));
+  fragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
 }
 `
-const hex3 = h => { const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(h || ''); return m ? [parseInt(m[1], 16) / 255, parseInt(m[2], 16) / 255, parseInt(m[3], 16) / 255] : [1, 1, 1] }
-export function PlasmaBg({ speed = 0.5, scale = 1.1, opacity = 0.95, color = '', quality = 0.7, className = '' }) {
+export function GradientWaves({ speed = 1, quality = 0.75, className = '' }) {
   const ref = useRef(null)
   useEffect(() => {
     const c = ref.current
     if (!c) return
-    const gl = c.getContext('webgl2', { alpha: true, premultipliedAlpha: false, antialias: false })
+    const gl = c.getContext('webgl2', { alpha: false, antialias: false })
     if (!gl) { c.style.display = 'none'; return }
     const mk = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); return gl.getShaderParameter(s, gl.COMPILE_STATUS) ? s : null }
     const vs = mk(gl.VERTEX_SHADER, '#version 300 es\nin vec2 position;\nvoid main(){gl_Position=vec4(position,0.0,1.0);}')
-    const fs = mk(gl.FRAGMENT_SHADER, PLASMA_FRAG)
+    const fs = mk(gl.FRAGMENT_SHADER, WAVES_FRAG)
     if (!vs || !fs) { c.style.display = 'none'; return }
     const prog = gl.createProgram()
     gl.attachShader(prog, vs); gl.attachShader(prog, fs); gl.linkProgram(prog)
@@ -256,33 +267,43 @@ export function PlasmaBg({ speed = 0.5, scale = 1.1, opacity = 0.95, color = '',
     gl.enableVertexAttribArray(loc)
     gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0)
     const u = n => gl.getUniformLocation(prog, n)
-    const col = hex3(color)
-    gl.uniform1f(u('uSpeed'), speed); gl.uniform1f(u('uScale'), scale); gl.uniform1f(u('uOpacity'), opacity)
-    gl.uniform3f(u('uColor'), col[0], col[1], col[2]); gl.uniform1f(u('uUseColor'), color ? 1 : 0)
-    gl.clearColor(0, 0, 0, 0)
     const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches
     const dpr = Math.min(window.devicePixelRatio || 1, 1.5) * quality
     const resize = () => {
       const w = Math.max(2, Math.round(c.clientWidth * dpr)), h = Math.max(2, Math.round(c.clientHeight * dpr))
       if (c.width !== w || c.height !== h) { c.width = w; c.height = h }
       gl.viewport(0, 0, c.width, c.height)
-      gl.uniform2f(u('iResolution'), c.width, c.height)
+      gl.uniform2f(u('uRes'), c.width, c.height)
     }
     resize()
     const ro = new ResizeObserver(resize); ro.observe(c)
+    // lumière : suit le curseur (lissé), dérive doucement quand il est ailleurs, gonfle au clic
+    const m = { x: 0.5, y: 0.35 }, target = { x: 0.5, y: 0.35 }
+    let swell = 0, hovering = false
+    const rel = e => { const r = c.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width, y: 1 - (e.clientY - r.top) / r.height, inside: e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom } }
+    const move = e => { const q = rel(e); hovering = q.inside; if (q.inside) { target.x = q.x; target.y = q.y } }
+    const down = e => { if (rel(e).inside) swell = 1 }
+    addEventListener('pointermove', move, { passive: true })
+    addEventListener('pointerdown', down, { passive: true })
     let raf = 0
     const t0 = performance.now()
     const draw = now => {
-      gl.uniform1f(u('iTime'), (now - t0) * 0.001)
-      gl.clear(gl.COLOR_BUFFER_BIT)
+      const t = (now - t0) * 0.001
+      if (!hovering) { target.x = 0.5 + Math.sin(t * 0.35) * 0.32; target.y = 0.32 + Math.cos(t * 0.27) * 0.2 }
+      m.x += (target.x - m.x) * 0.06; m.y += (target.y - m.y) * 0.06
+      swell *= 0.94
+      gl.uniform1f(u('uTime'), t * speed)
+      gl.uniform2f(u('uMouse'), m.x, m.y)
+      gl.uniform1f(u('uSwell'), swell)
       gl.drawArrays(gl.TRIANGLES, 0, 3)
       if (!reduce) raf = requestAnimationFrame(draw)
     }
     raf = requestAnimationFrame(draw)
     return () => {
       cancelAnimationFrame(raf); ro.disconnect()
+      removeEventListener('pointermove', move); removeEventListener('pointerdown', down)
       gl.getExtension('WEBGL_lose_context')?.loseContext()
     }
-  }, [speed, scale, opacity, color, quality])
+  }, [speed, quality])
   return <canvas ref={ref} className={'plasma ' + className} aria-hidden />
 }
