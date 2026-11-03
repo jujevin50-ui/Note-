@@ -2,6 +2,7 @@
 import './toolbar.css'
 import {useEffect,useState,useRef,useLayoutEffect} from 'react'
 import ToolbarIcon from './ToolbarIcon'
+import PageOutline from './PageOutline'
 import ToolbarPopover from './ToolbarPopover'
 import * as Y from 'yjs'
 import {useEditor,EditorContent,BubbleMenu} from '@tiptap/react'
@@ -187,6 +188,7 @@ function Tiptap({ydoc,provider,projectId}){
     {B('En-tête',()=>f().toggleHeaderRow().run(),false,'Ligne d’en-tête')}
     {B('Suppr.',()=>f().deleteTable().run(),false,'Supprimer le tableau')}
    </div></BubbleMenu>
+  <PageOutline editor={ed}/>
   <EditorContent className="editor-content" editor={ed}/></div>
   <SidePanel ydoc={ydoc} open={sp} onClose={()=>toggle(false)} width={spw} onWidth={w=>{setSpw(w);try{localStorage.setItem('spw',String(w))}catch{}}}/></>
 }
