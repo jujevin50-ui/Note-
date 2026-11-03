@@ -5,7 +5,8 @@ import { colorOf } from '../lib/provider'
 import Editor from '../components/Editor'
 import PdfView from '../components/PdfView'
 import WelcomeDashboard from '../components/WelcomeDashboard'
-import { LiquidBackground, SquishSwitch, Presence, useTheme, FolderBits, GradientWaves } from '../components/Bits'
+import SidebarNavigation from '../components/SidebarNavigation'
+import { LiquidBackground, SquishSwitch, Presence, useTheme, GradientWaves } from '../components/Bits'
 import { FxRoot, TextGenerate, Ticker, FxSearch } from '../components/Fx'
 
 function SpaceBtn({ active, onClick, ico, label }) {
@@ -32,12 +33,12 @@ function Dlg({ d, close }) {
 
 function ShareDlg({ code, pid, onNew, close }) {
   const [c, setC] = useState(code), [ok, setOk] = useState(false), [members, setMembers] = useState([]), [loading, setLoading] = useState(true), [memberError, setMemberError] = useState('')
-  useEffect(() => { let live = true; supabase.rpc('project_members_info', { p_pid: pid }).then(({ data, error }) => { if (!live) return; if (error) setMemberError('Pour afficher les noms et emails, exécute le fichier supabase/project_members_info.sql dans Supabase.'); else setMembers(data || []); setLoading(false) }); return () => { live = false } }, [pid])
+  useEffect(() => { let live = true; supabase.rpc('project_members_info', { p_pid: pid }).then(({ data, error }) => { if (!live) return; if (error) setMemberError('Membres indisponibles'); else setMembers(data || []); setLoading(false) }); return () => { live = false } }, [pid])
   return <div className="ov" onClick={close}><div className="dlg share-dialog" onClick={e => e.stopPropagation()}>
     <h3>Partager l'espace</h3>
     <label className="muted">Code pour inviter un membre</label>
     <input readOnly value={c} onFocus={e => e.target.select()} style={{ fontSize: 22, letterSpacing: 3, textAlign: 'center' }} />
-    <p className="muted" style={{ margin: 0 }}>La personne crée son compte, clique sur + puis « Rejoindre avec un code » et saisit ce code.</p>
+
     <div className="btns"><button className="ghost" onClick={async () => setC(await onNew())}>Nouveau code</button>
       <button onClick={() => { navigator.clipboard.writeText(c); setOk(true) }}>{ok ? 'Copié ✓' : 'Copier le code'}</button></div>
     <hr className="share-divider" />
@@ -68,7 +69,6 @@ function Settings({ user, close }) {
       <div className="st-body">
         {sec === 'profil' && <>
           <h2>Profil</h2>
-          <p className="st-sub">Ton nom apparaît sur ton curseur et dans la liste « en ligne ».</p>
           <div className="st-profile">
             <span className="me-av" style={{ background: colorOf(user.email) }}>{shown[0].toUpperCase()}</span>
             <div><b style={{ fontSize: 17 }}>{shown}</b><div className="muted" style={{ fontSize: 13 }}>{user.email}</div></div>
@@ -79,16 +79,14 @@ function Settings({ user, close }) {
         </>}
         {sec === 'apparence' && <>
           <h2>Apparence</h2>
-          <p className="st-sub">Le thème est enregistré sur cet appareil.</p>
           <div className="st-cards">
             {[['light', 'Clair'], ['dark', 'Sombre']].map(([k, l]) => <button key={k} type="button" className={'st-card' + (th === k ? ' on' : '')} onClick={() => setTheme(k)}>
               <span className={'st-prev ' + k}><i /><i /></span>{l}</button>)}
           </div>
-          <div className="st-field"><label>Raccourci</label><div style={{ display: 'flex', alignItems: 'center', gap: 12 }}><SquishSwitch /><span className="muted" style={{ fontSize: 13 }}>Disponible aussi en bas à gauche du menu.</span></div></div>
+          <div className="st-field"><label>Raccourci</label><div style={{ display: 'flex', alignItems: 'center', gap: 12 }}><SquishSwitch /></div></div>
         </>}
         {sec === 'editeur' && <>
           <h2>Éditeur</h2>
-          <p className="st-sub">Choisis où s'affiche la barre d'outils pendant que tu écris.</p>
           <div className="st-cards">
             <button type="button" className={'st-card' + (tb === 'center' ? ' on' : '')} onClick={() => setToolbar('center')}><span className="st-prev tb-c"><b /></span>Centre (en haut)</button>
             <button type="button" className={'st-card' + (tb === 'right' ? ' on' : '')} onClick={() => setToolbar('right')}><span className="st-prev tb-r"><b /></span>Droite (verticale)</button>
@@ -131,7 +129,7 @@ function FolderView({ folder, sibs, openItem, openFolder, show, items }) {
     {!kids.length ? <div className="dash-empty">
       <div className="dash-empty-ico">📁</div>
       <h3>Dossier vide</h3>
-      <p className="muted">Ajoute une page, un sous-dossier ou un PDF depuis la barre latérale ou le bouton ci-dessus.</p>
+
     </div> : <div className="tile-grid">
       {folders.map(i => <button type="button" className="tile tile-folder" key={i.id} onClick={() => openFolder(i.id)} onContextMenu={e => show(e, i)}>
         <span className="tile-ico" style={{ '--c': i.color || '#f59e0b' }}><Ic i={i} /></span>
@@ -245,7 +243,7 @@ function TreeHome({ items, sibs, openItem, show, projName, space, addCompany, ma
       </section>
       </>}
       <section className="th-map-section">
-        <div className="th-section-heading th-map-heading"><div><span className="th-section-kicker">VUE D’ENSEMBLE</span><h2>Cartographie des connaissances</h2><p>Explorez votre arborescence. Déplacez-vous, zoomez et ouvrez vos dossiers.</p></div><span className="th-map-hint">Glisser pour déplacer · Molette pour zoomer</span></div>
+        <div className="th-section-heading th-map-heading"><div><span className="th-section-kicker">VUE D’ENSEMBLE</span><h2>Cartographie des connaissances</h2></div></div>
         <div className="th-map-panel">
     <div className="th-stage" ref={stage}
       onPointerDown={e => { if (e.target.closest('.tr-tag,.tr-leaf,.tr-sign,.th-bar,.th-zoom')) return; drag.current = { x: e.clientX, y: e.clientY, vx: view.x, vy: view.y }; e.currentTarget.setPointerCapture(e.pointerId) }}
@@ -331,9 +329,6 @@ function Login() {
           <img src="/logo-192.png" width="44" height="44" alt="" />
           <h1><TextGenerate text="Notes" /></h1>
         </div>
-        <p className="login-lead">
-          <TextGenerate text="Prends des notes, apprends et suis tes projets — à plusieurs, en temps réel." step={45} />
-        </p>
         <input placeholder="Email" type="email" autoComplete="email" value={e} onChange={x => setE(x.target.value)} />
         <input type="password" placeholder="Mot de passe" autoComplete="current-password" value={p} onChange={x => setP(x.target.value)} />
         <button type="submit" className="on btn-glow" disabled={!!busy}><span>{busy === 1 ? 'Connexion…' : 'Connexion'}</span></button>
@@ -359,17 +354,14 @@ function Main({ user }) {
   const [menu, setMenu] = useState(null)
   const [tabs, setTabs] = useState([])
   const [open, setOpen] = useState(true)
-  const [drop, setDrop] = useState(null)
   const [share, setShare] = useState(null)
   const [settings, setSettings] = useState(false)
   const [online, setOnline] = useState([])
   const [w, setW] = useState(280)
-  const [collapsed, setCollapsed] = useState(() => { try { return JSON.parse(localStorage.getItem('collapsed') || '{}') } catch { return {} } })
-  useEffect(() => { try { localStorage.setItem('collapsed', JSON.stringify(collapsed)) } catch {} }, [collapsed])
-  const toggle = id => setCollapsed(c => ({ ...c, [id]: !c[id] }))
+  const [section, setSection] = useState('home')
   const [space, setSpace] = useState(() => { try { return localStorage.getItem('space') || 'notes' } catch { return 'notes' } })
-  const switchSpace = s => { setSpace(s); try { localStorage.setItem('space', s) } catch {}; setSel(null); setTabs([]) }
-  const fi = useRef(), pp = useRef(null), drag = useRef(null), pch = useRef(null)
+  const switchSpace = s => { setSpace(s); try { localStorage.setItem('space', s) } catch {}; setSel(null); setTabs([]); setSection('home') }
+  const fi = useRef(), pp = useRef(null), pch = useRef(null)
   const loadP = async () => { const { data } = await supabase.from('projects').select('*'); setProjs(data || []); if (!pid && data?.[0]) setPid(data[0].id) }
   const loadI = async () => {
     if (!pid) return
@@ -377,7 +369,7 @@ function Main({ user }) {
     setItems((data || []).filter(x => x.type !== 'board').map(x => ({ ...x, space: x.space || 'notes' })))
   }
   useEffect(() => { loadP() }, [])
-  useEffect(() => { setSel(null); setTabs([]); loadI(); if (!pid) return; const ch = supabase.channel('items:' + pid).on('postgres_changes', { event: '*', schema: 'public', table: 'items', filter: 'project_id=eq.' + pid }, loadI).subscribe(); return () => supabase.removeChannel(ch) }, [pid])
+  useEffect(() => { setSel(null); setTabs([]); setSection('home'); loadI(); if (!pid) return; const ch = supabase.channel('items:' + pid).on('postgres_changes', { event: '*', schema: 'public', table: 'items', filter: 'project_id=eq.' + pid }, loadI).subscribe(); return () => supabase.removeChannel(ch) }, [pid])
   const name = user.user_metadata?.name || user.email.split('@')[0]
   useEffect(() => { const v = +localStorage.getItem('sbw'); if (v) setW(Math.max(240, Math.min(440, v))) }, [])
   useEffect(() => {
@@ -390,11 +382,11 @@ function Main({ user }) {
   useEffect(() => { pch.current?.track({ id: user.id, name, color: colorOf(user.email), item: sel }) }, [sel, name])
   const startRz = e => { e.preventDefault(); const mv = ev => { const n = Math.max(240, Math.min(440, ev.clientX)); setW(n); localStorage.setItem('sbw', n) }; const up = () => { removeEventListener('mousemove', mv); removeEventListener('mouseup', up) }; addEventListener('mousemove', mv); addEventListener('mouseup', up) }
   const ask = (label, value, ok) => setDlg({ label, value, ok, k: Math.random() })
-  const insert = async row => { const { data, error } = await supabase.from('items').insert({ project_id: pid, pos: Date.now(), space, ...row }).select().single(); if (error) { alert(error.message + (String(error.message).includes('space') ? '\n\n→ Exécute supabase/space.sql dans Supabase.' : '')); return null }; return data ? { ...data, space: data.space || space } : null }
+  const insert = async row => { const { data, error } = await supabase.from('items').insert({ project_id: pid, pos: Date.now(), space, ...row }).select().single(); if (error) { alert('Impossible de créer ce contenu.'); return null }; return data ? { ...data, space: data.space || space } : null }
   const patch = (id, p) => { setItems(l => l.map(x => x.id === id ? { ...x, ...p } : x)); supabase.from('items').update(p).eq('id', id).then(err) }
   const newProj = () => ask('Nom du projet', '', async name => { const { data, error } = await supabase.from('projects').insert({ name }).select().single(); if (error) return alert(error.message); await loadP(); setPid(data.id) })
   const code = projs.find(p => p.id === pid)?.code
-  const invite = () => code ? setShare(code) : alert("Code introuvable : lance d'abord update2.sql dans Supabase.")
+  const invite = () => code ? setShare(code) : alert("Partage indisponible.")
   const newCode = async () => { const { data, error } = await supabase.rpc('new_code', { p_pid: pid }); if (error) { alert(error.message); return code } await loadP(); return data }
   const joinProj = () => ask('Code du projet', '', async p_code => { const { data, error } = await supabase.rpc('join_project', { p_code }); if (error) return alert(error.message); await loadP(); setPid(data) })
   const add = (type, parent_id) => ask(NAMES[type], '', async title => { await insert({ type, title, parent_id }); if (parent_id) patch(parent_id, { closed: false }) })
@@ -410,55 +402,16 @@ function Main({ user }) {
   const pick = p => { pp.current = p; fi.current.click() }
   const onPdf = e => { const f = e.target.files[0]; e.target.value = ''; if (f) readPdf(f, pp.current) }
   const show = (e, i, mode) => { e.preventDefault(); e.stopPropagation(); setMenu({ x: Math.min(e.clientX, innerWidth - 230), y: Math.min(e.clientY, innerHeight - 340), i, mode }) }
-  const pathTo = id => { const chain = []; let c = items.find(x => x.id === id); while (c) { if (c.type === 'folder') chain.unshift(c.id); c = items.find(x => x.id === c.parent_id) }; return chain }
-  const openItem = id => { setSel(id); setTabs(t => t.includes(id) ? t : [...t, id]); const it = items.find(x => x.id === id); if (it) { const p = pathTo(it.parent_id); if (p.length) setCollapsed(c => { const n = { ...c }; p.forEach(x => { delete n[x] }); return n }) } }
+  const openItem = id => { setSel(id); setTabs(t => t.includes(id) ? t : [...t, id]) }
   const closeTab = id => { const n = tabs.filter(x => x !== id); setTabs(n); if (sel === id) setSel(n[n.length - 1] || null) }
   const openFolder = id => openItem(id)
   const key = x => x.pos ?? new Date(x.created_at).getTime()
   const spaceItems = items.filter(i => (i.space || 'notes') === space)
   const sibs = p => spaceItems.filter(i => i.parent_id === p).sort((a, b) => key(a) - key(b))
-  const isIn = (id, anc) => { let c = items.find(x => x.id === id); while (c) { if (c.id === anc) return true; c = items.find(x => x.id === c.parent_id) }; return false }
-  const zoneOf = (e, f) => { const r = e.currentTarget.getBoundingClientRect(), y = (e.clientY - r.top) / r.height; return f ? (y < .25 ? 'before' : y > .75 ? 'after' : 'in') : (y < .5 ? 'before' : 'after') }
-  const move = (id, tid, zone) => {
-    if (tid && isIn(tid, id)) return
-    const t = items.find(x => x.id === tid)
-    if (!t) return patch(id, { parent_id: null, pos: Date.now() })
-    if (zone === 'in') { patch(id, { parent_id: t.id, pos: Date.now() }); return }
-    const l = sibs(t.parent_id).filter(x => x.id !== id), k = l.findIndex(x => x.id === t.id)
-    const a = zone === 'before' ? (l[k - 1] ? key(l[k - 1]) : key(t) - 2000) : key(t)
-    const b = zone === 'before' ? key(t) : (l[k + 1] ? key(l[k + 1]) : key(t) + 2000)
-    patch(id, { parent_id: t.parent_id, pos: (a + b) / 2 })
-  }
   const cur = items.find(i => i.id === sel && (i.space || 'notes') === space)
   const trail = i => { const a = []; let c = items.find(x => x.id === i.parent_id); while (c) { a.unshift(c); c = items.find(x => x.id === c.parent_id) }; return a }
   const tabItems = tabs.map(id => items.find(i => i.id === id)).filter(i => i && (i.space || 'notes') === space)
   const sideW = open ? w : 0
-  const renderTree = (parentId, depth) => { const kids = sibs(parentId); return kids.map((i, idx) => {
-    const f = i.type === 'folder', shut = !!collapsed[i.id], z = drop && drop.id === i.id ? ' dz-' + drop.zone : ''
-    return <div key={i.id} className="tnode">
-      {depth > 0 && <>
-        <i className="ln up" />
-        {idx < kids.length - 1 && <i className="ln dn" />}
-        <i className="ln tk" />
-      </>}
-      <div className={'row trow' + (sel === i.id ? ' on' : '') + z} style={{ paddingLeft: 6 }} draggable
-        onDragStart={e => { drag.current = i.id; e.dataTransfer.setData('text/plain', i.id) }}
-        onDragEnd={() => { drag.current = null; setDrop(null) }}
-        onDragOver={e => { if (!drag.current) return; e.preventDefault(); e.stopPropagation(); setDrop({ id: i.id, zone: zoneOf(e, f) }) }}
-        onDrop={e => { if (!drag.current) return; e.preventDefault(); e.stopPropagation(); move(drag.current, i.id, zoneOf(e, f)); drag.current = null; setDrop(null) }}
-        onClick={() => f ? toggle(i.id) : openItem(i.id)} onDoubleClick={() => f && openItem(i.id)} onContextMenu={e => show(e, i)}>
-        <span className="t">
-          {f ? <small className={'tchev' + (shut ? '' : ' open')}>›</small> : <small className="tchev ph" />}
-          {f && !i.icon ? <FolderBits size={0.21} color={i.color || '#3b82f6'} open={!shut} /> : <Ic i={i} />} {i.title}
-        </span>
-        <span className="act">{f && <small className="tcount">{sibs(i.id).length}</small>}{f && <b onClick={e => show(e, i, 'new')}>＋</b>}<b onClick={e => show(e, i)}>⋮</b></span>
-      </div>
-      {f && !shut && <div className="tchildren">{renderTree(i.id, depth + 1)}</div>}
-    </div>
-  }) }
-  const allFolders = spaceItems.filter(i => i.type === 'folder')
-  const allShut = allFolders.length > 0 && allFolders.every(f => collapsed[f.id])
-  const toggleAll = () => setCollapsed(c => { const n = { ...c }; allFolders.forEach(f => { n[f.id] = !allShut }); return n })
   const news = p => [['📄 Nouvelle page', () => add('page', p)], ['📁 Nouveau dossier', () => add('folder', p)], ['📎 Importer un PDF', () => pick(p)]]
   const m = menu && menu.i && items.find(x => x.id === menu.i.id)
   const titleOf = id => items.find(x => x.id === id)?.title
@@ -478,15 +431,7 @@ function Main({ user }) {
           <SpaceBtn active={space === 'notes'} onClick={() => switchSpace('notes')} ico="📝" label="Notes" name="Notes" />
           <SpaceBtn active={space === 'invest'} onClick={() => switchSpace('invest')} ico="📈" label="Invest" name="Invest" />
         </div>}
-        {pid && <div className="head side-nav"><button className={sel ? 'ghost' : 'on'} onClick={() => setSel(null)}>🏠 Accueil</button><button className="on" onClick={e => show(e, null, 'new')}>＋ Nouveau</button></div>}
-        {pid && <div className="tree-hd"><span>Fichiers</span>{allFolders.length > 0 && <button type="button" onClick={toggleAll} title={allShut ? 'Tout déplier' : 'Tout replier'}>{allShut ? 'Tout déplier' : 'Tout replier'}</button>}</div>}
-        <div className="tree"
-          onDragOver={e => drag.current && e.preventDefault()}
-          onDrop={e => { if (drag.current) { e.preventDefault(); move(drag.current, null, 'in'); drag.current = null; setDrop(null) } }}
-          onContextMenu={e => pid && show(e, null, 'new')}>
-          {!sibs(null).length && <p className="muted col-empty">Aucun fichier</p>}
-          {renderTree(null, 0)}
-        </div>
+        {pid && <SidebarNavigation active={sel ? null : section} onChange={next => { setSection(next); setSel(null) }} onCreate={(e, folder) => show(e, folder, 'new')} items={spaceItems} activeItem={sel} onOpen={openItem} onOptions={show} />}
         <div className="side-foot">
           <SquishSwitch />
           <button type="button" className="me" onClick={() => setSettings(true)} title="Paramètres">
@@ -502,7 +447,7 @@ function Main({ user }) {
           </button>
           <div className="crumbs">
             <span>{projName || 'Aucun projet'}</span>
-            {cur ? <>{trail(cur).map(t => <span key={t.id}><i>›</i> {t.title}</span>)}<i>›</i><b>{cur.title}</b></> : <><i>›</i><b>Accueil</b></>}
+            {cur ? <>{trail(cur).map(t => <span key={t.id}><i>›</i> {t.title}</span>)}<i>›</i><b>{cur.title}</b></> : <><i>›</i><b>{{ home: 'Accueil', pages: 'Pages', pdf: 'PDF', map: 'Cartographie' }[section]}</b></>}
           </div>
           <div className="tb-spacer" />
           <Presence online={online} me={user.id} titleOf={titleOf} />
@@ -522,12 +467,12 @@ function Main({ user }) {
             {!pid ? <div className="dash-empty">
               <div className="dash-empty-ico">🚀</div>
               <h3>Bienvenue !</h3>
-              <p className="muted">Crée un projet ou rejoins-en un pour commencer.</p>
+
               <div className="btns">
                 <button className="btn-primary btn-glow" onClick={newProj}>＋ Nouveau projet</button>
                 <button className="ghost" onClick={joinProj}>🔗 Rejoindre un projet</button>
               </div>
-            </div> : !sel ? <WelcomeDashboard items={spaceItems} sibs={sibs} openItem={openItem} show={show} projName={projName} space={space} addCompany={addCompany} name={name}><TreeHome mapOnly items={spaceItems} sibs={sibs} openItem={openItem} show={show} projName={projName} space={space} addCompany={addCompany} /></WelcomeDashboard> : cur?.type === 'pdf' ? <PdfView key={cur.id} id={cur.id} user={user} path={pid + '/' + cur.id + '.pdf'} title={cur.title} /> : cur?.type === 'page' ? <Editor key={cur.id} id={cur.id} user={user} projectId={pid} /> : cur?.type === 'folder' ? <FolderView folder={cur} sibs={sibs} openItem={openItem} openFolder={openFolder} show={show} items={items} /> : null}
+            </div> : !sel ? <WelcomeDashboard section={section} items={spaceItems} sibs={sibs} openItem={openItem} show={show} projName={projName} space={space} addCompany={addCompany} name={name}><TreeHome mapOnly items={spaceItems} sibs={sibs} openItem={openItem} show={show} projName={projName} space={space} addCompany={addCompany} /></WelcomeDashboard> : cur?.type === 'pdf' ? <PdfView key={cur.id} id={cur.id} user={user} path={pid + '/' + cur.id + '.pdf'} title={cur.title} /> : cur?.type === 'page' ? <Editor key={cur.id} id={cur.id} user={user} projectId={pid} /> : cur?.type === 'folder' ? <FolderView folder={cur} sibs={sibs} openItem={openItem} openFolder={openFolder} show={show} items={items} /> : null}
           </div>
         </main>
       </div>
