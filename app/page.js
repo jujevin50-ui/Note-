@@ -7,6 +7,7 @@ import PdfView from '../components/PdfView'
 import WelcomeDashboard from '../components/WelcomeDashboard'
 import SidebarNavigation from '../components/SidebarNavigation'
 import HomeGreeting from '../components/HomeGreeting'
+import useProjectPresence from '../components/useProjectPresence'
 import FocusTimer, { DEFAULT_TIMER, normalizeTimer, TimerSettings } from '../components/FocusTimer'
 import { LiquidBackground, Presence, GradientWaves } from '../components/Bits'
 import { FxRoot, TextGenerate } from '../components/Fx'
@@ -204,12 +205,12 @@ function Main({ user }) {
     setTimerConfig(next)
     try { localStorage.setItem('focus-timer', JSON.stringify(next)) } catch {}
   }
-  const [online, setOnline] = useState([])
+  const { online, status: presenceStatus } = useProjectPresence(pid, user, sel)
   const [w, setW] = useState(280)
   const [section, setSection] = useState('home')
   const [space, setSpace] = useState(() => { try { return localStorage.getItem('space') || 'notes' } catch { return 'notes' } })
   const switchSpace = s => { setSpace(s); try { localStorage.setItem('space', s) } catch {}; setSel(null); setSection('home') }
-  const fi = useRef(), pp = useRef(null), pch = useRef(null)
+  const fi = useRef(), pp = useRef(null)
   const loadP = async () => { const { data } = await supabase.from('projects').select('*'); setProjs(data || []); if (!pid && data?.[0]) setPid(data[0].id) }
   const loadI = async () => {
     if (!pid) return
@@ -220,14 +221,6 @@ function Main({ user }) {
   useEffect(() => { setSel(null); setSection('home'); loadI(); if (!pid) return; const ch = supabase.channel('items:' + pid).on('postgres_changes', { event: '*', schema: 'public', table: 'items', filter: 'project_id=eq.' + pid }, loadI).subscribe(); return () => supabase.removeChannel(ch) }, [pid])
   const name = user.user_metadata?.name || user.email.split('@')[0]
   useEffect(() => { const v = +localStorage.getItem('sbw'); if (v) setW(Math.max(240, Math.min(440, v))) }, [])
-  useEffect(() => {
-    if (!pid) return
-    const ch = supabase.channel('presence:' + pid, { config: { presence: { key: user.id } } })
-    ch.on('presence', { event: 'sync' }, () => setOnline(Object.values(ch.presenceState()).map(a => a[0])))
-      .subscribe(st => { if (st === 'SUBSCRIBED') { pch.current = ch; ch.track({ id: user.id, name, color: colorOf(user.email), item: null }) } })
-    return () => { pch.current = null; setOnline([]); supabase.removeChannel(ch) }
-  }, [pid])
-  useEffect(() => { pch.current?.track({ id: user.id, name, color: colorOf(user.email), item: sel }) }, [sel, name])
   const startRz = e => { e.preventDefault(); const mv = ev => { const n = Math.max(240, Math.min(440, ev.clientX)); setW(n); localStorage.setItem('sbw', n) }; const up = () => { removeEventListener('mousemove', mv); removeEventListener('mouseup', up) }; addEventListener('mousemove', mv); addEventListener('mouseup', up) }
   const ask = (label, value, ok) => setDlg({ label, value, ok, k: Math.random() })
   const insert = async row => { const { data, error } = await supabase.from('items').insert({ project_id: pid, pos: Date.now(), space, ...row }).select().single(); if (error) { alert('Impossible de créer ce contenu.'); return null }; return data ? { ...data, space: data.space || space } : null }
@@ -281,7 +274,7 @@ function Main({ user }) {
             {cur ? <>{trail(cur).map(t => <span className="crumb-parent" key={t.id}><i aria-hidden="true">›</i><button type="button" onClick={() => openFolder(t.id)} title={'Revenir au dossier ' + t.title}>{t.title}</button></span>)}<i aria-hidden="true">›</i><b aria-current="page" title={cur.title}>{cur.title}</b></> : <><i aria-hidden="true">›</i><b aria-current="page">{{ home: 'Accueil', library: space === 'invest' ? 'Invest' : 'Notes', pages: 'Pages', pdf: 'PDF' }[section]}</b></>}
           </nav>
           <div className="tb-spacer" />
-          <Presence online={online} me={user.id} titleOf={titleOf} />
+          {pid && <Presence online={online} status={presenceStatus} me={user.id} titleOf={titleOf} />}
           <button type="button" className="tb-ico" onClick={() => setSettings(true)} title="Paramètres">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" /></svg>
           </button>

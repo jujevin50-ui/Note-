@@ -287,3 +287,10 @@ textarea,textarea:focus,textarea:focus-visible,[contenteditable],[contenteditabl
 .timer-duration{display:flex;gap:12px}.timer-duration label{flex:1;min-width:0}.timer-duration input{width:100%;margin-top:6px}
 .st-field select{width:100%;padding:10px 12px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--fg);font:inherit}
 @media(max-width:480px){.topbar{gap:4px}.focus-timer{padding:2px;gap:0}.focus-timer-time{font-size:12px;padding:0 3px}.focus-timer button{width:24px}}
+
+.prs{flex-shrink:0}
+.prs-pending .prs-live{background:#f59e0b;animation:none;box-shadow:none}
+.prs-message{margin:6px 8px 10px;font-size:12px;line-height:1.5;color:var(--mut)}
+.prs-mobile-count{display:none}
+.prs-pop{max-width:calc(100vw - 24px);max-height:60dvh;overflow:auto}
+@media(max-width:720px){.prs-mobile-count{display:inline;font-size:12px}.prs-btn{gap:5px;padding:4px 8px}.prs-stack i:nth-child(n+3){display:none}}

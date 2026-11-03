@@ -125,7 +125,7 @@ export function BlurText({ text, step = 90, className = '' }) {
 export const ShinyText = ({ children, className = '' }) => <span className={'shiny ' + className}>{children}</span>
 export const GradientText = ({ children, className = '' }) => <span className={'grad-text ' + className}>{children}</span>
 
-export function Presence({ online, me, titleOf }) {
+export function Presence({ online, me, titleOf, status = 'connected' }) {
   const [open, setOpen] = useState(false)
   const box = useRef(null)
   useEffect(() => {
@@ -137,20 +137,23 @@ export function Presence({ online, me, titleOf }) {
   }, [open])
   const list = [...online].sort((a, b) => (a.id === me ? -1 : b.id === me ? 1 : 0))
   const shown = list.slice(0, 4), extra = list.length - shown.length
-  if (!list.length) return null
+  const connected = status === 'connected'
+  const label = connected ? `${list.length} en ligne` : status === 'connecting' ? 'Connexion…' : 'Reconnexion…'
   return (
-    <div className="prs" ref={box}>
-      <button type="button" className={'prs-btn' + (open ? ' on' : '')} onClick={() => setOpen(o => !o)} aria-expanded={open} title="Personnes en ligne">
+    <div className={'prs' + (!connected ? ' prs-pending' : '')} ref={box}>
+      <button type="button" className={'prs-btn' + (open ? ' on' : '')} onClick={() => setOpen(o => !o)} aria-expanded={open} aria-label={label + ", membres du projet"} title="Personnes en ligne dans ce projet">
         <span className="prs-live" aria-hidden />
         <span className="prs-stack">
           {shown.map(u => <i key={u.id} style={{ background: u.color }}>{(u.name || '?')[0].toUpperCase()}</i>)}
           {extra > 0 && <i className="prs-more">+{extra}</i>}
         </span>
-        <span className="prs-count">{list.length} en ligne</span>
+        <span className="prs-count">{label}</span><span className="prs-mobile-count">{connected ? list.length : '…'}</span>
       </button>
       {open && (
         <div className="prs-pop" role="dialog" aria-label="Personnes en ligne">
-          <div className="prs-hd">En ligne maintenant</div>
+          <div className="prs-hd">Membres en ligne dans ce projet</div>
+          {!connected && <p className="prs-message" role="status">Connexion à la présence en temps réel…</p>}
+          {connected && !list.length && <p className="prs-message" role="status">Actualisation des membres…</p>}
           {list.map(u => {
             const where = u.item && titleOf(u.item)
             return (
@@ -158,7 +161,7 @@ export function Presence({ online, me, titleOf }) {
                 <span className="prs-av" style={{ background: u.color }}>{(u.name || '?')[0].toUpperCase()}<b /></span>
                 <span className="prs-txt">
                   <strong>{u.name || 'Membre'}{u.id === me && <em>toi</em>}</strong>
-                  <small>{where ? 'Sur « ' + where + ' »' : "Sur l'accueil"}</small>
+                  <small>{where ? 'Sur « ' + where + ' »' : "Dans le projet"}</small>
                 </span>
               </div>
             )
