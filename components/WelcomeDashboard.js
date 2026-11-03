@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import './welcome-dashboard.css'
+import { selectLibraryItems } from '../lib/library'
 
 function Icon({ name, size = 20 }) {
   const paths = {
@@ -32,12 +33,13 @@ export default function WelcomeDashboard({ items, sibs, openItem, show, projName
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState('all')
   const [sort, setSort] = useState('recent')
-  useEffect(() => { setQuery(''); setFilter(section === 'pages' ? 'page' : section === 'pdf' ? 'pdf' : 'all') }, [section])
+  useEffect(() => { setQuery(''); setFilter(section === 'pages' ? 'page' : section === 'pdf' ? 'pdf' : 'all') }, [section, space, projName])
   const needle = query.trim().toLocaleLowerCase('fr')
-  const folders = items.filter(i => i.type === 'folder' && !i.parent_id)
+  const rootsOnly = !['pages', 'pdf'].includes(section)
   const documents = items.filter(i => i.type !== 'folder')
   const recent = [...documents].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)).slice(0, 3)
-  const visible = [...items].filter(i => (!needle || (i.title || '').toLocaleLowerCase('fr').includes(needle)) && (filter === 'all' || i.type === filter)).sort((a, b) => sort === 'name' ? (a.title || '').localeCompare(b.title || '', 'fr') : new Date(b.created_at || 0) - new Date(a.created_at || 0))
+  const visible = selectLibraryItems(items, { query, filter, sort, rootsOnly })
+  const matches = selectLibraryItems(items, { query, rootsOnly: false })
   const firstName = (name || 'vous').split(' ')[0]
   const create = e => show(e, null, 'new')
   const date = value => value && !Number.isNaN(Date.parse(value)) ? new Date(value).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : 'Sans date'
@@ -45,7 +47,7 @@ export default function WelcomeDashboard({ items, sibs, openItem, show, projName
     <span className="wd-tile-light" aria-hidden="true" />
     <span className="wd-tile-top"><span className="wd-file-icon">{item.icon || <Icon name={item.type} size={24} />}</span><span className="wd-open"><Icon name="arrow" size={18} /></span></span>
     {folder && <span className="wd-paper-stack" aria-hidden="true"><i /><i /><i /></span>}
-    <strong>{item.title}</strong>
+    <strong title={item.title}>{item.title}</strong>
     <span className="wd-tile-meta">{folder ? `${sibs(item.id).length} élément${sibs(item.id).length > 1 ? 's' : ''}` : item.type === 'pdf' ? 'Document PDF' : 'Page de notes'}<span>{!folder && date(item.created_at)}</span></span>
   </button>
 
@@ -61,11 +63,10 @@ export default function WelcomeDashboard({ items, sibs, openItem, show, projName
     {section !== 'home' && <h1 className="wd-section-heading">{{ library: space === 'invest' ? 'Invest' : 'Notes', pages: 'Pages', pdf: 'PDF' }[section]}</h1>}
     <section className="wd-library" aria-label="Bibliothèque"><div className="wd-library-head"><h2 className="wd-library-title">Bibliothèque</h2><button type="button" className="wd-new" onClick={create} aria-label="Créer un contenu"><Icon name="plus" size={18} /><span>Nouveau</span></button></div>
       <div className="wd-reveal">
-        <div className="wd-tools"><label className="wd-search"><Icon name="search" size={18} /><input aria-label="Rechercher dans la bibliothèque" placeholder="Rechercher" value={query} onChange={e => setQuery(e.target.value)} />{query && <button type="button" onClick={() => setQuery('')} aria-label="Effacer la recherche">×</button>}</label><select aria-label="Trier les contenus" value={sort} onChange={e => setSort(e.target.value)}><option value="recent">Plus récents</option><option value="name">Nom A → Z</option></select></div>
-        <div className={"wd-filters" + (['pages', 'pdf'].includes(section) ? " wd-filters-hidden" : "")} aria-label="Type de contenu">{[['all', 'Tout'], ['page', 'Pages'], ['folder', 'Dossiers'], ['pdf', 'PDF']].map(([value, label]) => <button type="button" key={value} aria-pressed={filter === value} className={filter === value ? 'selected' : ''} onClick={() => setFilter(value)}>{label}<span>{value === 'all' ? items.length : items.filter(i => i.type === value).length}</span></button>)}</div>
-        {!needle && filter === 'all' && folders.length > 0 && <div className="wd-folder-section"><div className="wd-section-title"><h2>Vos dossiers</h2></div><div className="wd-grid">{folders.map((item, index) => tile(item, index, true))}</div></div>}
-        <div className="wd-section-title"><h2>{needle ? 'Résultats de recherche' : filter === 'all' ? 'Tous les contenus' : { page: 'Vos pages', folder: 'Vos dossiers', pdf: 'Vos PDF' }[filter]}</h2><span role="status">{visible.length} résultat{visible.length > 1 ? 's' : ''}</span></div>
-        {visible.length ? <div className="wd-grid" key={`${filter}-${sort}-${needle}`}>{visible.map((item, index) => tile(item, index, item.type === 'folder'))}</div> : <div className="wd-empty"><span className="wd-empty-icon"><Icon name={needle ? 'search' : 'spark'} size={28} /></span><h3>{needle ? 'Aucun résultat' : 'Aucun contenu'}</h3><button type="button" className="wd-create" onClick={needle ? () => { setQuery(''); setFilter(section === 'pages' ? 'page' : section === 'pdf' ? 'pdf' : 'all') } : create}>{needle ? 'Réinitialiser la recherche' : 'Nouveau contenu'}<Icon name={needle ? 'arrow' : 'plus'} size={17} /></button></div>}
+        <div className="wd-tools"><label className="wd-search"><Icon name="search" size={18} /><input aria-label="Rechercher dans la bibliothèque" placeholder="Rechercher un dossier, une page, un PDF…" value={query} onChange={e => setQuery(e.target.value)} />{query && <button type="button" onClick={() => setQuery('')} aria-label="Effacer la recherche">×</button>}</label><select aria-label="Trier les contenus" value={sort} onChange={e => setSort(e.target.value)}><option value="recent">Plus récents</option><option value="name">Nom A → Z</option></select></div>
+        {(!rootsOnly || needle) && <div className={"wd-filters" + (['pages', 'pdf'].includes(section) ? " wd-filters-hidden" : "")} aria-label="Type de contenu">{[['all', 'Tout'], ['page', 'Pages'], ['folder', 'Dossiers'], ['pdf', 'PDF']].map(([value, label]) => <button type="button" key={value} aria-pressed={filter === value} className={filter === value ? 'selected' : ''} onClick={() => setFilter(value)}>{label}<span>{value === 'all' ? matches.length : matches.filter(i => i.type === value).length}</span></button>)}</div>}
+        <div className="wd-section-title"><h2>{needle ? 'Résultats de recherche' : rootsOnly ? 'Vos dossiers' : filter === 'all' ? 'Tous les contenus' : { page: 'Vos pages', folder: 'Vos dossiers', pdf: 'Vos PDF' }[filter]}</h2><span role="status">{visible.length} {needle || !rootsOnly ? 'résultat' : 'dossier'}{visible.length > 1 ? 's' : ''}</span></div>
+        {visible.length ? <div className="wd-grid" key={`${filter}-${sort}-${needle}`}>{visible.map((item, index) => tile(item, index, item.type === 'folder'))}</div> : <div className="wd-empty"><span className="wd-empty-icon"><Icon name={needle ? 'search' : 'spark'} size={28} /></span><h3>{needle ? 'Aucun résultat' : rootsOnly ? 'Aucun dossier principal' : 'Aucun contenu'}</h3><button type="button" className="wd-create" onClick={needle ? () => { setQuery(''); setFilter(section === 'pages' ? 'page' : section === 'pdf' ? 'pdf' : 'all') } : create}>{needle ? 'Réinitialiser la recherche' : 'Nouveau contenu'}<Icon name={needle ? 'arrow' : 'plus'} size={17} /></button></div>}
       </div>
     </section>
 

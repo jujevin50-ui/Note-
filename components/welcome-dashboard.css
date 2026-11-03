@@ -10,5 +10,28 @@
 @media(min-width:1400px){.wd-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}@media(max-width:1000px){.wd-hero-art{right:3%;scale:.85;transform-origin:right center}.wd-hero{padding:32px;min-height:320px}.wd-hero-copy{width:65%}.wd-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.wd-recent-grid{grid-template-columns:1fr}.wd-recent{padding:12px 14px}.wd-recent-copy{display:flex;align-items:center;flex:1;justify-content:space-between;gap:10px}}
 @media(max-width:600px){.wd{padding:20px 16px 30px}.wd-top{margin-bottom:20px}.wd-top-caption{display:none}.wd-hero{padding:26px 23px 34px;min-height:310px}.wd-hero-copy{width:100%}.wd-hero h1{font-size:32px}.wd-hero-art{right:-75px;top:70px;opacity:.13;scale:.9}.wd-hero p{max-width:260px}.wd-hero-number{font-size:7px;right:16px}.wd-summary{gap:16px;margin-bottom:26px;padding:18px 0}.wd-summary-end{display:none}.wd-section-title>span{font-size:9px}.wd-section-title h2{font-size:14px}.wd-new span{display:none}.wd-tools{gap:8px}.wd-tools select{max-width:108px;padding:10px 3px}.wd-search{padding:0 8px;gap:6px}.wd-search input{font-size:10px}.wd-grid{gap:10px}.wd-tile{padding:14px 12px}.wd-tile-meta{flex-wrap:wrap;font-size:9px}.wd-open{opacity:1}.wd-empty h3{font-size:16px}.wd-footer{font-size:9px}.wd-recent-copy small{flex-shrink:0}}
 @media(prefers-reduced-motion:reduce){.wd *,.wd *::before,.wd *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}.wd-hero-art,.wd-tile{transform:none!important}.wd-create:hover,.wd-recent:hover,.wd-new:hover,.wd-filters button:hover{transform:none}.wd-tile:active{scale:1}}
-.wd-section-heading{font-size:28px;letter-spacing:-.04em;margin:0 0 26px;font-weight:600}.wd-filters-hidden{display:none}.wd-hero{min-height:260px;display:flex;align-items:center}.wd-hero h1{margin:0 0 24px}.wd-hero-art{top:12px}.wd-empty h3{margin-bottom:22px}.wd:has(.wd-section-heading) .wd-library-head{justify-content:flex-end}@media(max-width:600px){.wd-hero{min-height:240px}.wd-hero-art{top:20px}.wd-hero h1{font-size:30px}}
+.wd-section-heading{font-size:28px;letter-spacing:-.04em;margin:0 0 26px;font-weight:600}.wd-filters-hidden{display:none}.wd-hero{min-height:260px;display:flex;align-items:center}.wd-hero h1{margin:0 0 24px}.wd-hero-art{top:12px}.wd-empty h3{margin-bottom:22px}.wd:has(.wd-section-heading) .wd-library-head{justify-content:space-between}@media(max-width:600px){.wd-hero{min-height:240px}.wd-hero-art{top:20px}.wd-hero h1{font-size:30px}}
 .wd-library-title{margin:0 0 16px;font-size:14px;font-weight:600}
+
+/* Bibliothèque : titres lisibles et espacement régulier. */
+.wd-library-head{gap:20px;padding-bottom:16px;margin-bottom:22px}
+.wd-library-title{margin:0;font-size:16px;line-height:1.4}
+.wd-new{flex-shrink:0;margin-bottom:0;min-height:36px;padding:8px 12px;font-size:12px!important}
+.wd-tools{margin-bottom:24px;flex-wrap:wrap}
+.wd-search{width:min(100%,440px);min-height:44px}
+.wd-search input{width:100%;font-size:13px;line-height:1.5}
+.wd-search>svg{flex-shrink:0}
+.wd-tools select{min-height:40px;font-size:12px}
+.wd-section-title{align-items:baseline;flex-wrap:wrap;gap:8px 16px}
+.wd-section-title h2{font-size:16px;line-height:1.5}
+.wd-section-title>span{font-size:12px}
+.wd-tile{gap:14px;padding:22px 20px;min-height:160px}
+.wd-tile-top{flex-shrink:0}
+.wd-tile>strong{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;white-space:normal;overflow:hidden;overflow-wrap:anywhere;font-size:14px;font-weight:600;line-height:1.5;letter-spacing:normal}
+.wd-tile-meta{margin-top:auto;gap:8px;font-size:11px;line-height:1.6;flex-wrap:wrap}
+.wd-folder{min-height:210px}
+.wd-paper-stack{height:36px;margin-top:2px;flex-shrink:0;pointer-events:none}
+.wd-paper-stack i{height:28px}
+.wd-folder>strong,.wd-folder>.wd-tile-meta{background:transparent}
+.wd-empty p{font-size:13px}
+@media(max-width:600px){.wd-tools{align-items:stretch;gap:10px}.wd-search{width:100%}.wd-tools select{max-width:none}.wd-tile{padding:16px 14px}.wd-tile>strong{font-size:13px}.wd-folder{min-height:200px}.wd-new span{display:inline}.wd-section-heading{margin-bottom:20px}}
