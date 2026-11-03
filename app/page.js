@@ -146,42 +146,45 @@ function FolderView({ folder, sibs, openItem, openFolder, show, items }) {
 }
 
 function TreeHome({ items, sibs, openItem, show, projName, space, addCompany }) {
-  const NW = 210, NH = 46, GX = 120, GY = 16, PAD = 40
+  const SLOT = 128, LV = 132, STAG = 46, OFF = 120
+  const GREENS = ['#5fae4f', '#7bbf5e', '#4c9a63', '#8fc45f', '#3f8f6b']
   const [q, setQ] = useState('')
   const [shut, setShut] = useState(() => { try { return JSON.parse(localStorage.getItem('homeShut') || '{}') } catch { return {} } })
   useEffect(() => { try { localStorage.setItem('homeShut', JSON.stringify(shut)) } catch {} }, [shut])
-  const [view, setView] = useState({ x: 40, y: 90, k: 1 })
+  const [view, setView] = useState({ x: 0, y: 70, k: 1 })
   const stage = useRef(null), drag = useRef(null), fitted = useRef(false)
   const needle = q.trim().toLowerCase()
   const folders = items.filter(i => i.type === 'folder')
   const nF = folders.length, nP = items.filter(i => i.type === 'page').length, nD = items.filter(i => i.type === 'pdf').length
   const allShut = nF > 0 && folders.every(f => shut[f.id])
 
-  // mise en page : arbre horizontal, chaque parent est centré sur ses enfants
-  const build = (pid, depth, color) => sibs(pid).map(i => { const c = i.color || color; return { i, depth, c, kids: i.type === 'folder' && (needle || !shut[i.id]) ? build(i.id, depth + 1, c) : [] } })
-  let leaf = 0, maxD = 0
+  // mise en page : le tronc est en bas, les dossiers sont des branches, les pages des feuilles
+  const build = (pid, depth, color) => sibs(pid).map((i, k) => { const c = i.color || color || GREENS[k % GREENS.length]; return { i, depth, c, kids: i.type === 'folder' && (needle || !shut[i.id]) ? build(i.id, depth + 1, i.color || color || c) : [] } })
+  let leaf = 0, maxD = 1
   const nodes = []
   const place = (n, parent) => {
     maxD = Math.max(maxD, n.depth)
     n.kids.forEach(k => place(k, n))
-    n.y = n.kids.length ? (n.kids[0].y + n.kids[n.kids.length - 1].y) / 2 : leaf++ * (NH + GY)
-    n.x = n.depth * (NW + GX)
+    n.x = n.kids.length ? (n.kids[0].x + n.kids[n.kids.length - 1].x) / 2 : leaf++ * SLOT
     n.parent = parent
+    n.slot = Math.round(n.x / SLOT)
     nodes.push(n)
   }
-  const tops = build(null, 1, '#3b82f6')
+  const tops = build(null, 1, null)
   tops.forEach(t => place(t, null))
-  const rootY = tops.length ? (tops[0].y + tops[tops.length - 1].y) / 2 : 0
-  const W = maxD * (NW + GX) + NW, H = Math.max(leaf, 1) * (NH + GY) - GY
+  const rx = tops.length ? (tops[0].x + tops[tops.length - 1].x) / 2 : 0
+  const ry = maxD * LV + 70, gy = ry + 120
+  nodes.forEach(n => { n.y = (maxD - n.depth) * LV + 70 + (n.i.type !== 'folder' && n.slot % 2 ? -STAG : 0) })
+  const Wd = Math.max(leaf - 1, 1) * SLOT + 2 * OFF, Hd = gy + 90
 
   const fit = () => {
     const el = stage.current
     if (!el) return
     const sw = el.clientWidth, sh = el.clientHeight
-    const k = Math.max(0.4, Math.min(1, (sw - 2 * PAD) / W, (sh - 150) / H))
-    setView({ k, x: Math.max(PAD, (sw - W * k) / 2), y: Math.max(90, (sh - H * k) / 2 + 30) })
+    const k = Math.max(0.35, Math.min(1, (sw * 0.94) / Wd, (sh - 90) / Hd))
+    setView({ k, x: (sw - Wd * k) / 2, y: Math.max(70, sh - Hd * k - 6) })
   }
-  useEffect(() => { if (!fitted.current && nodes.length) { fitted.current = true; fit() } })
+  useEffect(() => { if (!fitted.current && stage.current) { fitted.current = true; fit() } })
   useEffect(() => {
     const el = stage.current
     if (!el) return
@@ -194,58 +197,61 @@ function TreeHome({ items, sibs, openItem, show, projName, space, addCompany }) 
     return () => el.removeEventListener('wheel', h)
   }, [])
   const zoomBy = f => { const el = stage.current; if (!el) return; const mx = el.clientWidth / 2, my = el.clientHeight / 2; setView(v => { const k = Math.max(0.3, Math.min(1.8, v.k * f)), s = k / v.k; return { k, x: mx - (mx - v.x) * s, y: my - (my - v.y) * s } }) }
-  const spot = e => { const r = e.currentTarget.getBoundingClientRect(); e.currentTarget.style.setProperty('--mx', ((e.clientX - r.left) / r.width) * 100 + '%'); e.currentTarget.style.setProperty('--my', ((e.clientY - r.top) / r.height) * 100 + '%') }
   const onNode = i => { if (i.type === 'folder') setShut(s => ({ ...s, [i.id]: !s[i.id] })); else openItem(i.id) }
 
-  const rcy = rootY + NH / 2
+  const a = rx + OFF
   const edge = n => {
-    const x1 = n.parent ? n.parent.x + NW : NW, y1 = (n.parent ? n.parent.y : rootY) + NH / 2
-    const x2 = n.x, y2 = n.y + NH / 2, xm = x1 + (x2 - x1) / 2
-    return `M${x1} ${y1} C${xm} ${y1} ${xm} ${y2} ${x2} ${y2}`
+    const x1 = (n.parent ? n.parent.x : rx) + OFF, y1 = n.parent ? n.parent.y : ry
+    const x2 = n.x + OFF, y2 = n.y, dy = y1 - y2
+    return `M${x1} ${y1} C${x1 + (x2 - x1) * 0.12} ${y1 - dy * 0.55} ${x2 - (x2 - x1) * 0.1} ${y2 + dy * 0.45} ${x2} ${y2}`
   }
+  const bw = n => n.i.type === 'folder' ? Math.max(3.5, 13 - (n.depth - 1) * 3.5) : 2.2
+  const trunk = `M${a - 34} ${gy + 8} C${a - 26} ${gy - 34} ${a - 17} ${ry + 70} ${a - 14} ${ry} L${a + 14} ${ry} C${a + 17} ${ry + 70} ${a + 26} ${gy - 34} ${a + 34} ${gy + 8} Z`
   return <div className="th">
-    <LiquidBackground />
+    <i className="th-sun" /><i className="th-cloud c1" /><i className="th-cloud c2" />
     <div className="th-stage" ref={stage}
-      onPointerDown={e => { if (e.target.closest('.hn,.th-bar,.th-zoom')) return; drag.current = { x: e.clientX, y: e.clientY, vx: view.x, vy: view.y }; e.currentTarget.setPointerCapture(e.pointerId) }}
+      onPointerDown={e => { if (e.target.closest('.tr-tag,.tr-leaf,.tr-sign,.th-bar,.th-zoom')) return; drag.current = { x: e.clientX, y: e.clientY, vx: view.x, vy: view.y }; e.currentTarget.setPointerCapture(e.pointerId) }}
       onPointerMove={e => { const d = drag.current; if (d) setView(v => ({ ...v, x: d.vx + e.clientX - d.x, y: d.vy + e.clientY - d.y })) }}
       onPointerUp={() => { drag.current = null }} onPointerCancel={() => { drag.current = null }}
       onContextMenu={e => show(e, null, 'new')}>
       <div className="th-canvas" style={{ transform: `translate(${view.x}px, ${view.y}px) scale(${view.k})` }}>
-        <svg className="th-edges" width={W + 40} height={H + 80}>
-          {nodes.map(n => {
-            const dl = n.depth * 140 + (n.y / (NH + GY)) * 30
-            const st = { '--ec': n.c, '--dl': dl + 'ms', '--d2': dl + 900 + 'ms' }
-            return <g key={n.i.id} style={st}>
-              <path className="th-edge" d={edge(n)} pathLength="1" />
-              <path className="th-flow" d={edge(n)} pathLength="1" />
-            </g>
-          })}
+        <svg className="th-svg" width={Wd + 400} height={Hd} style={{ left: -200 }} viewBox={`-200 0 ${Wd + 400} ${Hd}`}>
+          <ellipse className="tr-grass" cx={a} cy={gy + 26} rx={Wd / 2 + 180} ry={64} />
+          <ellipse className="tr-soil" cx={a} cy={gy + 14} rx={86} ry={20} />
+          <path className="tr-trunk" d={trunk} />
+          <path className="tr-bark" d={`M${a - 8} ${gy - 10} C${a - 9} ${gy - 70} ${a - 6} ${ry + 80} ${a - 5} ${ry + 14}`} />
+          <path className="tr-bark" d={`M${a + 9} ${gy - 18} C${a + 10} ${gy - 80} ${a + 7} ${ry + 90} ${a + 6} ${ry + 24}`} />
+          {nodes.map(n => <path key={n.i.id} className="tr-br" d={edge(n)} pathLength="1" style={{ strokeWidth: bw(n), '--dl': n.depth * 180 + n.slot * 18 + 'ms' }} />)}
         </svg>
-        <div className="hn hn-root" style={{ left: 0, top: rcy - 34, width: NW, height: 68, '--c': '#3b82f6' }}>
-          <i className="hn-ring" /><i className="hn-ring r2" />
-          <span className="hn-tree">🌳</span>
-          <div className="hn-rt"><b>{projName || 'Mon espace'}</b><small>{nF} dossier{nF > 1 ? 's' : ''} · {nP + nD} fichier{nP + nD > 1 ? 's' : ''}</small></div>
+        <div className="tr-sign" style={{ left: a + 74, top: gy - 60 }}>
+          <b>{projName || 'Mon espace'}</b>
+          <small>{nF} dossier{nF > 1 ? 's' : ''} · {nP + nD} fichier{nP + nD > 1 ? 's' : ''}</small>
         </div>
         {nodes.map(n => {
           const i = n.i, f = i.type === 'folder', closed = f && !needle && !!shut[i.id]
           const hit = needle && (i.title || '').toLowerCase().includes(needle)
-          return <div key={i.id} className={'hn' + (f ? ' hn-f' : '') + (hit ? ' hit' : '') + (needle && !hit ? ' dim' : '') + (closed ? ' shut' : '')}
-            style={{ left: n.x, top: n.y, width: NW, height: NH, '--c': n.c, '--dl': n.depth * 140 + (n.y / (NH + GY)) * 30 + 200 + 'ms' }}
-            onClick={() => onNode(i)} onContextMenu={e => show(e, i)} onPointerMove={spot}>
-            {f ? (i.icon ? <span className="hn-em">{i.icon}</span> : <FolderBits size={0.3} color={n.c} open={!closed} />) : <span className="hn-em"><Ic i={i} /></span>}
-            <span className="hn-t">{i.title}</span>
-            {f && <small className="hn-n">{sibs(i.id).length}</small>}
-            {f && <span className="hn-act">
-              <b onClick={e => { e.stopPropagation(); show(e, i, 'new') }}>＋</b>
-              <b onClick={e => { e.stopPropagation(); openItem(i.id) }}>↗</b>
-            </span>}
-          </div>
+          const cls = (needle && !hit ? ' dim' : '') + (hit ? ' hit' : '')
+          const dl = n.depth * 180 + n.slot * 18 + 500 + 'ms'
+          const side = n.x < (n.parent ? n.parent.x : rx) ? -1 : 1
+          const pos = { left: n.x + OFF, top: n.y, '--c': n.c, '--dl': dl }
+          return f
+            ? <div key={i.id} className={'tr-tag' + (closed ? ' shut' : '') + cls} style={pos} onClick={() => onNode(i)} onContextMenu={e => show(e, i)}>
+              <span className="tr-em">{i.icon || '📁'}</span><span className="tr-t">{i.title}</span>
+              <small className="tr-n">{sibs(i.id).length}</small>
+              <span className="tr-act">
+                <b onClick={e => { e.stopPropagation(); show(e, i, 'new') }}>＋</b>
+                <b onClick={e => { e.stopPropagation(); openItem(i.id) }}>↗</b>
+              </span>
+            </div>
+            : <div key={i.id} className={'tr-leaf' + cls} style={{ ...pos, '--rot': side * 5 + 'deg', '--sd': (n.slot % 5) * -1.1 + 's' }} onClick={() => onNode(i)} onContextMenu={e => show(e, i)}>
+              <span className="tr-em"><Ic i={i} /></span><span className="tr-t">{i.title}</span>
+            </div>
         })}
       </div>
     </div>
     <div className="th-bar">
       <FxSearch value={q} onChange={e => setQ(e.target.value)} placeholders={['Rechercher dans l\'arbre…', 'Un dossier, une page…', 'Un PDF, une idée…']} />
-      <button type="button" className="btn-primary btn-glow" onClick={e => show(e, null, 'new')}>＋ Nouveau</button>
+      <button type="button" className="btn-primary" onClick={e => show(e, null, 'new')}>＋ Nouveau</button>
       {space === 'invest' && addCompany && <button type="button" className="th-btn" onClick={addCompany}>＋ Entreprise</button>}
       {nF > 0 && <button type="button" className="th-btn" onClick={() => setShut(Object.fromEntries(folders.map(f => [f.id, !allShut])))}>{allShut ? 'Tout déplier' : 'Tout replier'}</button>}
       <span className="th-stats">
@@ -386,15 +392,13 @@ function Main({ user }) {
   const trail = i => { const a = []; let c = items.find(x => x.id === i.parent_id); while (c) { a.unshift(c); c = items.find(x => x.id === c.parent_id) }; return a }
   const tabItems = tabs.map(id => items.find(i => i.id === id)).filter(i => i && (i.space || 'notes') === space)
   const sideW = open ? w : 0
-  const selItem = items.find(x => x.id === sel)
-  const chain = selItem ? [...pathTo(selItem.parent_id), selItem.id] : []
-  const renderTree = (parentId, depth) => { const kids = sibs(parentId), act = depth > 0 ? kids.findIndex(k => chain.includes(k.id)) : -1; return kids.map((i, idx) => {
+  const renderTree = (parentId, depth) => { const kids = sibs(parentId); return kids.map((i, idx) => {
     const f = i.type === 'folder', shut = !!collapsed[i.id], z = drop && drop.id === i.id ? ' dz-' + drop.zone : ''
     return <div key={i.id} className="tnode">
       {depth > 0 && <>
-        <i className={'ln up' + (act >= 0 && idx <= act ? ' lit' : '')} />
-        {idx < kids.length - 1 && <i className={'ln dn' + (idx < act ? ' lit' : '')} />}
-        <i className={'ln tk' + (idx === act ? ' lit' : '')} />
+        <i className="ln up" />
+        {idx < kids.length - 1 && <i className="ln dn" />}
+        <i className="ln tk" />
       </>}
       <div className={'row trow' + (sel === i.id ? ' on' : '') + z} style={{ paddingLeft: 6 }} draggable
         onDragStart={e => { drag.current = i.id; e.dataTransfer.setData('text/plain', i.id) }}
@@ -408,7 +412,7 @@ function Main({ user }) {
         </span>
         <span className="act">{f && <small className="tcount">{sibs(i.id).length}</small>}{f && <b onClick={e => show(e, i, 'new')}>＋</b>}<b onClick={e => show(e, i)}>⋮</b></span>
       </div>
-      {f && !shut && <div className="tchildren" style={{ '--tc': i.color || '#3b82f6' }}>{renderTree(i.id, depth + 1)}</div>}
+      {f && !shut && <div className="tchildren">{renderTree(i.id, depth + 1)}</div>}
     </div>
   }) }
   const allFolders = spaceItems.filter(i => i.type === 'folder')

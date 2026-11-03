@@ -247,15 +247,6 @@ body{background:var(--bg);color:var(--fg);transition:background .3s ease,color .
 .ln.up{left:-1px;top:-1px;width:2px;height:18px}
 .ln.dn{left:-1px;top:15px;bottom:-1px;width:2px}
 .ln.tk{left:-1px;top:15px;width:8px;height:2px}
-.ln.lit{background:var(--tc,#3b82f6);box-shadow:0 0 8px color-mix(in srgb,var(--tc,#3b82f6) 70%,transparent);z-index:2;overflow:visible}
-.ln.lit::after{content:'';position:absolute;inset:0;border-radius:inherit;
-  background:linear-gradient(180deg,transparent 0%,rgba(255,255,255,.9) 50%,transparent 100%);background-size:100% 260%;animation:lnFlowV 1.4s linear infinite}
-.ln.tk.lit::after{background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,.9) 50%,transparent 100%);background-size:260% 100%;animation-name:lnFlowH}
-.ln.tk.lit::before{content:'';position:absolute;right:-2px;top:-1.5px;width:5px;height:5px;border-radius:50%;background:var(--tc,#3b82f6);box-shadow:0 0 9px var(--tc,#3b82f6)}
-@keyframes lnFlowV{from{background-position:0 -130%}to{background-position:0 230%}}
-@keyframes lnFlowH{from{background-position:-130% 0}to{background-position:230% 0}}
-.tree .trow.on{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--tc,#3b82f6) 45%,transparent)}
-@media(prefers-reduced-motion:reduce){.ln.lit::after{animation:none}}
 
 /* ── Plus de contour bleu autour du texte quand on écrit (éditeur, résumé, note, champs) ── */
 .ProseMirror,.ProseMirror:focus,.ProseMirror:focus-visible,.ProseMirror-focused,
@@ -263,65 +254,67 @@ body{background:var(--bg);color:var(--fg);transition:background .3s ease,color .
 textarea,textarea:focus,textarea:focus-visible,[contenteditable],[contenteditable]:focus,[contenteditable]:focus-visible{outline:none !important;box-shadow:none}
 .ProseMirror *:focus,.ProseMirror *:focus-visible{outline:none}
 
-/* ══ Accueil : arbre géant (dossiers › sous-dossiers › pages) ══ */
+/* ══ Accueil : un vrai arbre (tronc › branches = dossiers › feuilles = pages) ══ */
 .mainc>main.full{position:relative;padding:0;overflow:hidden}
 .mainc>main.full .workspace{position:absolute;inset:0;min-height:0}
-.th{position:absolute;inset:0;overflow:hidden;isolation:isolate}
-.th .lbg{z-index:0;opacity:.85}
-.th-stage{position:absolute;inset:0;z-index:1;cursor:grab;touch-action:none;background-image:radial-gradient(var(--dot,rgba(15,23,42,.1)) 1px,transparent 1.3px);background-size:26px 26px}
+.th{--wood:#7a5a3a;--bark:#5e4329;--grass:#8cc07b;--soil:#8a6a45;--tag-bg:#f8f1e0;--tag-bd:#c3a574;--tag-fg:#4a3720;--leaf-fg:#16381d;--leaf-mix:#ffffff;--leaf-pct:72%;
+  position:absolute;inset:0;overflow:hidden;isolation:isolate;background:linear-gradient(180deg,#d8ebf8 0%,#eaf4ef 58%,#e1edd3 100%)}
+:root[data-theme=dark] .th{--wood:#8c6a45;--bark:#6d5132;--grass:#2c4a2e;--soil:#3a2c1d;--tag-bg:#2b241a;--tag-bd:#7b6440;--tag-fg:#eadfc9;--leaf-fg:#e8f5e9;--leaf-mix:#0b1510;--leaf-pct:58%;
+  background:linear-gradient(180deg,#0d1320 0%,#151f2b 60%,#18261d 100%)}
+.th-sun{position:absolute;right:9%;top:11%;width:110px;height:110px;border-radius:50%;z-index:0;background:radial-gradient(circle,#fff7cf 0,#ffe9a0 42%,rgba(255,233,160,0) 70%)}
+:root[data-theme=dark] .th-sun{background:radial-gradient(circle,#f1f3ff 0,#c9d0f5 38%,rgba(201,208,245,0) 68%);width:90px;height:90px}
+.th-cloud{position:absolute;z-index:0;height:34px;border-radius:99px;background:rgba(255,255,255,.75);filter:blur(1px);animation:thCloud 90s linear infinite}
+.th-cloud::before,.th-cloud::after{content:'';position:absolute;background:inherit;border-radius:50%}
+.th-cloud::before{width:46px;height:46px;left:18px;top:-22px}.th-cloud::after{width:34px;height:34px;left:62px;top:-14px}
+.th-cloud.c1{width:120px;top:20%;left:-160px}
+.th-cloud.c2{width:90px;top:32%;left:-160px;animation-duration:140s;animation-delay:-60s;opacity:.7}
+:root[data-theme=dark] .th-cloud{background:rgba(120,135,170,.25)}
+@keyframes thCloud{to{transform:translateX(calc(100vw + 360px))}}
+.th-stage{position:absolute;inset:0;z-index:1;cursor:grab;touch-action:none}
 .th-stage:active{cursor:grabbing}
 .th-canvas{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform}
-.th-edges{position:absolute;left:0;top:0;overflow:visible;pointer-events:none}
-.th-edge{fill:none;stroke:var(--ec);stroke-width:2;stroke-linecap:round;opacity:.42;stroke-dasharray:1;stroke-dashoffset:1;animation:thDraw .9s var(--ease,ease) forwards;animation-delay:var(--dl)}
-.th-flow{fill:none;stroke:var(--ec);stroke-width:3;stroke-linecap:round;stroke-dasharray:.06 .94;opacity:0;filter:drop-shadow(0 0 4px var(--ec));
-  animation:thShow .3s ease forwards,thFlow 3.4s linear infinite;animation-delay:var(--d2),var(--d2)}
-@keyframes thDraw{to{stroke-dashoffset:0}}
-@keyframes thShow{to{opacity:1}}
-@keyframes thFlow{from{stroke-dashoffset:0}to{stroke-dashoffset:-1}}
+.th-svg{position:absolute;top:0;overflow:visible;pointer-events:none}
+.tr-grass{fill:var(--grass)}.tr-soil{fill:var(--soil)}
+.tr-trunk{fill:var(--wood);transform-box:fill-box;transform-origin:50% 100%;animation:trGrow 1s var(--ease,ease) backwards}
+.tr-bark{fill:none;stroke:var(--bark);stroke-width:2;stroke-linecap:round;opacity:.55}
+.tr-br{fill:none;stroke:var(--wood);stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1;animation:trDraw .8s var(--ease,ease) forwards;animation-delay:var(--dl)}
+@keyframes trDraw{to{stroke-dashoffset:0}}
+@keyframes trGrow{from{scale:1 0}to{scale:1 1}}
 
-.hn{position:absolute;display:flex;align-items:center;gap:9px;padding:0 12px;border-radius:15px;cursor:pointer;color:var(--fg);font-size:13.5px;font-weight:600;overflow:hidden;
-  background:color-mix(in srgb,var(--bg) 80%,transparent);border:1.5px solid color-mix(in srgb,var(--c) 45%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
-  box-shadow:0 8px 22px -12px color-mix(in srgb,var(--c) 75%,transparent);
-  animation:hnPop .65s var(--ease,ease) backwards;animation-delay:var(--dl,0ms);
-  transition:box-shadow .25s,border-color .25s,opacity .25s,scale .25s var(--spring,ease)}
-.hn::before{content:'';position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .25s;
-  background:radial-gradient(170px circle at var(--mx,50%) var(--my,50%),color-mix(in srgb,var(--c) 30%,transparent),transparent 70%)}
-.hn:hover{border-color:var(--c);scale:1.05;box-shadow:0 14px 34px -12px color-mix(in srgb,var(--c) 85%,transparent)}
-.hn:hover::before{opacity:1}
-.hn>*{position:relative}
-.hn-em{display:grid;place-items:center;font-size:16px;flex:none}
-.hn .rbf-box{margin:2px 0 0 -2px}
-.hn-t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.hn-n{flex:none;font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;background:color-mix(in srgb,var(--c) 18%,transparent);color:var(--fg)}
-.hn-act{display:none;gap:2px;flex:none}
-.hn:hover .hn-act{display:flex}
-.hn:hover .hn-n{display:none}
-.hn-act b{width:24px;height:24px;display:grid;place-items:center;border-radius:8px;font-size:13px;transition:background .15s}
-.hn-act b:hover{background:color-mix(in srgb,var(--c) 25%,transparent)}
-.hn.shut{border-style:dashed}
-.hn.hit{border-color:var(--c);box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 30%,transparent),0 0 26px color-mix(in srgb,var(--c) 70%,transparent)}
-.hn.dim{opacity:.28}
-@keyframes hnPop{from{opacity:0;filter:blur(10px);transform:scale(.8)}to{opacity:1;filter:blur(0);transform:none}}
-.hn-root{padding:0 16px;gap:12px;border-radius:24px;border-width:2px;cursor:default;overflow:visible;
-  background:linear-gradient(135deg,color-mix(in srgb,var(--c) 24%,var(--bg)),var(--bg))}
-.hn-root:hover{scale:1}
-.hn-tree{font-size:32px;line-height:1;animation:hnFloat 4s ease-in-out infinite}
-.hn-rt{min-width:0;display:flex;flex-direction:column}
-.hn-rt b{font-size:15.5px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:128px}
-.hn-rt small{font-size:11.5px;font-weight:500;color:var(--mut)}
-.hn-ring{position:absolute !important;inset:-2px;border-radius:inherit;border:2px solid var(--c);opacity:0;pointer-events:none;animation:hnRing 3s ease-out infinite}
-.hn-ring.r2{animation-delay:1.5s}
-@keyframes hnRing{0%{opacity:.55;transform:scale(1)}100%{opacity:0;transform:scale(1.22,1.45)}}
-@keyframes hnFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+.tr-sign{position:absolute;padding:8px 14px 9px;border-radius:8px;background:var(--tag-bg);border:2px solid var(--tag-bd);color:var(--tag-fg);box-shadow:0 3px 0 var(--bark);transform:rotate(-2deg);display:flex;flex-direction:column;max-width:190px}
+.tr-sign::after{content:'';position:absolute;left:50%;top:100%;width:6px;height:46px;margin-left:-3px;background:var(--bark);border-radius:0 0 3px 3px;z-index:-1}
+.tr-sign b{font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tr-sign small{font-size:11px;opacity:.75}
+
+.tr-tag,.tr-leaf{position:absolute;display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px;font-weight:600;transform:translate(-50%,-50%);transition:box-shadow .2s,opacity .2s,filter .2s}
+.tr-tag{padding:6px 11px;border-radius:9px;background:var(--tag-bg);border:2px solid var(--tag-bd);color:var(--tag-fg);box-shadow:0 2px 0 var(--bark);max-width:210px;
+  animation:trPop .55s var(--ease,ease) backwards;animation-delay:var(--dl)}
+.tr-tag:hover{border-color:var(--c);box-shadow:0 3px 0 var(--bark)}
+.tr-tag.shut{border-style:dashed}
+.tr-leaf{max-width:176px;padding:7px 16px 7px 13px;border-radius:3px 24px 3px 24px;rotate:var(--rot);
+  background:color-mix(in srgb,var(--c) var(--leaf-pct),var(--leaf-mix));border:1.5px solid color-mix(in srgb,var(--c) 80%,#000);color:var(--leaf-fg);
+  animation:trPop .6s var(--ease,ease) backwards,trSway 6s ease-in-out infinite;animation-delay:var(--dl),var(--sd,0s)}
+.tr-leaf:hover{box-shadow:0 3px 10px rgba(0,0,0,.2);filter:brightness(1.05)}
+.tr-em{display:grid;place-items:center;font-size:14px;flex:none}
+.tr-t{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tr-n{flex:none;font-size:11px;font-weight:700;padding:1px 7px;border-radius:99px;background:color-mix(in srgb,var(--c) 28%,transparent)}
+.tr-act{display:none;gap:2px;flex:none}
+.tr-tag:hover .tr-act{display:flex}.tr-tag:hover .tr-n{display:none}
+.tr-act b{width:22px;height:22px;display:grid;place-items:center;border-radius:6px;font-size:13px}
+.tr-act b:hover{background:color-mix(in srgb,var(--c) 30%,transparent)}
+.tr-tag.hit,.tr-leaf.hit{box-shadow:0 0 0 3px #f59e0b}
+.tr-tag.dim,.tr-leaf.dim{opacity:.3}
+@keyframes trPop{from{opacity:0;scale:.4}to{opacity:1;scale:1}}
+@keyframes trSway{0%,100%{rotate:calc(var(--rot) - 2.5deg)}50%{rotate:calc(var(--rot) + 2.5deg)}}
 
 .th-bar{position:absolute;z-index:5;left:16px;right:16px;top:14px;display:flex;flex-wrap:wrap;align-items:center;gap:10px;pointer-events:none}
 .th-bar>*{pointer-events:auto}
-.th-btn{padding:9px 16px;border-radius:12px;border:1px solid var(--rd-glass-bd);background:var(--rd-glass);color:var(--fg);font-weight:600;font-size:13.5px;cursor:pointer;backdrop-filter:blur(14px);transition:background .2s,transform .2s}
-.th-btn:hover{background:var(--hov);transform:translateY(-1px)}
+.th-btn{padding:9px 16px;border-radius:10px;border:1px solid var(--bd);background:var(--bg);color:var(--fg);font-weight:600;font-size:13.5px;cursor:pointer}
+.th-btn:hover{background:var(--hov)}
 .th-stats{display:flex;gap:8px;margin-left:auto;flex-wrap:wrap}
-.th-stats .stat-pill{background:var(--rd-glass);border:1px solid var(--rd-glass-bd);backdrop-filter:blur(14px)}
-.th-zoom{position:absolute;z-index:5;right:16px;bottom:16px;display:flex;gap:2px;padding:5px;border-radius:15px;background:var(--rd-glass);border:1px solid var(--rd-glass-bd);backdrop-filter:blur(16px);box-shadow:var(--rd-pop-sh)}
-.th-zoom button{min-width:34px;height:34px;border:0;border-radius:10px;background:transparent;color:var(--fg);font-size:16px;font-weight:600;cursor:pointer}
+.th-stats .stat-pill{background:var(--bg);border:1px solid var(--bd)}
+.th-zoom{position:absolute;z-index:5;right:16px;bottom:16px;display:flex;gap:2px;padding:4px;border-radius:12px;background:var(--bg);border:1px solid var(--bd);box-shadow:0 4px 14px rgba(0,0,0,.12)}
+.th-zoom button{min-width:34px;height:34px;border:0;border-radius:9px;background:transparent;color:var(--fg);font-size:16px;font-weight:600;cursor:pointer}
 .th-zoom button:hover{background:var(--hov)}
 .th-zoom .th-pct{font-size:12.5px;min-width:52px}
-@media(prefers-reduced-motion:reduce){.hn,.th-edge,.th-flow,.hn-ring,.hn-tree{animation:none}.th-edge{stroke-dashoffset:0}}
+@media(prefers-reduced-motion:reduce){.tr-leaf,.tr-tag,.tr-br,.tr-trunk,.th-cloud{animation:none}.tr-br{stroke-dashoffset:0}}
