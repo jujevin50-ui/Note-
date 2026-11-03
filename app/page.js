@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { colorOf } from '../lib/provider'
 import Editor from '../components/Editor'
 import PdfView from '../components/PdfView'
+import WelcomeDashboard from '../components/WelcomeDashboard'
 import { LiquidBackground, SquishSwitch, Presence, useTheme, FolderBits, GradientWaves } from '../components/Bits'
 import { FxRoot, TextGenerate, Ticker, FxSearch } from '../components/Fx'
 
@@ -145,7 +146,7 @@ function FolderView({ folder, sibs, openItem, openFolder, show, items }) {
   </div>
 }
 
-function TreeHome({ items, sibs, openItem, show, projName, space, addCompany }) {
+function TreeHome({ items, sibs, openItem, show, projName, space, addCompany, mapOnly = false }) {
   const SLOT = 128, LV = 132, STAG = 46, OFF = 120
   const GREENS = ['#5fae4f', '#7bbf5e', '#4c9a63', '#8fc45f', '#3f8f6b']
   const [q, setQ] = useState('')
@@ -211,8 +212,9 @@ function TreeHome({ items, sibs, openItem, show, projName, space, addCompany }) 
   }
   const bw = n => n.i.type === 'folder' ? Math.max(3.5, 13 - (n.depth - 1) * 3.5) : 2.2
   const trunk = `M${a - 34} ${gy + 8} C${a - 26} ${gy - 34} ${a - 17} ${ry + 70} ${a - 14} ${ry} L${a + 14} ${ry} C${a + 17} ${ry + 70} ${a + 26} ${gy - 34} ${a + 34} ${gy + 8} Z`
-  return <div className="th th-dashboard">
+  return <div className={"th th-dashboard" + (mapOnly ? " th-map-only" : "")}>
     <div className="th-dashboard-content">
+      {!mapOnly && <>
       <section className="th-welcome">
         <div className="th-welcome-copy">
           <div className="th-eyebrow"><span className="th-eyebrow-dot" /> ESPACE DE CONNAISSANCES <span className="th-eyebrow-sep">/</span> {space === 'invest' ? 'INVESTISSEMENT' : 'NOTES'}</div>
@@ -241,6 +243,7 @@ function TreeHome({ items, sibs, openItem, show, projName, space, addCompany }) 
         <div className="th-section-heading"><div><span className="th-section-kicker">REPRENDRE VOTRE TRAVAIL</span><h2>Documents récents</h2></div><span className="th-section-note">Les derniers contenus ajoutés</span></div>
         {recentItems.length ? <div className="th-recent-list">{recentItems.map((item, idx) => <button type="button" className="th-recent-row" key={item.id} onClick={() => openItem(item.id)}><span className={'th-recent-icon ' + (item.type === 'pdf' ? 'pdf' : 'page')}>{item.type === 'pdf' ? 'PDF' : 'Aa'}</span><span className="th-recent-title"><strong>{item.title}</strong><small>{item.type === 'pdf' ? 'Document PDF' : 'Note'}</small></span><span className="th-recent-date">{item.created_at ? new Date(item.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }) : 'Récemment'}</span><span className="th-recent-arrow">↗</span></button>)}</div> : <div className="th-recent-empty">Vos pages et PDF apparaîtront ici au fur et à mesure de vos recherches.</div>}
       </section>
+      </>}
       <section className="th-map-section">
         <div className="th-section-heading th-map-heading"><div><span className="th-section-kicker">VUE D’ENSEMBLE</span><h2>Cartographie des connaissances</h2><p>Explorez votre arborescence. Déplacez-vous, zoomez et ouvrez vos dossiers.</p></div><span className="th-map-hint">Glisser pour déplacer · Molette pour zoomer</span></div>
         <div className="th-map-panel">
@@ -524,7 +527,7 @@ function Main({ user }) {
                 <button className="btn-primary btn-glow" onClick={newProj}>＋ Nouveau projet</button>
                 <button className="ghost" onClick={joinProj}>🔗 Rejoindre un projet</button>
               </div>
-            </div> : !sel ? <TreeHome items={spaceItems} sibs={sibs} openItem={openItem} show={show} projName={projName} space={space} addCompany={addCompany} /> : cur?.type === 'pdf' ? <PdfView key={cur.id} id={cur.id} user={user} path={pid + '/' + cur.id + '.pdf'} title={cur.title} /> : cur?.type === 'page' ? <Editor key={cur.id} id={cur.id} user={user} projectId={pid} /> : cur?.type === 'folder' ? <FolderView folder={cur} sibs={sibs} openItem={openItem} openFolder={openFolder} show={show} items={items} /> : null}
+            </div> : !sel ? <WelcomeDashboard items={spaceItems} sibs={sibs} openItem={openItem} show={show} projName={projName} space={space} addCompany={addCompany} name={name}><TreeHome mapOnly items={spaceItems} sibs={sibs} openItem={openItem} show={show} projName={projName} space={space} addCompany={addCompany} /></WelcomeDashboard> : cur?.type === 'pdf' ? <PdfView key={cur.id} id={cur.id} user={user} path={pid + '/' + cur.id + '.pdf'} title={cur.title} /> : cur?.type === 'page' ? <Editor key={cur.id} id={cur.id} user={user} projectId={pid} /> : cur?.type === 'folder' ? <FolderView folder={cur} sibs={sibs} openItem={openItem} openFolder={openFolder} show={show} items={items} /> : null}
           </div>
         </main>
       </div>
