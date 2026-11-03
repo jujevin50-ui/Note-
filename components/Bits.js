@@ -9,7 +9,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 
 export function useTheme() {
-  const [t, setT] = useState('light')
+  const [t, setT] = useState('dark')
   useEffect(() => {
     const read = () => setT(document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light')
     read()

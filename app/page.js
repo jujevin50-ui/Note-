@@ -7,7 +7,8 @@ import PdfView from '../components/PdfView'
 import WelcomeDashboard from '../components/WelcomeDashboard'
 import SidebarNavigation from '../components/SidebarNavigation'
 import HomeGreeting from '../components/HomeGreeting'
-import { LiquidBackground, SquishSwitch, Presence, useTheme, GradientWaves } from '../components/Bits'
+import FocusTimer, { DEFAULT_TIMER, normalizeTimer, TimerSettings } from '../components/FocusTimer'
+import { LiquidBackground, Presence, GradientWaves } from '../components/Bits'
 import { FxRoot, TextGenerate } from '../components/Fx'
 
 const COLORS = ['#f59e0b', '#ef4444', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899', '#64748b']
@@ -45,12 +46,11 @@ function ShareDlg({ code, pid, onNew, close }) {
     <div className="btns"><button className="on" onClick={close}>Fermer</button></div></div></div>
 }
 
-const SET_SECS = [['projet', '◈', 'Projet'], ['profil', '👤', 'Profil'], ['apparence', '🎨', 'Apparence'], ['editeur', '✍️', 'Éditeur']]
+const SET_SECS = [['projet', '◈', 'Projet'], ['profil', '👤', 'Profil'], ['timer', '◷', 'Minuteur'], ['editeur', '✍️', 'Éditeur']]
 
-function Settings({ user, close, projects, projectId, onProjectChange, onCreateProject, onJoinProject, onShareProject }) {
+function Settings({ user, close, projects, projectId, onProjectChange, onCreateProject, onJoinProject, onShareProject, timerConfig, onTimerChange }) {
   const [sec, setSec] = useState('projet')
   const [n, setN] = useState(user.user_metadata?.name || ''), [st, setSt] = useState('')
-  const [th, setTheme] = useTheme()
   const [tb, setTb] = useState(() => { try { return localStorage.getItem('tbpos') || 'center' } catch { return 'center' } })
   const setToolbar = p => { setTb(p); try { localStorage.setItem('tbpos', p) } catch {}; window.dispatchEvent(new Event('tbpos-change')) }
   const save = async () => { const { error } = await supabase.auth.updateUser({ data: { name: n.trim() } }); setSt(error ? error.message : '✓ Enregistré') }
@@ -89,14 +89,7 @@ function Settings({ user, close, projects, projectId, onProjectChange, onCreateP
             <input autoFocus autoComplete="off" name="nom-utilisateur" value={n} placeholder={user.email.split('@')[0]} onChange={e => setN(e.target.value)} onKeyDown={e => e.key === 'Enter' && save()} /></div>
           <div className="st-field"><label>Email</label><input readOnly value={user.email} /></div>
         </>}
-        {sec === 'apparence' && <>
-          <h2>Apparence</h2>
-          <div className="st-cards">
-            {[['light', 'Clair'], ['dark', 'Sombre']].map(([k, l]) => <button key={k} type="button" className={'st-card' + (th === k ? ' on' : '')} onClick={() => setTheme(k)}>
-              <span className={'st-prev ' + k}><i /><i /></span>{l}</button>)}
-          </div>
-          <div className="st-field"><label>Raccourci</label><div style={{ display: 'flex', alignItems: 'center', gap: 12 }}><SquishSwitch /></div></div>
-        </>}
+        {sec === 'timer' && <TimerSettings value={timerConfig} onChange={onTimerChange} />}
         {sec === 'editeur' && <>
           <h2>Éditeur</h2>
           <div className="st-cards">
@@ -171,7 +164,6 @@ function Login() {
     <div className="login-stage">
       <div className="aurora" aria-hidden />
       <LiquidBackground />
-      <div style={{ position: 'absolute', right: 20, top: 20, zIndex: 3 }}><SquishSwitch /></div>
       <form className="login login-card" onSubmit={x => { x.preventDefault(); go(0) }}>
         <div className="login-brand">
           <img src="/logo-192.png" width="44" height="44" alt="" />
@@ -203,6 +195,13 @@ function Main({ user }) {
   const [open, setOpen] = useState(true)
   const [share, setShare] = useState(null)
   const [settings, setSettings] = useState(false)
+  const [timerConfig, setTimerConfig] = useState(DEFAULT_TIMER)
+  useEffect(() => { try { setTimerConfig(normalizeTimer(JSON.parse(localStorage.getItem('focus-timer')))) } catch {} }, [])
+  const changeTimer = value => {
+    const next = normalizeTimer(value)
+    setTimerConfig(next)
+    try { localStorage.setItem('focus-timer', JSON.stringify(next)) } catch {}
+  }
   const [online, setOnline] = useState([])
   const [w, setW] = useState(280)
   const [section, setSection] = useState('home')
@@ -284,7 +283,7 @@ function Main({ user }) {
           <button type="button" className="tb-ico" onClick={() => setSettings(true)} title="Paramètres">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" /></svg>
           </button>
-          <SquishSwitch />
+          <FocusTimer key={timerConfig.mode + timerConfig.seconds} config={timerConfig} />
         </div>
         <main className={cur && (cur.type === 'page' || cur.type === 'pdf') ? 'paper' : !sel ? 'full' : ''}>
           <div className="workspace">
@@ -311,7 +310,7 @@ function Main({ user }) {
       </div>}
       {dlg && <Dlg d={dlg} close={() => setDlg(null)} />}
       {share && <ShareDlg code={share} pid={pid} onNew={newCode} close={() => setShare(null)} />}
-      {settings && <Settings user={user} projects={projs} projectId={pid} onProjectChange={setPid} onCreateProject={newProj} onJoinProject={joinProj} onShareProject={invite} close={() => setSettings(false)} />}
+      {settings && <Settings timerConfig={timerConfig} onTimerChange={changeTimer} user={user} projects={projs} projectId={pid} onProjectChange={setPid} onCreateProject={newProj} onJoinProject={joinProj} onShareProject={invite} close={() => setSettings(false)} />}
       <input type="file" accept=".pdf" ref={fi} onChange={onPdf} style={{ display: 'none' }} />
     </div>
   )

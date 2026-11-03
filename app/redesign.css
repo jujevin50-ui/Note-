@@ -276,3 +276,14 @@ textarea,textarea:focus,textarea:focus-visible,[contenteditable],[contenteditabl
 .mainc>main{min-height:0;border-radius:16px;border:1px solid var(--rd-glass-bd)}
 .mainc .tabs+main{border-top-left-radius:12px;border-top-right-radius:12px}
 @media(max-width:720px){.app{gap:5px;padding:5px}.app aside.side-cols,.app .mainc{border-radius:14px}.mainc .topbar,.mainc>main{border-radius:12px}}
+
+.focus-timer{display:flex;align-items:center;gap:3px;flex-shrink:0;padding:3px 5px;border:1px solid var(--rd-glass-bd);border-radius:10px;background:var(--hov)}
+.focus-timer-time{padding:0 5px;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.focus-timer button{display:grid;place-items:center;width:27px;height:28px;padding:0;border:0;border-radius:7px;background:transparent;color:var(--fg);cursor:pointer}
+.focus-timer button:hover{background:var(--sel)}
+.focus-timer button:focus-visible{outline:2px solid var(--ac)}
+.focus-timer.finished{color:#86efac;border-color:#86efac}
+.timer-announcement{position:absolute;width:1px;height:1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.timer-duration{display:flex;gap:12px}.timer-duration label{flex:1;min-width:0}.timer-duration input{width:100%;margin-top:6px}
+.st-field select{width:100%;padding:10px 12px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--fg);font:inherit}
+@media(max-width:480px){.topbar{gap:4px}.focus-timer{padding:2px;gap:0}.focus-timer-time{font-size:12px;padding:0 3px}.focus-timer button{width:24px}}
