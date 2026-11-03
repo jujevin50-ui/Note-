@@ -4,4 +4,6 @@
 - La navigation gauche utilise une colonne de bulles pour les dossiers principaux. Au survol ou au focus clavier, une bulle s’étire en pilule et révèle son nom à côté de son icône. Un panneau adjacent affiche les pages et sous-dossiers du dossier sélectionné, sans arborescence dépliable. Garder la navigation utilisable au clic et sur mobile.
 - Les animations accompagnent les actions et respectent `prefers-reduced-motion`. Préserver les thèmes clair/sombre et l’affichage mobile.
 
-- Le choix Notes / Invest se trouve dans Paramètres → Espace ; ne pas remettre de sélecteur dans le haut de la barre latérale.
+- L’accueil affiche uniquement les deux espaces Notes et Invest. Le projet actif, son changement, la création, l’adhésion et le partage se trouvent dans Paramètres → Projet. Ne pas remettre le logo, la ligne projet, les icônes ajout/membres ou la flèche en haut de la barre latérale.
+
+- Ne pas utiliser d’onglets de documents façon navigateur : un seul contenu ouvert dans la zone principale, sélectionné depuis la navigation gauche.

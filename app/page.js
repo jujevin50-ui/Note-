@@ -6,7 +6,7 @@ import Editor from '../components/Editor'
 import PdfView from '../components/PdfView'
 import WelcomeDashboard from '../components/WelcomeDashboard'
 import SidebarNavigation from '../components/SidebarNavigation'
-import SpacePreference from '../components/SpacePreference'
+import HomeSpaces from '../components/HomeSpaces'
 import { LiquidBackground, SquishSwitch, Presence, useTheme, GradientWaves } from '../components/Bits'
 import { FxRoot, TextGenerate, Ticker, FxSearch } from '../components/Fx'
 
@@ -45,10 +45,10 @@ function ShareDlg({ code, pid, onNew, close }) {
     <div className="btns"><button className="on" onClick={close}>Fermer</button></div></div></div>
 }
 
-const SET_SECS = [['espace', '◈', 'Espace'], ['profil', '👤', 'Profil'], ['apparence', '🎨', 'Apparence'], ['editeur', '✍️', 'Éditeur']]
+const SET_SECS = [['projet', '◈', 'Projet'], ['profil', '👤', 'Profil'], ['apparence', '🎨', 'Apparence'], ['editeur', '✍️', 'Éditeur']]
 
-function Settings({ user, close, space, onSpaceChange }) {
-  const [sec, setSec] = useState('espace')
+function Settings({ user, close, projects, projectId, onProjectChange, onCreateProject, onJoinProject, onShareProject }) {
+  const [sec, setSec] = useState('projet')
   const [n, setN] = useState(user.user_metadata?.name || ''), [st, setSt] = useState('')
   const [th, setTheme] = useTheme()
   const [tb, setTb] = useState(() => { try { return localStorage.getItem('tbpos') || 'center' } catch { return 'center' } })
@@ -64,9 +64,20 @@ function Settings({ user, close, space, onSpaceChange }) {
     </nav>
     <div className="st-main">
       <div className="st-body">
-        {sec === 'espace' && <>
-          <h2>Espace</h2>
-          <SpacePreference value={space} onChange={onSpaceChange} />
+        {sec === 'projet' && <>
+          <h2>Projet</h2>
+          <div className="project-preference">
+            <label htmlFor="settings-project">Projet actif</label>
+            <select id="settings-project" value={projectId || ''} onChange={e => onProjectChange(e.target.value)}>
+              {!projects.length && <option value="">Aucun projet</option>}
+              {projects.map(project => <option key={project.id} value={project.id}>{project.name}</option>)}
+            </select>
+            <div className="project-preference-actions">
+              <button type="button" onClick={() => { close(); onCreateProject() }}>Nouveau projet</button>
+              <button type="button" onClick={() => { close(); onJoinProject() }}>Rejoindre un projet</button>
+              {projectId && <button type="button" onClick={() => { close(); onShareProject() }}>Partager</button>}
+            </div>
+          </div>
         </>}
         {sec === 'profil' && <>
           <h2>Profil</h2>
@@ -353,7 +364,6 @@ function Main({ user }) {
   const [sel, setSel] = useState(null)
   const [dlg, setDlg] = useState(null)
   const [menu, setMenu] = useState(null)
-  const [tabs, setTabs] = useState([])
   const [open, setOpen] = useState(true)
   const [share, setShare] = useState(null)
   const [settings, setSettings] = useState(false)
@@ -361,7 +371,7 @@ function Main({ user }) {
   const [w, setW] = useState(280)
   const [section, setSection] = useState('home')
   const [space, setSpace] = useState(() => { try { return localStorage.getItem('space') || 'notes' } catch { return 'notes' } })
-  const switchSpace = s => { setSpace(s); try { localStorage.setItem('space', s) } catch {}; setSel(null); setTabs([]); setSection('home') }
+  const switchSpace = s => { setSpace(s); try { localStorage.setItem('space', s) } catch {}; setSel(null); setSection('home') }
   const fi = useRef(), pp = useRef(null), pch = useRef(null)
   const loadP = async () => { const { data } = await supabase.from('projects').select('*'); setProjs(data || []); if (!pid && data?.[0]) setPid(data[0].id) }
   const loadI = async () => {
@@ -370,7 +380,7 @@ function Main({ user }) {
     setItems((data || []).filter(x => x.type !== 'board').map(x => ({ ...x, space: x.space || 'notes' })))
   }
   useEffect(() => { loadP() }, [])
-  useEffect(() => { setSel(null); setTabs([]); setSection('home'); loadI(); if (!pid) return; const ch = supabase.channel('items:' + pid).on('postgres_changes', { event: '*', schema: 'public', table: 'items', filter: 'project_id=eq.' + pid }, loadI).subscribe(); return () => supabase.removeChannel(ch) }, [pid])
+  useEffect(() => { setSel(null); setSection('home'); loadI(); if (!pid) return; const ch = supabase.channel('items:' + pid).on('postgres_changes', { event: '*', schema: 'public', table: 'items', filter: 'project_id=eq.' + pid }, loadI).subscribe(); return () => supabase.removeChannel(ch) }, [pid])
   const name = user.user_metadata?.name || user.email.split('@')[0]
   useEffect(() => { const v = +localStorage.getItem('sbw'); if (v) setW(Math.max(240, Math.min(440, v))) }, [])
   useEffect(() => {
@@ -403,15 +413,13 @@ function Main({ user }) {
   const pick = p => { pp.current = p; fi.current.click() }
   const onPdf = e => { const f = e.target.files[0]; e.target.value = ''; if (f) readPdf(f, pp.current) }
   const show = (e, i, mode) => { e.preventDefault(); e.stopPropagation(); setMenu({ x: Math.min(e.clientX, innerWidth - 230), y: Math.min(e.clientY, innerHeight - 340), i, mode }) }
-  const openItem = id => { setSel(id); setTabs(t => t.includes(id) ? t : [...t, id]) }
-  const closeTab = id => { const n = tabs.filter(x => x !== id); setTabs(n); if (sel === id) setSel(n[n.length - 1] || null) }
+  const openItem = id => setSel(id)
   const openFolder = id => openItem(id)
   const key = x => x.pos ?? new Date(x.created_at).getTime()
   const spaceItems = items.filter(i => (i.space || 'notes') === space)
   const sibs = p => spaceItems.filter(i => i.parent_id === p).sort((a, b) => key(a) - key(b))
   const cur = items.find(i => i.id === sel && (i.space || 'notes') === space)
   const trail = i => { const a = []; let c = items.find(x => x.id === i.parent_id); while (c) { a.unshift(c); c = items.find(x => x.id === c.parent_id) }; return a }
-  const tabItems = tabs.map(id => items.find(i => i.id === id)).filter(i => i && (i.space || 'notes') === space)
   const sideW = open ? w : 0
   const news = p => [['📄 Nouvelle page', () => add('page', p)], ['📁 Nouveau dossier', () => add('folder', p)], ['📎 Importer un PDF', () => pick(p)]]
   const m = menu && menu.i && items.find(x => x.id === menu.i.id)
@@ -424,11 +432,7 @@ function Main({ user }) {
       {open && <aside className="side-cols">
         <div className="plasma-wrap" aria-hidden><GradientWaves /><span className="plasma-veil" /></div>
         <div className="rz" onMouseDown={startRz} />
-        <div className="head side-top"><img src="/logo-192.png" width="24" height="24" alt="" />
-          <select value={pid || ''} onChange={e => setPid(e.target.value)}>{projs.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select>
-          <button onClick={e => show(e, null, 'proj')} title="Nouveau projet ou rejoindre">＋</button>{pid && <button onClick={invite} title="Partager (code)">👥</button>}
-          <button className="ghost" onClick={() => setOpen(false)} title="Masquer le menu">◀</button></div>
-        {pid && <SidebarNavigation active={sel ? null : section} onChange={next => { setSection(next); setSel(null) }} onCreate={(e, folder) => show(e, folder, 'new')} items={spaceItems} activeItem={sel} onOpen={openItem} onOptions={show} />}
+        <SidebarNavigation active={sel ? null : section} onChange={next => { setSection(next); setSel(null) }} onCreate={(e, folder) => pid ? show(e, folder, 'new') : setSettings(true)} items={spaceItems} activeItem={sel} onOpen={openItem} onOptions={show} />
         <div className="side-foot">
           <SquishSwitch />
           <button type="button" className="me" onClick={() => setSettings(true)} title="Paramètres">
@@ -443,8 +447,8 @@ function Main({ user }) {
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="16" rx="3" /><path d="M9 4v16" /></svg>
           </button>
           <div className="crumbs">
-            <span>{projName || 'Aucun projet'}</span><span className="active-space-name">{space === 'invest' ? 'Invest' : 'Notes'}</span>
-            {cur ? <>{trail(cur).map(t => <span key={t.id}><i>›</i> {t.title}</span>)}<i>›</i><b>{cur.title}</b></> : <><i>›</i><b>{{ home: 'Accueil', pages: 'Pages', pdf: 'PDF', map: 'Cartographie' }[section]}</b></>}
+            {section !== 'home' && <span className="active-space-name">{space === 'invest' ? 'Invest' : 'Notes'}</span>}
+            {cur ? <>{trail(cur).map(t => <span key={t.id}><i>›</i> {t.title}</span>)}<i>›</i><b>{cur.title}</b></> : <><i>›</i><b>{{ home: 'Accueil', library: space === 'invest' ? 'Invest' : 'Notes', pages: 'Pages', pdf: 'PDF', map: 'Cartographie' }[section]}</b></>}
           </div>
           <div className="tb-spacer" />
           <Presence online={online} me={user.id} titleOf={titleOf} />
@@ -452,24 +456,9 @@ function Main({ user }) {
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" /></svg>
           </button>
         </div>
-        {tabs.length > 0 && <div className="tabs">
-          {tabItems.map(t => <div key={t.id} className={'tab' + (sel === t.id ? ' on' : '')} onClick={() => openItem(t.id)}>
-            <span className="tab-ico"><Ic i={t} /></span>
-            <span className="tab-title">{t.title}</span>
-            <span className="tab-close" onClick={e => { e.stopPropagation(); closeTab(t.id) }}>✕</span>
-          </div>)}
-        </div>}
         <main className={cur && (cur.type === 'page' || cur.type === 'pdf') ? 'paper' : !sel ? 'full' : ''}>
           <div className="workspace">
-            {!pid ? <div className="dash-empty">
-              <div className="dash-empty-ico">🚀</div>
-              <h3>Bienvenue !</h3>
-
-              <div className="btns">
-                <button className="btn-primary btn-glow" onClick={newProj}>＋ Nouveau projet</button>
-                <button className="ghost" onClick={joinProj}>🔗 Rejoindre un projet</button>
-              </div>
-            </div> : !sel ? <WelcomeDashboard section={section} items={spaceItems} sibs={sibs} openItem={openItem} show={show} projName={projName} space={space} addCompany={addCompany} name={name}><TreeHome mapOnly items={spaceItems} sibs={sibs} openItem={openItem} show={show} projName={projName} space={space} addCompany={addCompany} /></WelcomeDashboard> : cur?.type === 'pdf' ? <PdfView key={cur.id} id={cur.id} user={user} path={pid + '/' + cur.id + '.pdf'} title={cur.title} /> : cur?.type === 'page' ? <Editor key={cur.id} id={cur.id} user={user} projectId={pid} /> : cur?.type === 'folder' ? <FolderView folder={cur} sibs={sibs} openItem={openItem} openFolder={openFolder} show={show} items={items} /> : null}
+            {section === 'home' && !sel ? <HomeSpaces onOpen={next => { switchSpace(next); setSection('library') }} /> : !pid ? <div className="dash-empty"><h3>Aucun projet</h3><button type="button" className="btn-primary" onClick={() => setSettings(true)}>Paramètres</button></div> : !sel ? <WelcomeDashboard section={section} items={spaceItems} sibs={sibs} openItem={openItem} show={show} projName={projName} space={space} addCompany={addCompany} name={name}><TreeHome mapOnly items={spaceItems} sibs={sibs} openItem={openItem} show={show} projName={projName} space={space} addCompany={addCompany} /></WelcomeDashboard> : cur?.type === 'pdf' ? <PdfView key={cur.id} id={cur.id} user={user} path={pid + '/' + cur.id + '.pdf'} title={cur.title} /> : cur?.type === 'page' ? <Editor key={cur.id} id={cur.id} user={user} projectId={pid} /> : cur?.type === 'folder' ? <FolderView folder={cur} sibs={sibs} openItem={openItem} openFolder={openFolder} show={show} items={items} /> : null}
           </div>
         </main>
       </div>
@@ -492,7 +481,7 @@ function Main({ user }) {
       </div>}
       {dlg && <Dlg d={dlg} close={() => setDlg(null)} />}
       {share && <ShareDlg code={share} pid={pid} onNew={newCode} close={() => setShare(null)} />}
-      {settings && <Settings user={user} space={space} onSpaceChange={switchSpace} close={() => setSettings(false)} />}
+      {settings && <Settings user={user} projects={projs} projectId={pid} onProjectChange={setPid} onCreateProject={newProj} onJoinProject={joinProj} onShareProject={invite} close={() => setSettings(false)} />}
       <input type="file" accept=".pdf" ref={fi} onChange={onPdf} style={{ display: 'none' }} />
     </div>
   )
