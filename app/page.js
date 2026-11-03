@@ -6,12 +6,9 @@ import Editor from '../components/Editor'
 import PdfView from '../components/PdfView'
 import WelcomeDashboard from '../components/WelcomeDashboard'
 import SidebarNavigation from '../components/SidebarNavigation'
+import SpacePreference from '../components/SpacePreference'
 import { LiquidBackground, SquishSwitch, Presence, useTheme, GradientWaves } from '../components/Bits'
 import { FxRoot, TextGenerate, Ticker, FxSearch } from '../components/Fx'
-
-function SpaceBtn({ active, onClick, ico, label }) {
-  return <button type="button" className={active ? 'on' : ''} onClick={onClick}>{ico} {label}</button>
-}
 
 const COLORS = ['#f59e0b', '#ef4444', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899', '#64748b']
 const NAMES = { page: 'Nom de la page', folder: 'Nom du dossier' }
@@ -48,10 +45,10 @@ function ShareDlg({ code, pid, onNew, close }) {
     <div className="btns"><button className="on" onClick={close}>Fermer</button></div></div></div>
 }
 
-const SET_SECS = [['profil', '👤', 'Profil'], ['apparence', '🎨', 'Apparence'], ['editeur', '✍️', 'Éditeur']]
+const SET_SECS = [['espace', '◈', 'Espace'], ['profil', '👤', 'Profil'], ['apparence', '🎨', 'Apparence'], ['editeur', '✍️', 'Éditeur']]
 
-function Settings({ user, close }) {
-  const [sec, setSec] = useState('profil')
+function Settings({ user, close, space, onSpaceChange }) {
+  const [sec, setSec] = useState('espace')
   const [n, setN] = useState(user.user_metadata?.name || ''), [st, setSt] = useState('')
   const [th, setTheme] = useTheme()
   const [tb, setTb] = useState(() => { try { return localStorage.getItem('tbpos') || 'center' } catch { return 'center' } })
@@ -59,7 +56,7 @@ function Settings({ user, close }) {
   const save = async () => { const { error } = await supabase.auth.updateUser({ data: { name: n.trim() } }); setSt(error ? error.message : '✓ Enregistré') }
   const shown = n.trim() || user.email.split('@')[0]
   useEffect(() => { const k = e => e.key === 'Escape' && close(); addEventListener('keydown', k); return () => removeEventListener('keydown', k) }, [])
-  return <div className="ov" onClick={close}><div className="st-sheet" onClick={e => e.stopPropagation()}>
+  return <div className="ov" onClick={close}><div className="st-sheet" role="dialog" aria-modal="true" aria-label="Paramètres" onClick={e => e.stopPropagation()}>
     <nav className="st-nav">
       <h3>Paramètres</h3>
       {SET_SECS.map(([k, ico, l]) => <button key={k} type="button" className={sec === k ? 'on' : ''} onClick={() => setSec(k)}><span>{ico}</span>{l}</button>)}
@@ -67,6 +64,10 @@ function Settings({ user, close }) {
     </nav>
     <div className="st-main">
       <div className="st-body">
+        {sec === 'espace' && <>
+          <h2>Espace</h2>
+          <SpacePreference value={space} onChange={onSpaceChange} />
+        </>}
         {sec === 'profil' && <>
           <h2>Profil</h2>
           <div className="st-profile">
@@ -427,10 +428,6 @@ function Main({ user }) {
           <select value={pid || ''} onChange={e => setPid(e.target.value)}>{projs.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select>
           <button onClick={e => show(e, null, 'proj')} title="Nouveau projet ou rejoindre">＋</button>{pid && <button onClick={invite} title="Partager (code)">👥</button>}
           <button className="ghost" onClick={() => setOpen(false)} title="Masquer le menu">◀</button></div>
-        {pid && <div className="side-spaces">
-          <SpaceBtn active={space === 'notes'} onClick={() => switchSpace('notes')} ico="📝" label="Notes" name="Notes" />
-          <SpaceBtn active={space === 'invest'} onClick={() => switchSpace('invest')} ico="📈" label="Invest" name="Invest" />
-        </div>}
         {pid && <SidebarNavigation active={sel ? null : section} onChange={next => { setSection(next); setSel(null) }} onCreate={(e, folder) => show(e, folder, 'new')} items={spaceItems} activeItem={sel} onOpen={openItem} onOptions={show} />}
         <div className="side-foot">
           <SquishSwitch />
@@ -446,7 +443,7 @@ function Main({ user }) {
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="16" rx="3" /><path d="M9 4v16" /></svg>
           </button>
           <div className="crumbs">
-            <span>{projName || 'Aucun projet'}</span>
+            <span>{projName || 'Aucun projet'}</span><span className="active-space-name">{space === 'invest' ? 'Invest' : 'Notes'}</span>
             {cur ? <>{trail(cur).map(t => <span key={t.id}><i>›</i> {t.title}</span>)}<i>›</i><b>{cur.title}</b></> : <><i>›</i><b>{{ home: 'Accueil', pages: 'Pages', pdf: 'PDF', map: 'Cartographie' }[section]}</b></>}
           </div>
           <div className="tb-spacer" />
@@ -495,7 +492,7 @@ function Main({ user }) {
       </div>}
       {dlg && <Dlg d={dlg} close={() => setDlg(null)} />}
       {share && <ShareDlg code={share} pid={pid} onNew={newCode} close={() => setShare(null)} />}
-      {settings && <Settings user={user} close={() => setSettings(false)} />}
+      {settings && <Settings user={user} space={space} onSpaceChange={switchSpace} close={() => setSettings(false)} />}
       <input type="file" accept=".pdf" ref={fi} onChange={onPdf} style={{ display: 'none' }} />
     </div>
   )
