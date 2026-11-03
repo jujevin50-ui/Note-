@@ -199,6 +199,7 @@ uniform vec2 uRes;
 uniform float uTime;
 uniform vec2 uMouse;
 uniform float uSwell;
+uniform float uDark;
 out vec4 fragColor;
 
 float hgt(vec2 p, float t) {
@@ -231,22 +232,27 @@ void main() {
   vec2 d2 = vec2((uv.x - uMouse.x) * (uRes.x / uRes.y), uv.y - uMouse.y);
   float glow = exp(-dot(d2, d2) * 5.0) * (0.6 + uSwell * 1.4);
 
-  vec3 shadow = vec3(0.83, 0.85, 0.92);
-  vec3 lit = vec3(1.0);
+  vec3 shadow = mix(vec3(0.83, 0.85, 0.92), vec3(0.035, 0.04, 0.075), uDark);
+  vec3 lit = mix(vec3(1.0), vec3(0.30, 0.33, 0.55), uDark);
   vec3 col = mix(shadow, lit, diff * 0.85 + 0.15);
-  col += vec3(0.03, 0.0, 0.06) * n.x;
-  col += vec3(1.0) * spec * 0.55 + vec3(0.9, 0.93, 1.0) * glow * 0.25;
+  col += vec3(0.03, 0.0, 0.06) * n.x * (1.0 + uDark);
+  vec3 hi = mix(vec3(1.0), vec3(0.62, 0.68, 1.0), uDark);
+  col += hi * spec * 0.55 + mix(vec3(0.9, 0.93, 1.0), vec3(0.45, 0.5, 0.95), uDark) * glow * 0.25;
 
-  vec3 haze = vec3(1.0);
+  vec3 haze = mix(vec3(1.0), vec3(0.045, 0.05, 0.085), uDark);
   float f = smoothstep(0.0, 0.42, dy);
   col = mix(haze, col, f);
-  vec3 sky = mix(vec3(1.0), vec3(0.93, 0.95, 1.0), smoothstep(0.0, 0.2, -dy));
+  vec3 skyTop = mix(vec3(0.93, 0.95, 1.0), vec3(0.03, 0.035, 0.07), uDark);
+  vec3 sky = mix(haze, skyTop, smoothstep(0.0, 0.2, -dy));
   col = mix(col, sky, step(dy, 0.0));
   fragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
 }
 `
 export function GradientWaves({ speed = 1, quality = 0.75, className = '' }) {
   const ref = useRef(null)
+  const [theme] = useTheme()
+  const darkRef = useRef(theme === 'dark')
+  useEffect(() => { darkRef.current = theme === 'dark' }, [theme])
   useEffect(() => {
     const c = ref.current
     if (!c) return
@@ -279,7 +285,7 @@ export function GradientWaves({ speed = 1, quality = 0.75, className = '' }) {
     const ro = new ResizeObserver(resize); ro.observe(c)
     // lumière : suit le curseur (lissé), dérive doucement quand il est ailleurs, gonfle au clic
     const m = { x: 0.5, y: 0.35 }, target = { x: 0.5, y: 0.35 }
-    let swell = 0, hovering = false
+    let swell = 0, hovering = false, dk = darkRef.current ? 1 : 0
     const rel = e => { const r = c.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width, y: 1 - (e.clientY - r.top) / r.height, inside: e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom } }
     const move = e => { const q = rel(e); hovering = q.inside; if (q.inside) { target.x = q.x; target.y = q.y } }
     const down = e => { if (rel(e).inside) swell = 1 }
@@ -292,6 +298,8 @@ export function GradientWaves({ speed = 1, quality = 0.75, className = '' }) {
       if (!hovering) { target.x = 0.5 + Math.sin(t * 0.35) * 0.32; target.y = 0.32 + Math.cos(t * 0.27) * 0.2 }
       m.x += (target.x - m.x) * 0.06; m.y += (target.y - m.y) * 0.06
       swell *= 0.94
+      dk += ((darkRef.current ? 1 : 0) - dk) * 0.08
+      gl.uniform1f(u('uDark'), dk)
       gl.uniform1f(u('uTime'), t * speed)
       gl.uniform2f(u('uMouse'), m.x, m.y)
       gl.uniform1f(u('uSwell'), swell)

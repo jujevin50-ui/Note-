@@ -4,30 +4,11 @@ import { supabase } from '../lib/supabase'
 import { colorOf } from '../lib/provider'
 import Editor from '../components/Editor'
 import PdfView from '../components/PdfView'
-import { LiquidBackground, SquishSwitch, BlurText, ShinyText, GradientText, Presence, useTheme, FolderBits, GradientWaves } from '../components/Bits'
+import { LiquidBackground, SquishSwitch, Presence, useTheme, FolderBits, GradientWaves } from '../components/Bits'
 import { FxRoot, TextGenerate, Ticker, FxSearch } from '../components/Fx'
 
-// Composant Bouton Espace avec animation
-function SpaceBtn({ active, onClick, ico, label, name }) {
-  const [show, setShow] = useState(false)
-  const [tilt, setTilt] = useState({ tx: 0, ry: 0 })
-  const btnRef = useRef(null)
-  const onMove = useCallback(e => {
-    if (!btnRef.current) return
-    const r = btnRef.current.getBoundingClientRect()
-    const x = (e.clientX - r.left) / r.width - 0.5
-    setTilt({ tx: x * 12, ry: x * 18 })
-  }, [])
-  return (
-    <button type="button" ref={btnRef} className={active ? 'on' : ''} onClick={onClick}
-      onMouseEnter={() => setShow(true)} onMouseLeave={() => { setShow(false); setTilt({ tx: 0, ry: 0 }) }}
-      onMouseMove={onMove} title={name}>
-      {ico} {label}
-      <span className={'liq-tooltip' + (show ? ' show' : '')} style={{ '--tx': tilt.tx + 'px', '--ry': tilt.ry + 'deg' }}>
-        <span className="liq-ico">{ico}</span>{name}
-      </span>
-    </button>
-  )
+function SpaceBtn({ active, onClick, ico, label }) {
+  return <button type="button" className={active ? 'on' : ''} onClick={onClick}>{ico} {label}</button>
 }
 
 const COLORS = ['#f59e0b', '#ef4444', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899', '#64748b']
@@ -122,22 +103,6 @@ function Settings({ user, close }) {
   </div></div>
 }
 
-function Hero({ kicker, name, stats, actions, quick }) {
-  const h = new Date().getHours()
-  const hello = h >= 18 || h < 5 ? 'Bonsoir,' : 'Bonjour,'
-  return <section className="hero">
-    <LiquidBackground />
-    <span className="hero-kicker"><ShinyText>{kicker}</ShinyText></span>
-    <h1 className="hero-title"><BlurText text={hello} /> <GradientText>{name}</GradientText></h1>
-    {stats && <div className="hero-stats">{stats}</div>}
-    <div className="hero-actions">{actions}</div>
-    {quick?.length > 0 && <div className="qa-row">{quick.map(([label, fn]) => {
-      const [ico, ...r] = label.split(' ')
-      return <button type="button" key={label} className="qa" onClick={fn}><span className="qa-ico">{ico}</span><span>{r.join(' ')}</span></button>
-    })}</div>}
-  </section>
-}
-
 const INV_SECTIONS = [
   { title: 'Entreprises à suivre', icon: '📈', color: '#007aff' },
   { title: 'Analyses', icon: '🔍', color: '#ff9500' },
@@ -180,168 +145,121 @@ function FolderView({ folder, sibs, openItem, openFolder, show, items }) {
   </div>
 }
 
-function NotesHome({ items, sibs, openItem, show, projName, name, quick }) {
+function TreeHome({ items, sibs, openItem, show, projName, space, addCompany }) {
+  const NW = 210, NH = 46, GX = 120, GY = 16, PAD = 40
   const [q, setQ] = useState('')
   const [shut, setShut] = useState(() => { try { return JSON.parse(localStorage.getItem('homeShut') || '{}') } catch { return {} } })
   useEffect(() => { try { localStorage.setItem('homeShut', JSON.stringify(shut)) } catch {} }, [shut])
-  const tgl = id => setShut(x => ({ ...x, [id]: !x[id] }))
-  const roots = sibs(null)
-  const folders = roots.filter(i => i.type === 'folder')
-  const loose = roots.filter(i => i.type !== 'folder')
-  const nF = items.filter(i => i.type === 'folder').length
-  const nP = items.filter(i => i.type === 'page').length
-  const nD = items.filter(i => i.type === 'pdf').length
-  const path = i => { const a = []; let c = items.find(x => x.id === i.parent_id); while (c) { a.unshift(c.title); c = items.find(x => x.id === c.parent_id) }; return a.join(' › ') }
-  const flat = (id, d = 0) => sibs(id).flatMap(c => [{ i: c, d }, ...(c.type === 'folder' ? flat(c.id, d + 1) : [])])
-  const flatVis = (id, d = 0) => sibs(id).flatMap(c => [{ i: c, d }, ...(c.type === 'folder' && !shut[c.id] ? flatVis(c.id, d + 1) : [])])
+  const [view, setView] = useState({ x: 40, y: 90, k: 1 })
+  const stage = useRef(null), drag = useRef(null), fitted = useRef(false)
   const needle = q.trim().toLowerCase()
-  const found = needle ? items.filter(i => (i.title || '').toLowerCase().includes(needle)) : []
-  const plural = (n, w) => n + ' ' + w + (n > 1 ? 's' : '')
-  const Row = ({ i, d }) => i.type === 'folder' ? <div className="hrow hsub" style={{ paddingLeft: 6 + d * 14, cursor: 'pointer' }} onClick={() => tgl(i.id)} onDoubleClick={() => openItem(i.id)} onContextMenu={e => show(e, i)}><small className={'hchev' + (shut[i.id] ? '' : ' open')}>›</small><Ic i={i} /><b>{i.title}</b><small className="muted">{flat(i.id).filter(x => x.i.type !== 'folder').length}</small>
-    <span className="hact"><b onClick={e => { e.stopPropagation(); show(e, i, 'new') }}>＋</b><b onClick={e => { e.stopPropagation(); show(e, i) }}>⋮</b></span></div> : <div className="hrow hitem" style={{ paddingLeft: 6 + d * 14 }} onClick={() => openItem(i.id)} onContextMenu={e => show(e, i)}><Ic i={i} /><span>{i.title}</span></div>
-  const card = f => {
-    const all = flat(f.id)
-    const n = all.filter(x => x.i.type !== 'folder').length
-    const sf = all.filter(x => x.i.type === 'folder').length
-    const closed = !!shut[f.id]
-    const rows = flatVis(f.id)
-    return <article className={'hcard' + (closed ? ' shut' : '')} key={f.id} style={{ '--accent': f.color || '#007aff' }}>
-      <div className="hhead" onClick={() => tgl(f.id)} onContextMenu={e => show(e, f)} title={closed ? 'Déplier' : 'Replier'}>
-        <small className={'hchev' + (closed ? '' : ' open')}>›</small>
-        {f.icon ? <span className="hcard-ico"><Ic i={f} /></span> : <FolderBits size={0.62} color={f.color || '#3b82f6'} open={!closed} className="hcard-folder" />}
-        <div><h3>{f.title}</h3><small className="muted">{plural(n, 'élément')}{sf > 0 && ' · ' + plural(sf, 'sous-dossier')}</small></div>
-        <span className="hact"><b onClick={e => show(e, f, 'new')} title="Ajouter">＋</b><b onClick={e => show(e, f)}>⋮</b></span>
-      </div>
-      {!closed && <div className="hbody">{rows.length ? rows.map(r => <Row key={r.i.id} {...r} />) : <p className="hcard-empty muted">Dossier vide</p>}</div>}
-    </article>
+  const folders = items.filter(i => i.type === 'folder')
+  const nF = folders.length, nP = items.filter(i => i.type === 'page').length, nD = items.filter(i => i.type === 'pdf').length
+  const allShut = nF > 0 && folders.every(f => shut[f.id])
+
+  // mise en page : arbre horizontal, chaque parent est centré sur ses enfants
+  const build = (pid, depth, color) => sibs(pid).map(i => { const c = i.color || color; return { i, depth, c, kids: i.type === 'folder' && (needle || !shut[i.id]) ? build(i.id, depth + 1, c) : [] } })
+  let leaf = 0, maxD = 0
+  const nodes = []
+  const place = (n, parent) => {
+    maxD = Math.max(maxD, n.depth)
+    n.kids.forEach(k => place(k, n))
+    n.y = n.kids.length ? (n.kids[0].y + n.kids[n.kids.length - 1].y) / 2 : leaf++ * (NH + GY)
+    n.x = n.depth * (NW + GX)
+    n.parent = parent
+    nodes.push(n)
   }
-  return <div className="home home-in">
-    <Hero kicker={projName || 'Espace'} name={name} quick={quick}
-      stats={<>
+  const tops = build(null, 1, '#3b82f6')
+  tops.forEach(t => place(t, null))
+  const rootY = tops.length ? (tops[0].y + tops[tops.length - 1].y) / 2 : 0
+  const W = maxD * (NW + GX) + NW, H = Math.max(leaf, 1) * (NH + GY) - GY
+
+  const fit = () => {
+    const el = stage.current
+    if (!el) return
+    const sw = el.clientWidth, sh = el.clientHeight
+    const k = Math.max(0.4, Math.min(1, (sw - 2 * PAD) / W, (sh - 150) / H))
+    setView({ k, x: Math.max(PAD, (sw - W * k) / 2), y: Math.max(90, (sh - H * k) / 2 + 30) })
+  }
+  useEffect(() => { if (!fitted.current && nodes.length) { fitted.current = true; fit() } })
+  useEffect(() => {
+    const el = stage.current
+    if (!el) return
+    const h = e => {
+      e.preventDefault()
+      const r = el.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top
+      setView(v => { const k = Math.max(0.3, Math.min(1.8, v.k * Math.exp(-e.deltaY * 0.0012))), s = k / v.k; return { k, x: mx - (mx - v.x) * s, y: my - (my - v.y) * s } })
+    }
+    el.addEventListener('wheel', h, { passive: false })
+    return () => el.removeEventListener('wheel', h)
+  }, [])
+  const zoomBy = f => { const el = stage.current; if (!el) return; const mx = el.clientWidth / 2, my = el.clientHeight / 2; setView(v => { const k = Math.max(0.3, Math.min(1.8, v.k * f)), s = k / v.k; return { k, x: mx - (mx - v.x) * s, y: my - (my - v.y) * s } }) }
+  const spot = e => { const r = e.currentTarget.getBoundingClientRect(); e.currentTarget.style.setProperty('--mx', ((e.clientX - r.left) / r.width) * 100 + '%'); e.currentTarget.style.setProperty('--my', ((e.clientY - r.top) / r.height) * 100 + '%') }
+  const onNode = i => { if (i.type === 'folder') setShut(s => ({ ...s, [i.id]: !s[i.id] })); else openItem(i.id) }
+
+  const rcy = rootY + NH / 2
+  const edge = n => {
+    const x1 = n.parent ? n.parent.x + NW : NW, y1 = (n.parent ? n.parent.y : rootY) + NH / 2
+    const x2 = n.x, y2 = n.y + NH / 2, xm = x1 + (x2 - x1) / 2
+    return `M${x1} ${y1} C${xm} ${y1} ${xm} ${y2} ${x2} ${y2}`
+  }
+  return <div className="th">
+    <LiquidBackground />
+    <div className="th-stage" ref={stage}
+      onPointerDown={e => { if (e.target.closest('.hn,.th-bar,.th-zoom')) return; drag.current = { x: e.clientX, y: e.clientY, vx: view.x, vy: view.y }; e.currentTarget.setPointerCapture(e.pointerId) }}
+      onPointerMove={e => { const d = drag.current; if (d) setView(v => ({ ...v, x: d.vx + e.clientX - d.x, y: d.vy + e.clientY - d.y })) }}
+      onPointerUp={() => { drag.current = null }} onPointerCancel={() => { drag.current = null }}
+      onContextMenu={e => show(e, null, 'new')}>
+      <div className="th-canvas" style={{ transform: `translate(${view.x}px, ${view.y}px) scale(${view.k})` }}>
+        <svg className="th-edges" width={W + 40} height={H + 80}>
+          {nodes.map(n => {
+            const dl = n.depth * 140 + (n.y / (NH + GY)) * 30
+            const st = { '--ec': n.c, '--dl': dl + 'ms', '--d2': dl + 900 + 'ms' }
+            return <g key={n.i.id} style={st}>
+              <path className="th-edge" d={edge(n)} pathLength="1" />
+              <path className="th-flow" d={edge(n)} pathLength="1" />
+            </g>
+          })}
+        </svg>
+        <div className="hn hn-root" style={{ left: 0, top: rcy - 34, width: NW, height: 68, '--c': '#3b82f6' }}>
+          <i className="hn-ring" /><i className="hn-ring r2" />
+          <span className="hn-tree">🌳</span>
+          <div className="hn-rt"><b>{projName || 'Mon espace'}</b><small>{nF} dossier{nF > 1 ? 's' : ''} · {nP + nD} fichier{nP + nD > 1 ? 's' : ''}</small></div>
+        </div>
+        {nodes.map(n => {
+          const i = n.i, f = i.type === 'folder', closed = f && !needle && !!shut[i.id]
+          const hit = needle && (i.title || '').toLowerCase().includes(needle)
+          return <div key={i.id} className={'hn' + (f ? ' hn-f' : '') + (hit ? ' hit' : '') + (needle && !hit ? ' dim' : '') + (closed ? ' shut' : '')}
+            style={{ left: n.x, top: n.y, width: NW, height: NH, '--c': n.c, '--dl': n.depth * 140 + (n.y / (NH + GY)) * 30 + 200 + 'ms' }}
+            onClick={() => onNode(i)} onContextMenu={e => show(e, i)} onPointerMove={spot}>
+            {f ? (i.icon ? <span className="hn-em">{i.icon}</span> : <FolderBits size={0.3} color={n.c} open={!closed} />) : <span className="hn-em"><Ic i={i} /></span>}
+            <span className="hn-t">{i.title}</span>
+            {f && <small className="hn-n">{sibs(i.id).length}</small>}
+            {f && <span className="hn-act">
+              <b onClick={e => { e.stopPropagation(); show(e, i, 'new') }}>＋</b>
+              <b onClick={e => { e.stopPropagation(); openItem(i.id) }}>↗</b>
+            </span>}
+          </div>
+        })}
+      </div>
+    </div>
+    <div className="th-bar">
+      <FxSearch value={q} onChange={e => setQ(e.target.value)} placeholders={['Rechercher dans l\'arbre…', 'Un dossier, une page…', 'Un PDF, une idée…']} />
+      <button type="button" className="btn-primary btn-glow" onClick={e => show(e, null, 'new')}>＋ Nouveau</button>
+      {space === 'invest' && addCompany && <button type="button" className="th-btn" onClick={addCompany}>＋ Entreprise</button>}
+      {nF > 0 && <button type="button" className="th-btn" onClick={() => setShut(Object.fromEntries(folders.map(f => [f.id, !allShut])))}>{allShut ? 'Tout déplier' : 'Tout replier'}</button>}
+      <span className="th-stats">
         <span className="stat-pill"><Ticker value={nF} /> dossier{nF !== 1 ? 's' : ''}</span>
         <span className="stat-pill"><Ticker value={nP} /> page{nP !== 1 ? 's' : ''}</span>
         {nD > 0 && <span className="stat-pill"><Ticker value={nD} /> PDF</span>}
-      </>}
-      actions={<>
-        <FxSearch value={q} onChange={e => setQ(e.target.value)} placeholders={['Rechercher une note…', 'Un cours, une réunion…', 'Un PDF, un dossier…', 'Une idée à retrouver…']} />
-        <button type="button" className="btn-primary btn-glow" onClick={e => show(e, null, 'new')}>＋ Nouveau</button>
-      </>} />
-    {needle ? <section className="hsec">
-      <div className="sec-label"><h4>Résultats</h4><span className="muted">{found.length}</span></div>
-      {found.length ? <div className="search-results">{found.map(i => <button type="button" className="result-row" key={i.id} onClick={() => i.type !== 'folder' && openItem(i.id)} onContextMenu={e => show(e, i)}>
-        <span className="tile-ico sm"><Ic i={i} /></span>
-        <span className="result-meta"><b>{i.title}</b><small className="muted">{path(i) || 'Racine'} · {i.type}</small></span>
-      </button>)}</div> : <p className="muted dash-none">Aucun résultat pour « {q.trim()} ».</p>}
-    </section> : !items.length ? <div className="dash-empty">
-      <div className="dash-empty-ico">📝</div>
-      <h3>Commence à écrire</h3>
-      <p className="muted">Crée une page ou un dossier pour organiser tes idées.</p>
-      <button type="button" className="btn-primary btn-glow" onClick={e => show(e, null, 'new')}>＋ Créer une note</button>
-    </div> : <>
-      {folders.length > 0 && <section className="hsec">
-        <div className="sec-label"><h4>📁 Dossiers</h4><span className="muted">{folders.length}</span><button type="button" className="ghost hmore" style={{ marginLeft: 'auto' }} onClick={() => { const all = items.filter(x => x.type === 'folder'), every = all.every(x => shut[x.id]); setShut(Object.fromEntries(all.map(x => [x.id, !every]))) }}>{items.filter(x => x.type === 'folder').every(x => shut[x.id]) ? 'Tout déplier' : 'Tout replier'}</button></div>
-        <div className="hgrid">{folders.map(card)}</div>
-      </section>}
-      {loose.length > 0 && <section className="hsec">
-        <div className="sec-label"><h4>📄 Pages libres</h4><span className="muted">{loose.length}</span></div>
-        <div className="tile-grid">
-          {loose.map(i => <button type="button" className="tile" key={i.id} onClick={() => openItem(i.id)} onContextMenu={e => show(e, i)}>
-            <span className="tile-ico" style={{ '--c': i.color || (i.type === 'pdf' ? '#ef4444' : '#3b82f6') }}><Ic i={i} /></span>
-            <span className="tile-body"><b>{i.title}</b><small className="muted">{i.type === 'pdf' ? 'PDF' : 'Page'}</small></span>
-          </button>)}
-        </div>
-      </section>}
-    </>}
-  </div>
-}
-
-function InvestHome({ items, sibs, openItem, show, projName, addCompany, del, name, quick }) {
-  const [q, setQ] = useState('')
-  const roots = sibs(null)
-  const path = i => { const a = []; let c = items.find(x => x.id === i.parent_id); while (c) { a.unshift(c.title); c = items.find(x => x.id === c.parent_id) }; return a.join(' › ') }
-  const needle = q.trim().toLowerCase()
-  const found = needle ? items.filter(i => (i.title || '').toLowerCase().includes(needle)) : []
-  const plural = (n, w) => n + ' ' + w + (n > 1 ? 's' : '')
-  const findFolder = t => roots.find(i => i.type === 'folder' && (i.title || '').toLowerCase() === t.toLowerCase())
-  const companyFolder = findFolder('Entreprises à suivre')
-  const companies = companyFolder ? sibs(companyFolder.id).filter(i => i.type !== 'folder') : []
-  const otherSections = INV_SECTIONS.filter(s => s.title !== 'Entreprises à suivre')
-  const sectionTitles = new Set(INV_SECTIONS.map(s => s.title.toLowerCase()))
-  const otherFolders = roots.filter(i => i.type === 'folder' && !sectionTitles.has((i.title || '').toLowerCase()))
-  const loose = roots.filter(i => i.type !== 'folder')
-  const ItemRow = ({ i }) => {
-    if (i.type === 'folder') return <div className="inv-row inv-sub" onContextMenu={e => show(e, i)}><Ic i={i} /><b>{i.title}</b><small className="muted">{sibs(i.id).length}</small>
-      <span className="hact"><b onClick={e => show(e, i, 'new')}>＋</b><b onClick={e => show(e, i)}>⋮</b></span></div>
-    return <div className="inv-row" onClick={() => openItem(i.id)} onContextMenu={e => show(e, i)}><Ic i={i} /><span>{i.title}</span>
-      <span className="hact"><b onClick={e => { e.stopPropagation(); show(e, i) }}>⋮</b></span></div>
-  }
-  const Section = ({ s }) => {
-    const folder = findFolder(s.title)
-    const kids = folder ? sibs(folder.id) : []
-    return <section className="inv-sec" style={{ '--inv': s.color }}>
-      <header className="inv-head">
-        <span className="inv-ico">{s.icon}</span>
-        <div className="inv-titles"><h3>{s.title}</h3><small className="muted">{folder ? (kids.length ? plural(kids.length, 'élément') : 'Vide') : 'Non créé'}</small></div>
-        <button type="button" className="ghost inv-add" onClick={e => folder ? show(e, folder, 'new') : show(e, null, 'new')} title="Ajouter">＋</button>
-      </header>
-      <div className="inv-body">
-        {folder ? (kids.length ? kids.map(i => <ItemRow key={i.id} i={i} />) : <p className="inv-empty muted">Rien pour l'instant</p>)
-          : <p className="inv-empty muted">Crée le dossier « {s.title} » pour commencer.</p>}
-      </div>
-    </section>
-  }
-  return <div className="home home-in">
-    <Hero kicker={projName || 'Espace'} name={name} quick={quick}
-      actions={<>
-        <FxSearch value={q} onChange={e => setQ(e.target.value)} placeholders={['Rechercher…', 'Une entreprise suivie…', 'Une analyse, une source…']} />
-        <button type="button" className="btn-primary btn-glow" onClick={e => show(e, null, 'new')}>＋ Nouveau</button>
-      </>} />
-    {needle ? <section className="hsec">
-      <div className="sec-label"><h4>Résultats</h4><span className="muted">{found.length}</span></div>
-      {found.length ? <div className="search-results">{found.map(i => <button type="button" className="result-row" key={i.id} onClick={() => i.type !== 'folder' && openItem(i.id)} onContextMenu={e => show(e, i)}>
-        <span className="tile-ico sm"><Ic i={i} /></span>
-        <span className="result-meta"><b>{i.title}</b><small className="muted">{path(i) || 'Racine'} · {i.type}</small></span>
-      </button>)}</div> : <p className="muted dash-none">Aucun résultat pour « {q.trim()} ».</p>}
-    </section> : <>
-      <section className="watchlist">
-        <header className="watchlist-hd">
-          <div className="watchlist-titles">
-            <span className="watchlist-badge">📈</span>
-            <div>
-              <h2>Entreprises à suivre</h2>
-              <p className="muted">{companies.length ? plural(companies.length, 'entreprise suivie') : 'Construis ta watchlist'}</p>
-            </div>
-          </div>
-          <button type="button" className="btn-primary btn-glow" onClick={addCompany}>＋ Ajouter</button>
-        </header>
-        {companies.length > 0 ? <div className="watchlist-grid">
-          {companies.map(c => <div key={c.id} className="watch-card" onClick={() => openItem(c.id)} onContextMenu={e => show(e, c)}>
-            <span className="watch-avatar">{c.title?.slice(0, 1).toUpperCase()}</span>
-            <span className="watch-name">{c.title}</span>
-            <button type="button" className="ghost watch-x" title="Retirer" onClick={e => { e.stopPropagation(); del(c) }}>✕</button>
-          </div>)}
-        </div> : <div className="watchlist-empty">
-          <p className="muted">Aucune société suivie. Ajoute tes tickers ou noms d'entreprises pour y accéder vite.</p>
-        </div>}
-      </section>
-      <section className="hsec">
-        <div className="sec-label"><h4>Espaces de travail</h4></div>
-        <div className="inv-grid">{otherSections.map(s => <Section key={s.title} s={s} />)}</div>
-      </section>
-      {(otherFolders.length > 0 || loose.length > 0) && <section className="hsec">
-        <div className="sec-label"><h4>Autres</h4></div>
-        <div className="tile-grid">
-          {otherFolders.map(f => <button type="button" className="tile tile-folder" key={f.id} onContextMenu={e => show(e, f)}>
-            <span className="tile-ico" style={{ '--c': f.color || '#f59e0b' }}><Ic i={f} /></span>
-            <span className="tile-body"><b>{f.title}</b><small className="muted">Dossier</small></span>
-          </button>)}
-          {loose.map(i => <button type="button" className="tile" key={i.id} onClick={() => openItem(i.id)} onContextMenu={e => show(e, i)}>
-            <span className="tile-ico" style={{ '--c': i.color || '#3b82f6' }}><Ic i={i} /></span>
-            <span className="tile-body"><b>{i.title}</b><small className="muted">{i.type === 'pdf' ? 'PDF' : 'Page'}</small></span>
-          </button>)}
-        </div>
-      </section>}
-    </>}
+      </span>
+    </div>
+    <div className="th-zoom">
+      <button type="button" onClick={() => zoomBy(1 / 1.2)} aria-label="Zoom arrière">−</button>
+      <button type="button" className="th-pct" onClick={fit} aria-label="Ajuster">{Math.round(view.k * 100)}%</button>
+      <button type="button" onClick={() => zoomBy(1.2)} aria-label="Zoom avant">＋</button>
+      <button type="button" onClick={fit} aria-label="Tout voir" title="Tout voir">⤢</button>
+    </div>
   </div>
 }
 
@@ -554,7 +472,7 @@ function Main({ user }) {
             <span className="tab-close" onClick={e => { e.stopPropagation(); closeTab(t.id) }}>✕</span>
           </div>)}
         </div>}
-        <main className={cur && (cur.type === 'page' || cur.type === 'pdf') ? 'paper' : ''}>
+        <main className={cur && (cur.type === 'page' || cur.type === 'pdf') ? 'paper' : !sel ? 'full' : ''}>
           <div className="workspace">
             {!pid ? <div className="dash-empty">
               <div className="dash-empty-ico">🚀</div>
@@ -564,7 +482,7 @@ function Main({ user }) {
                 <button className="btn-primary btn-glow" onClick={newProj}>＋ Nouveau projet</button>
                 <button className="ghost" onClick={joinProj}>🔗 Rejoindre un projet</button>
               </div>
-            </div> : !sel ? (space === 'invest' ? <InvestHome items={items} sibs={sibs} openItem={openItem} show={show} projName={projName} addCompany={addCompany} del={del} name={name} quick={news(null)} /> : <NotesHome items={items} sibs={sibs} openItem={openItem} show={show} projName={projName} name={name} quick={news(null)} />) : cur?.type === 'pdf' ? <PdfView key={cur.id} id={cur.id} user={user} path={pid + '/' + cur.id + '.pdf'} title={cur.title} /> : cur?.type === 'page' ? <Editor key={cur.id} id={cur.id} user={user} projectId={pid} /> : cur?.type === 'folder' ? <FolderView folder={cur} sibs={sibs} openItem={openItem} openFolder={openFolder} show={show} items={items} /> : null}
+            </div> : !sel ? <TreeHome items={items} sibs={sibs} openItem={openItem} show={show} projName={projName} space={space} addCompany={addCompany} /> : cur?.type === 'pdf' ? <PdfView key={cur.id} id={cur.id} user={user} path={pid + '/' + cur.id + '.pdf'} title={cur.title} /> : cur?.type === 'page' ? <Editor key={cur.id} id={cur.id} user={user} projectId={pid} /> : cur?.type === 'folder' ? <FolderView folder={cur} sibs={sibs} openItem={openItem} openFolder={openFolder} show={show} items={items} /> : null}
           </div>
         </main>
       </div>

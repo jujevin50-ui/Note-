@@ -37,12 +37,16 @@ body{background:var(--bg);color:var(--fg);transition:background .3s ease,color .
 .tb-spacer{flex:1}
 
 /* ── Sidebar : suit le thème, verre dépoli, pied de page ── */
-.app aside.side-cols,:root[data-theme=dark] .app aside.side-cols{--side:#ffffff;--fg:#1d1d1f;--mut:#6e6e73;--hov:rgba(0,0,0,.055);--sel:rgba(0,0,0,.075);--sel-fg:#111;--bd:#dcdce2;--side-border:rgba(0,0,0,.08);--ac:#1d1d1f;--on-fg:#fff;--bg:#fff;--dzin:rgba(0,0,0,.14);
-  position:relative;overflow:hidden;background:#fff;color:var(--fg);box-shadow:1px 0 0 var(--side-border)}
+.app aside.side-cols{--side:#ffffff;--fg:#1d1d1f;--mut:#6e6e73;--hov:rgba(0,0,0,.055);--sel:rgba(0,0,0,.075);--sel-fg:#111;--bd:#dcdce2;--side-border:rgba(0,0,0,.08);--ac:#1d1d1f;--on-fg:#fff;--bg:#fff;--dzin:rgba(0,0,0,.14);--veil:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,.25) 50%,rgba(255,255,255,.5));
+  position:relative;overflow:hidden;background:var(--side);color:var(--fg);box-shadow:1px 0 0 var(--side-border)}
+:root[data-theme=dark] .app aside.side-cols{--side:#0d0e14;--fg:#f5f5f7;--mut:#a6a6b3;--hov:rgba(255,255,255,.08);--sel:rgba(255,255,255,.15);--sel-fg:#fff;--bd:rgba(255,255,255,.14);--side-border:rgba(255,255,255,.09);--ac:#f5f5f7;--on-fg:#111;--bg:#1c1c24;--dzin:rgba(255,255,255,.2);--veil:linear-gradient(180deg,rgba(10,10,18,.5),rgba(10,10,18,.2) 50%,rgba(10,10,18,.5))}
+:root[data-theme=dark] .app aside.side-cols select option{background:#1c1c24;color:#f5f5f7}
 .app aside.side-cols>*:not(.plasma-wrap):not(.rz){position:relative;z-index:1}
 .plasma-wrap{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden}
 .plasma{position:absolute;inset:0;width:100%;height:100%;display:block}
-.plasma-veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,.25) 50%,rgba(255,255,255,.5))}
+.plasma-veil{position:absolute;inset:0;background:var(--veil)}
+/* plus de bulle de texte au-dessus de Notes / Invest */
+.liq-tooltip{display:none !important}
 .side-foot{margin-top:auto;display:flex;align-items:center;gap:10px;padding:10px 6px 2px;border-top:1px solid var(--side-border)}
 .side-foot .me{flex:1;min-width:0;display:flex;align-items:center;gap:8px;border:0;background:transparent;padding:4px 6px;border-radius:10px;cursor:pointer;color:inherit;text-align:left}
 .side-foot .me:hover{background:var(--hov)}
@@ -237,16 +241,17 @@ body{background:var(--bg);color:var(--fg);transition:background .3s ease,color .
 /* ── Menu de gauche : liens gris entre dossier et fichiers ; le chemin de la page ouverte prend la couleur du dossier + flux de lumière ── */
 .tree .trow{position:relative}
 .tnode{position:relative}
-.tchildren{margin:0 0 0 14px;padding:0;--lg:rgba(120,120,135,.38)}
+.tchildren{margin:0 0 0 14px;padding:0;--lg:#c8c8d1}
+:root[data-theme=dark] .tchildren{--lg:#4f5060}
 .ln{position:absolute;pointer-events:none;border-radius:2px;background:var(--lg)}
-.ln.up{left:-1px;top:0;width:1.5px;height:16px}
-.ln.dn{left:-1px;top:16px;bottom:0;width:1.5px}
-.ln.tk{left:-1px;top:15.25px;width:7px;height:1.5px}
-.ln.lit{background:color-mix(in srgb,var(--tc,#3b82f6) 38%,transparent);box-shadow:0 0 7px color-mix(in srgb,var(--tc,#3b82f6) 65%,transparent);z-index:2;overflow:visible}
+.ln.up{left:-1px;top:-1px;width:2px;height:18px}
+.ln.dn{left:-1px;top:15px;bottom:-1px;width:2px}
+.ln.tk{left:-1px;top:15px;width:8px;height:2px}
+.ln.lit{background:var(--tc,#3b82f6);box-shadow:0 0 8px color-mix(in srgb,var(--tc,#3b82f6) 70%,transparent);z-index:2;overflow:visible}
 .ln.lit::after{content:'';position:absolute;inset:0;border-radius:inherit;
-  background:linear-gradient(180deg,transparent 0%,var(--tc,#3b82f6) 50%,transparent 100%);background-size:100% 260%;animation:lnFlowV 1.5s linear infinite}
-.ln.tk.lit::after{background:linear-gradient(90deg,transparent 0%,var(--tc,#3b82f6) 50%,transparent 100%);background-size:260% 100%;animation-name:lnFlowH}
-.ln.tk.lit::before{content:'';position:absolute;right:-2px;top:-1.5px;width:4.5px;height:4.5px;border-radius:50%;background:var(--tc,#3b82f6);box-shadow:0 0 9px var(--tc,#3b82f6)}
+  background:linear-gradient(180deg,transparent 0%,rgba(255,255,255,.9) 50%,transparent 100%);background-size:100% 260%;animation:lnFlowV 1.4s linear infinite}
+.ln.tk.lit::after{background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,.9) 50%,transparent 100%);background-size:260% 100%;animation-name:lnFlowH}
+.ln.tk.lit::before{content:'';position:absolute;right:-2px;top:-1.5px;width:5px;height:5px;border-radius:50%;background:var(--tc,#3b82f6);box-shadow:0 0 9px var(--tc,#3b82f6)}
 @keyframes lnFlowV{from{background-position:0 -130%}to{background-position:0 230%}}
 @keyframes lnFlowH{from{background-position:-130% 0}to{background-position:230% 0}}
 .tree .trow.on{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--tc,#3b82f6) 45%,transparent)}
@@ -257,3 +262,66 @@ body{background:var(--bg);color:var(--fg);transition:background .3s ease,color .
 .sp,.sp *:focus,.sp *:focus-visible,.sp-body,.sp-body:focus-within,
 textarea,textarea:focus,textarea:focus-visible,[contenteditable],[contenteditable]:focus,[contenteditable]:focus-visible{outline:none !important;box-shadow:none}
 .ProseMirror *:focus,.ProseMirror *:focus-visible{outline:none}
+
+/* ══ Accueil : arbre géant (dossiers › sous-dossiers › pages) ══ */
+.mainc>main.full{position:relative;padding:0;overflow:hidden}
+.mainc>main.full .workspace{position:absolute;inset:0;min-height:0}
+.th{position:absolute;inset:0;overflow:hidden;isolation:isolate}
+.th .lbg{z-index:0;opacity:.85}
+.th-stage{position:absolute;inset:0;z-index:1;cursor:grab;touch-action:none;background-image:radial-gradient(var(--dot,rgba(15,23,42,.1)) 1px,transparent 1.3px);background-size:26px 26px}
+.th-stage:active{cursor:grabbing}
+.th-canvas{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform}
+.th-edges{position:absolute;left:0;top:0;overflow:visible;pointer-events:none}
+.th-edge{fill:none;stroke:var(--ec);stroke-width:2;stroke-linecap:round;opacity:.42;stroke-dasharray:1;stroke-dashoffset:1;animation:thDraw .9s var(--ease,ease) forwards;animation-delay:var(--dl)}
+.th-flow{fill:none;stroke:var(--ec);stroke-width:3;stroke-linecap:round;stroke-dasharray:.06 .94;opacity:0;filter:drop-shadow(0 0 4px var(--ec));
+  animation:thShow .3s ease forwards,thFlow 3.4s linear infinite;animation-delay:var(--d2),var(--d2)}
+@keyframes thDraw{to{stroke-dashoffset:0}}
+@keyframes thShow{to{opacity:1}}
+@keyframes thFlow{from{stroke-dashoffset:0}to{stroke-dashoffset:-1}}
+
+.hn{position:absolute;display:flex;align-items:center;gap:9px;padding:0 12px;border-radius:15px;cursor:pointer;color:var(--fg);font-size:13.5px;font-weight:600;overflow:hidden;
+  background:color-mix(in srgb,var(--bg) 80%,transparent);border:1.5px solid color-mix(in srgb,var(--c) 45%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  box-shadow:0 8px 22px -12px color-mix(in srgb,var(--c) 75%,transparent);
+  animation:hnPop .65s var(--ease,ease) backwards;animation-delay:var(--dl,0ms);
+  transition:box-shadow .25s,border-color .25s,opacity .25s,scale .25s var(--spring,ease)}
+.hn::before{content:'';position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .25s;
+  background:radial-gradient(170px circle at var(--mx,50%) var(--my,50%),color-mix(in srgb,var(--c) 30%,transparent),transparent 70%)}
+.hn:hover{border-color:var(--c);scale:1.05;box-shadow:0 14px 34px -12px color-mix(in srgb,var(--c) 85%,transparent)}
+.hn:hover::before{opacity:1}
+.hn>*{position:relative}
+.hn-em{display:grid;place-items:center;font-size:16px;flex:none}
+.hn .rbf-box{margin:2px 0 0 -2px}
+.hn-t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hn-n{flex:none;font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;background:color-mix(in srgb,var(--c) 18%,transparent);color:var(--fg)}
+.hn-act{display:none;gap:2px;flex:none}
+.hn:hover .hn-act{display:flex}
+.hn:hover .hn-n{display:none}
+.hn-act b{width:24px;height:24px;display:grid;place-items:center;border-radius:8px;font-size:13px;transition:background .15s}
+.hn-act b:hover{background:color-mix(in srgb,var(--c) 25%,transparent)}
+.hn.shut{border-style:dashed}
+.hn.hit{border-color:var(--c);box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 30%,transparent),0 0 26px color-mix(in srgb,var(--c) 70%,transparent)}
+.hn.dim{opacity:.28}
+@keyframes hnPop{from{opacity:0;filter:blur(10px);transform:scale(.8)}to{opacity:1;filter:blur(0);transform:none}}
+.hn-root{padding:0 16px;gap:12px;border-radius:24px;border-width:2px;cursor:default;overflow:visible;
+  background:linear-gradient(135deg,color-mix(in srgb,var(--c) 24%,var(--bg)),var(--bg))}
+.hn-root:hover{scale:1}
+.hn-tree{font-size:32px;line-height:1;animation:hnFloat 4s ease-in-out infinite}
+.hn-rt{min-width:0;display:flex;flex-direction:column}
+.hn-rt b{font-size:15.5px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:128px}
+.hn-rt small{font-size:11.5px;font-weight:500;color:var(--mut)}
+.hn-ring{position:absolute !important;inset:-2px;border-radius:inherit;border:2px solid var(--c);opacity:0;pointer-events:none;animation:hnRing 3s ease-out infinite}
+.hn-ring.r2{animation-delay:1.5s}
+@keyframes hnRing{0%{opacity:.55;transform:scale(1)}100%{opacity:0;transform:scale(1.22,1.45)}}
+@keyframes hnFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+
+.th-bar{position:absolute;z-index:5;left:16px;right:16px;top:14px;display:flex;flex-wrap:wrap;align-items:center;gap:10px;pointer-events:none}
+.th-bar>*{pointer-events:auto}
+.th-btn{padding:9px 16px;border-radius:12px;border:1px solid var(--rd-glass-bd);background:var(--rd-glass);color:var(--fg);font-weight:600;font-size:13.5px;cursor:pointer;backdrop-filter:blur(14px);transition:background .2s,transform .2s}
+.th-btn:hover{background:var(--hov);transform:translateY(-1px)}
+.th-stats{display:flex;gap:8px;margin-left:auto;flex-wrap:wrap}
+.th-stats .stat-pill{background:var(--rd-glass);border:1px solid var(--rd-glass-bd);backdrop-filter:blur(14px)}
+.th-zoom{position:absolute;z-index:5;right:16px;bottom:16px;display:flex;gap:2px;padding:5px;border-radius:15px;background:var(--rd-glass);border:1px solid var(--rd-glass-bd);backdrop-filter:blur(16px);box-shadow:var(--rd-pop-sh)}
+.th-zoom button{min-width:34px;height:34px;border:0;border-radius:10px;background:transparent;color:var(--fg);font-size:16px;font-weight:600;cursor:pointer}
+.th-zoom button:hover{background:var(--hov)}
+.th-zoom .th-pct{font-size:12.5px;min-width:52px}
+@media(prefers-reduced-motion:reduce){.hn,.th-edge,.th-flow,.hn-ring,.hn-tree{animation:none}.th-edge{stroke-dashoffset:0}}
