@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { colorOf } from '../lib/provider'
 import Editor from '../components/Editor'
@@ -8,7 +8,7 @@ import WelcomeDashboard from '../components/WelcomeDashboard'
 import SidebarNavigation from '../components/SidebarNavigation'
 import HomeGreeting from '../components/HomeGreeting'
 import { LiquidBackground, SquishSwitch, Presence, useTheme, GradientWaves } from '../components/Bits'
-import { FxRoot, TextGenerate, Ticker, FxSearch } from '../components/Fx'
+import { FxRoot, TextGenerate } from '../components/Fx'
 
 const COLORS = ['#f59e0b', '#ef4444', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899', '#64748b']
 const NAMES = { page: 'Nom de la page', folder: 'Nom du dossier' }
@@ -156,170 +156,6 @@ function FolderView({ folder, sibs, openItem, openFolder, show, items }) {
   </div>
 }
 
-function TreeHome({ items, sibs, openItem, show, projName, space, addCompany, mapOnly = false }) {
-  const SLOT = 128, LV = 132, STAG = 46, OFF = 120
-  const GREENS = ['#5fae4f', '#7bbf5e', '#4c9a63', '#8fc45f', '#3f8f6b']
-  const [q, setQ] = useState('')
-  const [shut, setShut] = useState(() => { try { return JSON.parse(localStorage.getItem('homeShut') || '{}') } catch { return {} } })
-  useEffect(() => { try { localStorage.setItem('homeShut', JSON.stringify(shut)) } catch {} }, [shut])
-  const [view, setView] = useState({ x: 0, y: 70, k: 1 })
-  const stage = useRef(null), drag = useRef(null), fitted = useRef(false)
-  const needle = q.trim().toLowerCase()
-  const allFolders = items.filter(i => i.type === 'folder')
-  const folders = allFolders.filter(i => !i.parent_id)
-  const nF = allFolders.length, nP = items.filter(i => i.type === 'page').length, nD = items.filter(i => i.type === 'pdf').length
-  const recentItems = [...items].filter(i => i.type === 'page' || i.type === 'pdf').sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)).slice(0, 4)
-  const totalItems = nP + nD
-  const greeting = new Date().getHours() < 12 ? 'Bonjour' : new Date().getHours() < 18 ? 'Bon après-midi' : 'Bonsoir'
-  const allShut = nF > 0 && folders.every(f => shut[f.id])
-
-  // mise en page : le tronc est en bas, les dossiers sont des branches, les pages des feuilles
-  const build = (pid, depth, color) => sibs(pid).map((i, k) => { const c = i.color || color || GREENS[k % GREENS.length]; return { i, depth, c, kids: i.type === 'folder' && (needle || !shut[i.id]) ? build(i.id, depth + 1, i.color || color || c) : [] } })
-  let leaf = 0, maxD = 1
-  const nodes = []
-  const place = (n, parent) => {
-    maxD = Math.max(maxD, n.depth)
-    n.kids.forEach(k => place(k, n))
-    n.x = n.kids.length ? (n.kids[0].x + n.kids[n.kids.length - 1].x) / 2 : leaf++ * SLOT
-    n.parent = parent
-    n.slot = Math.round(n.x / SLOT)
-    nodes.push(n)
-  }
-  const tops = build(null, 1, null)
-  tops.forEach(t => place(t, null))
-  const rx = tops.length ? (tops[0].x + tops[tops.length - 1].x) / 2 : 0
-  const ry = maxD * LV + 70, gy = ry + 120
-  nodes.forEach(n => { n.y = (maxD - n.depth) * LV + 70 + (n.i.type !== 'folder' && n.slot % 2 ? -STAG : 0) })
-  const Wd = Math.max(leaf - 1, 1) * SLOT + 2 * OFF, Hd = gy + 90
-
-  const fit = () => {
-    const el = stage.current
-    if (!el) return
-    const sw = el.clientWidth, sh = el.clientHeight
-    const k = Math.max(0.35, Math.min(1, (sw * 0.94) / Wd, (sh - 90) / Hd))
-    setView({ k, x: (sw - Wd * k) / 2, y: Math.max(70, sh - Hd * k - 6) })
-  }
-  useEffect(() => { if (!fitted.current && stage.current) { fitted.current = true; fit() } })
-  useEffect(() => {
-    const el = stage.current
-    if (!el) return
-    const h = e => {
-      e.preventDefault()
-      const r = el.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top
-      setView(v => { const k = Math.max(0.3, Math.min(1.8, v.k * Math.exp(-e.deltaY * 0.0012))), s = k / v.k; return { k, x: mx - (mx - v.x) * s, y: my - (my - v.y) * s } })
-    }
-    el.addEventListener('wheel', h, { passive: false })
-    return () => el.removeEventListener('wheel', h)
-  }, [])
-  const zoomBy = f => { const el = stage.current; if (!el) return; const mx = el.clientWidth / 2, my = el.clientHeight / 2; setView(v => { const k = Math.max(0.3, Math.min(1.8, v.k * f)), s = k / v.k; return { k, x: mx - (mx - v.x) * s, y: my - (my - v.y) * s } }) }
-  const onNode = i => { if (i.type === 'folder') setShut(s => ({ ...s, [i.id]: !s[i.id] })); else openItem(i.id) }
-
-  const a = rx + OFF
-  const edge = n => {
-    const x1 = (n.parent ? n.parent.x : rx) + OFF, y1 = n.parent ? n.parent.y : ry
-    const x2 = n.x + OFF, y2 = n.y, dy = y1 - y2
-    return `M${x1} ${y1} C${x1 + (x2 - x1) * 0.12} ${y1 - dy * 0.55} ${x2 - (x2 - x1) * 0.1} ${y2 + dy * 0.45} ${x2} ${y2}`
-  }
-  const bw = n => n.i.type === 'folder' ? Math.max(3.5, 13 - (n.depth - 1) * 3.5) : 2.2
-  const trunk = `M${a - 34} ${gy + 8} C${a - 26} ${gy - 34} ${a - 17} ${ry + 70} ${a - 14} ${ry} L${a + 14} ${ry} C${a + 17} ${ry + 70} ${a + 26} ${gy - 34} ${a + 34} ${gy + 8} Z`
-  return <div className={"th th-dashboard" + (mapOnly ? " th-map-only" : "")}>
-    <div className="th-dashboard-content">
-      {!mapOnly && <>
-      <section className="th-welcome">
-        <div className="th-welcome-copy">
-          <div className="th-eyebrow"><span className="th-eyebrow-dot" /> ESPACE DE CONNAISSANCES <span className="th-eyebrow-sep">/</span> {space === 'invest' ? 'INVESTISSEMENT' : 'NOTES'}</div>
-          <h1>{greeting}, <span>{(projName || 'bienvenue').split(' ')[0]}.</span></h1>
-          <p>Un espace commun pour organiser vos idées, approfondir vos recherches et construire vos connaissances.</p>
-        </div>
-        <div className="th-welcome-actions">
-          <button type="button" className="th-primary" onClick={e => show(e, null, 'new')}><span>＋</span> Créer un contenu</button>
-          {space === 'invest' && addCompany && <button type="button" className="th-secondary" onClick={addCompany}>＋ Entreprise</button>}
-        </div>
-        <div className="th-orbit th-orbit-one" /><div className="th-orbit th-orbit-two" /><div className="th-orbit-core"><span>✳</span></div>
-      </section>
-      <section className="th-overview" aria-label="Vue d'ensemble">
-        <div className="th-stat"><span className="th-stat-icon blue">▤</span><div><strong>{nF}</strong><small>Dossiers</small></div></div>
-        <div className="th-stat"><span className="th-stat-icon violet">▧</span><div><strong>{nP}</strong><small>Pages</small></div></div>
-        <div className="th-stat"><span className="th-stat-icon coral">▤</span><div><strong>{nD}</strong><small>Documents PDF</small></div></div>
-        <div className="th-stat th-stat-wide"><span className="th-stat-icon green">⌁</span><div><strong>{totalItems + nF}</strong><small>Éléments dans cet espace</small></div><span className="th-stat-caption">Mis à jour en temps réel</span></div>
-      </section>
-      <section className="th-section">
-        <div className="th-section-heading"><div><span className="th-section-kicker">VOTRE BIBLIOTHÈQUE</span><h2>Explorer les dossiers</h2></div><span className="th-section-note">{nF} espace{nF !== 1 ? 's' : ''} organisé{nF !== 1 ? 's' : ''}</span></div>
-        {folders.length ? <div className="th-folder-grid">{folders.slice(0, 6).map((folder, idx) => { const count = sibs(folder.id).length; return <button type="button" key={folder.id} className="th-folder-card" style={{ '--folder-accent': folder.color || ['#6d9cff','#9b8af7','#65b99a','#e7a36f'][idx % 4], '--card-index': idx }} onClick={() => openItem(folder.id)} onContextMenu={e => show(e, folder)}>
-          <span className="th-folder-symbol">{folder.icon || '▰'}</span><span className="th-folder-arrow">↗</span><strong>{folder.title}</strong><small>{count} élément{count !== 1 ? 's' : ''}</small><span className="th-folder-progress"><i style={{ width: `${Math.min(100, Math.max(12, count * 16))}%` }} /></span>
-        </button> })}</div> : <div className="th-empty-inline"><span>▱</span><div><strong>Votre bibliothèque commence ici</strong><small>Créez un premier dossier pour structurer vos recherches.</small></div><button type="button" onClick={e => show(e, null, 'new')}>Créer un dossier</button></div>}
-      </section>
-      <section className="th-section th-recent-section">
-        <div className="th-section-heading"><div><span className="th-section-kicker">REPRENDRE VOTRE TRAVAIL</span><h2>Documents récents</h2></div><span className="th-section-note">Les derniers contenus ajoutés</span></div>
-        {recentItems.length ? <div className="th-recent-list">{recentItems.map((item, idx) => <button type="button" className="th-recent-row" key={item.id} onClick={() => openItem(item.id)}><span className={'th-recent-icon ' + (item.type === 'pdf' ? 'pdf' : 'page')}>{item.type === 'pdf' ? 'PDF' : 'Aa'}</span><span className="th-recent-title"><strong>{item.title}</strong><small>{item.type === 'pdf' ? 'Document PDF' : 'Note'}</small></span><span className="th-recent-date">{item.created_at ? new Date(item.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }) : 'Récemment'}</span><span className="th-recent-arrow">↗</span></button>)}</div> : <div className="th-recent-empty">Vos pages et PDF apparaîtront ici au fur et à mesure de vos recherches.</div>}
-      </section>
-      </>}
-      <section className="th-map-section">
-        <div className="th-section-heading th-map-heading"><div><span className="th-section-kicker">VUE D’ENSEMBLE</span><h2>Cartographie des connaissances</h2></div></div>
-        <div className="th-map-panel">
-    <div className="th-stage" ref={stage}
-      onPointerDown={e => { if (e.target.closest('.tr-tag,.tr-leaf,.tr-sign,.th-bar,.th-zoom')) return; drag.current = { x: e.clientX, y: e.clientY, vx: view.x, vy: view.y }; e.currentTarget.setPointerCapture(e.pointerId) }}
-      onPointerMove={e => { const d = drag.current; if (d) setView(v => ({ ...v, x: d.vx + e.clientX - d.x, y: d.vy + e.clientY - d.y })) }}
-      onPointerUp={() => { drag.current = null }} onPointerCancel={() => { drag.current = null }}
-      onContextMenu={e => show(e, null, 'new')}>
-      <div className="th-canvas" style={{ transform: `translate(${view.x}px, ${view.y}px) scale(${view.k})` }}>
-        <svg className="th-svg" width={Wd + 400} height={Hd} style={{ left: -200 }} viewBox={`-200 0 ${Wd + 400} ${Hd}`}>
-          <ellipse className="tr-grass" cx={a} cy={gy + 26} rx={Wd / 2 + 180} ry={64} />
-          <ellipse className="tr-soil" cx={a} cy={gy + 14} rx={86} ry={20} />
-          <path className="tr-trunk" d={trunk} />
-          <path className="tr-bark" d={`M${a - 8} ${gy - 10} C${a - 9} ${gy - 70} ${a - 6} ${ry + 80} ${a - 5} ${ry + 14}`} />
-          <path className="tr-bark" d={`M${a + 9} ${gy - 18} C${a + 10} ${gy - 80} ${a + 7} ${ry + 90} ${a + 6} ${ry + 24}`} />
-          {nodes.map(n => <path key={n.i.id} className="tr-br" d={edge(n)} pathLength="1" style={{ strokeWidth: bw(n), '--dl': n.depth * 180 + n.slot * 18 + 'ms' }} />)}
-        </svg>
-        <div className="tr-sign" style={{ left: a + 74, top: gy - 60 }}>
-          <b>{projName || 'Mon espace'}</b>
-          <small>{nF} dossier{nF > 1 ? 's' : ''} · {nP + nD} fichier{nP + nD > 1 ? 's' : ''}</small>
-        </div>
-        {nodes.map(n => {
-          const i = n.i, f = i.type === 'folder', closed = f && !needle && !!shut[i.id]
-          const hit = needle && (i.title || '').toLowerCase().includes(needle)
-          const cls = (needle && !hit ? ' dim' : '') + (hit ? ' hit' : '')
-          const dl = n.depth * 180 + n.slot * 18 + 500 + 'ms'
-          const side = n.x < (n.parent ? n.parent.x : rx) ? -1 : 1
-          const pos = { left: n.x + OFF, top: n.y, '--c': n.c, '--dl': dl }
-          return f
-            ? <div key={i.id} className={'tr-tag' + (closed ? ' shut' : '') + cls} style={pos} onClick={() => onNode(i)} onContextMenu={e => show(e, i)}>
-              <span className="tr-em">{i.icon || '📁'}</span><span className="tr-t">{i.title}</span>
-              <small className="tr-n">{sibs(i.id).length}</small>
-              <span className="tr-act">
-                <b onClick={e => { e.stopPropagation(); show(e, i, 'new') }}>＋</b>
-                <b onClick={e => { e.stopPropagation(); openItem(i.id) }}>↗</b>
-              </span>
-            </div>
-            : <div key={i.id} className={'tr-leaf' + cls} style={{ ...pos, '--rot': side * 5 + 'deg', '--sd': (n.slot % 5) * -1.1 + 's' }} onClick={() => onNode(i)} onContextMenu={e => show(e, i)}>
-              <span className="tr-em"><Ic i={i} /></span><span className="tr-t">{i.title}</span>
-            </div>
-        })}
-      </div>
-    </div>
-    <div className="th-bar">
-      <FxSearch value={q} onChange={e => setQ(e.target.value)} placeholders={['Rechercher dans l\'arbre…', 'Un dossier, une page…', 'Un PDF, une idée…']} />
-      <button type="button" className="btn-primary" onClick={e => show(e, null, 'new')}>＋ Nouveau</button>
-      {space === 'invest' && addCompany && <button type="button" className="th-btn" onClick={addCompany}>＋ Entreprise</button>}
-      {nF > 0 && <button type="button" className="th-btn" onClick={() => setShut(Object.fromEntries(folders.map(f => [f.id, !allShut])))}>{allShut ? 'Tout déplier' : 'Tout replier'}</button>}
-      <span className="th-stats">
-        <span className="stat-pill"><Ticker value={nF} /> dossier{nF !== 1 ? 's' : ''}</span>
-        <span className="stat-pill"><Ticker value={nP} /> page{nP !== 1 ? 's' : ''}</span>
-        {nD > 0 && <span className="stat-pill"><Ticker value={nD} /> PDF</span>}
-      </span>
-    </div>
-    <div className="th-zoom">
-      <button type="button" onClick={() => zoomBy(1 / 1.2)} aria-label="Zoom arrière">−</button>
-      <button type="button" className="th-pct" onClick={fit} aria-label="Ajuster">{Math.round(view.k * 100)}%</button>
-      <button type="button" onClick={() => zoomBy(1.2)} aria-label="Zoom avant">＋</button>
-      <button type="button" onClick={fit} aria-label="Tout voir" title="Tout voir">⤢</button>
-    </div>
-        </div>
-      </section>
-    </div>
-  </div>
-}
-
 function Login() {
   const [e, setE] = useState('')
   const [p, setP] = useState('')
@@ -448,7 +284,7 @@ function Main({ user }) {
           </button>
           <div className="crumbs">
             {section !== 'home' && <span className="active-space-name">{space === 'invest' ? 'Invest' : 'Notes'}</span>}
-            {cur ? <>{trail(cur).map(t => <span key={t.id}><i>›</i> {t.title}</span>)}<i>›</i><b>{cur.title}</b></> : <><i>›</i><b>{{ home: 'Accueil', library: space === 'invest' ? 'Invest' : 'Notes', pages: 'Pages', pdf: 'PDF', map: 'Cartographie' }[section]}</b></>}
+            {cur ? <>{trail(cur).map(t => <span key={t.id}><i>›</i> {t.title}</span>)}<i>›</i><b>{cur.title}</b></> : <><i>›</i><b>{{ home: 'Accueil', library: space === 'invest' ? 'Invest' : 'Notes', pages: 'Pages', pdf: 'PDF' }[section]}</b></>}
           </div>
           <div className="tb-spacer" />
           <Presence online={online} me={user.id} titleOf={titleOf} />
@@ -458,7 +294,7 @@ function Main({ user }) {
         </div>
         <main className={cur && (cur.type === 'page' || cur.type === 'pdf') ? 'paper' : !sel ? 'full' : ''}>
           <div className="workspace">
-            {section === 'home' && !sel ? <HomeGreeting name={name} /> : !pid ? <div className="dash-empty"><h3>Aucun projet</h3><button type="button" className="btn-primary" onClick={() => setSettings(true)}>Paramètres</button></div> : !sel ? <WelcomeDashboard section={section} items={spaceItems} sibs={sibs} openItem={openItem} show={show} projName={projName} space={space} addCompany={addCompany} name={name}><TreeHome mapOnly items={spaceItems} sibs={sibs} openItem={openItem} show={show} projName={projName} space={space} addCompany={addCompany} /></WelcomeDashboard> : cur?.type === 'pdf' ? <PdfView key={cur.id} id={cur.id} user={user} path={pid + '/' + cur.id + '.pdf'} title={cur.title} /> : cur?.type === 'page' ? <Editor key={cur.id} id={cur.id} user={user} projectId={pid} /> : cur?.type === 'folder' ? <FolderView folder={cur} sibs={sibs} openItem={openItem} openFolder={openFolder} show={show} items={items} /> : null}
+            {section === 'home' && !sel ? <HomeGreeting name={name} /> : !pid ? <div className="dash-empty"><h3>Aucun projet</h3><button type="button" className="btn-primary" onClick={() => setSettings(true)}>Paramètres</button></div> : !sel ? <WelcomeDashboard section={section} items={spaceItems} sibs={sibs} openItem={openItem} show={show} projName={projName} space={space} addCompany={addCompany} name={name} /> : cur?.type === 'pdf' ? <PdfView key={cur.id} id={cur.id} user={user} path={pid + '/' + cur.id + '.pdf'} title={cur.title} /> : cur?.type === 'page' ? <Editor key={cur.id} id={cur.id} user={user} projectId={pid} /> : cur?.type === 'folder' ? <FolderView folder={cur} sibs={sibs} openItem={openItem} openFolder={openFolder} show={show} items={items} /> : null}
           </div>
         </main>
       </div>
