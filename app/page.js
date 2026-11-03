@@ -210,7 +210,7 @@ function Main({ user }) {
   const [w, setW] = useState(280)
   const [section, setSection] = useState('home')
   const [space, setSpace] = useState(() => { try { return localStorage.getItem('space') || 'notes' } catch { return 'notes' } })
-  const { recent, recentStatus, recordOpen } = useRecentDocuments(pid, space)
+  const { recent, recentStatus, recordOpen, refreshRecent } = useRecentDocuments(pid, space)
   const switchSpace = s => { setSpace(s); try { localStorage.setItem('space', s) } catch {}; setSel(null); setSection('home') }
   const fi = useRef(), pp = useRef(null)
   const loadP = async () => { const { data } = await supabase.from('projects').select('*'); setProjs(data || []); if (!pid && data?.[0]) setPid(data[0].id) }
@@ -245,7 +245,7 @@ function Main({ user }) {
   const pick = p => { pp.current = p; fi.current.click() }
   const onPdf = e => { const f = e.target.files[0]; e.target.value = ''; if (f) readPdf(f, pp.current) }
   const show = (e, i, mode) => { e.preventDefault(); e.stopPropagation(); setMenu({ x: Math.min(e.clientX, innerWidth - 230), y: Math.min(e.clientY, innerHeight - 340), i, mode }) }
-  const openItem = id => { if (sel !== id) recordOpen(items.find(item => item.id === id)); setSel(id) }
+  const openItem = id => { recordOpen(items.find(item => item.id === id)); setSel(id) }
   const openFolder = id => openItem(id)
   const key = x => x.pos ?? new Date(x.created_at).getTime()
   const spaceItems = items.filter(i => (i.space || 'notes') === space)
@@ -284,7 +284,7 @@ function Main({ user }) {
         </div>
         <main className={cur && (cur.type === 'page' || cur.type === 'pdf') ? 'paper' : !sel ? 'full' : ''}>
           <div className="workspace">
-            {section === 'home' && !sel ? <HomeGreeting name={name} /> : !pid ? <div className="dash-empty"><h3>Aucun projet</h3><button type="button" className="btn-primary" onClick={() => setSettings(true)}>Paramètres</button></div> : !sel ? <WelcomeDashboard recentDocuments={recent} recentStatus={recentStatus} section={section} items={spaceItems} sibs={sibs} openItem={openItem} show={show} projName={projName} space={space} addCompany={addCompany} name={name} /> : cur?.type === 'pdf' ? <PdfView key={cur.id} id={cur.id} user={user} path={pid + '/' + cur.id + '.pdf'} title={cur.title} /> : cur?.type === 'page' ? <Editor key={cur.id} id={cur.id} user={user} projectId={pid} /> : cur?.type === 'folder' ? <FolderView folder={cur} sibs={sibs} openItem={openItem} openFolder={openFolder} show={show} items={items} /> : null}
+            {section === 'home' && !sel ? <HomeGreeting name={name} /> : !pid ? <div className="dash-empty"><h3>Aucun projet</h3><button type="button" className="btn-primary" onClick={() => setSettings(true)}>Paramètres</button></div> : !sel ? <WelcomeDashboard recentDocuments={recent} recentStatus={recentStatus} refreshRecent={refreshRecent} section={section} items={spaceItems} sibs={sibs} openItem={openItem} show={show} projName={projName} space={space} addCompany={addCompany} name={name} /> : cur?.type === 'pdf' ? <PdfView key={cur.id} id={cur.id} user={user} path={pid + '/' + cur.id + '.pdf'} title={cur.title} /> : cur?.type === 'page' ? <Editor key={cur.id} id={cur.id} user={user} projectId={pid} /> : cur?.type === 'folder' ? <FolderView folder={cur} sibs={sibs} openItem={openItem} openFolder={openFolder} show={show} items={items} /> : null}
           </div>
         </main>
       </div>

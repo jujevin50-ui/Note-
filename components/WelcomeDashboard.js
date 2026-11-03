@@ -29,11 +29,12 @@ function reset(e) {
   e.currentTarget.style.setProperty('--rotate-y', '0deg')
 }
 
-export default function WelcomeDashboard({ items, sibs, openItem, show, projName, space, addCompany, name, recentDocuments = [], recentStatus = 'ready', section = 'home' }) {
+export default function WelcomeDashboard({ items, sibs, openItem, show, projName, space, addCompany, name, recentDocuments = [], recentStatus = 'ready', refreshRecent, section = 'home' }) {
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState('all')
   const [sort, setSort] = useState('recent')
   useEffect(() => { setQuery(''); setFilter(section === 'pages' ? 'page' : section === 'pdf' ? 'pdf' : 'all') }, [section, space, projName])
+  useEffect(() => { if (section === 'library') refreshRecent?.() }, [section, refreshRecent])
   const needle = query.trim().toLocaleLowerCase('fr')
   const rootsOnly = !['pages', 'pdf'].includes(section)
   const documents = items.filter(i => i.type !== 'folder')
@@ -62,7 +63,7 @@ export default function WelcomeDashboard({ items, sibs, openItem, show, projName
     {section !== 'home' && <h1 className="wd-section-heading">{{ library: space === 'invest' ? 'Invest' : 'Notes', pages: 'Pages', pdf: 'PDF' }[section]}</h1>}
     {section === 'library' && <section className="wd-resume" aria-label="Documents ouverts récemment par le projet">
       <div className="wd-section-title"><h2>Ouverts récemment</h2><span>Par les membres du projet</span></div>
-      {recentStatus === 'loading' ? <p className="wd-recent-status" role="status">Chargement…</p> : recentStatus === 'error' ? <p className="wd-recent-status" role="status">L’historique partagé est indisponible pour le moment.</p> : recent.length ? <div className="wd-recent-grid">{recent.map((item, index) => <button type="button" className="wd-recent" key={item.id} style={{ '--index': index }} onClick={() => openItem(item.id)} title={item.title}><span className={'wd-recent-icon ' + item.type}><Icon name={item.type} /></span><span className="wd-recent-copy"><strong>{item.title}</strong><small>Ouvert le {new Date(item.last_opened_at).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</small></span><span className="wd-recent-arrow"><Icon name="arrow" size={18} /></span></button>)}</div> : <p className="wd-recent-status">Les documents ouverts par les membres du projet apparaîtront ici.</p>}
+      {recentStatus === 'loading' ? <p className="wd-recent-status" role="status">Chargement…</p> : recentStatus === 'setup-required' ? <p className="wd-recent-status" role="status">L’historique partagé doit être activé dans la base du projet avec le fichier recent-documents.sql.</p> : recentStatus === 'error' ? <div className="wd-recent-status" role="status">Impossible de charger l’historique partagé. <button type="button" onClick={refreshRecent}>Réessayer</button></div> : recent.length ? <div className="wd-recent-grid">{recent.map((item, index) => <button type="button" className="wd-recent" key={item.id} style={{ '--index': index }} onClick={() => openItem(item.id)} title={item.title}><span className={'wd-recent-icon ' + item.type}><Icon name={item.type} /></span><span className="wd-recent-copy"><strong>{item.title}</strong><small>Ouvert le {new Date(item.last_opened_at).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</small></span><span className="wd-recent-arrow"><Icon name="arrow" size={18} /></span></button>)}</div> : <p className="wd-recent-status">Les documents ouverts par les membres du projet apparaîtront ici.</p>}
     </section>}
     <section className="wd-library" aria-label="Bibliothèque"><div className="wd-library-head"><h2 className="wd-library-title">Bibliothèque</h2><button type="button" className="wd-new" onClick={create} aria-label="Créer un contenu"><Icon name="plus" size={18} /><span>Nouveau</span></button></div>
       <div className="wd-reveal">

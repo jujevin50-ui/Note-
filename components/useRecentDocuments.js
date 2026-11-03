@@ -1,6 +1,7 @@
 'use client'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { loadRecentDocuments, recordDocumentOpen, recentErrorStatus } from '../lib/recent-documents'
 
 export default function useRecentDocuments(projectId, space) {
   const [state, setState] = useState({ key: '', rows: [], status: 'loading' })
@@ -11,8 +12,9 @@ export default function useRecentDocuments(projectId, space) {
   const refresh = useCallback(async () => {
     if (!projectId) return
     const request = ++sequence.current
-    const { data, error } = await supabase.rpc('recent_documents', { p_project_id: projectId, p_space: space })
-    if (current.current === key && request === sequence.current) setState({ key, rows: data || [], status: error ? 'error' : 'ready' })
+    let data, error
+    try { ({ data, error } = await loadRecentDocuments(supabase, projectId, space)) } catch (failure) { error = failure }
+    if (current.current === key && request === sequence.current) setState({ key, rows: data || [], status: error ? recentErrorStatus(error) : 'ready' })
   }, [projectId, space, key])
   useEffect(() => {
     if (!projectId) return
@@ -26,10 +28,11 @@ export default function useRecentDocuments(projectId, space) {
   }, [refresh, key, projectId])
   const recordOpen = async item => {
     if (!item || !['page', 'pdf'].includes(item.type)) return
-    const { error } = await supabase.rpc('record_document_open', { p_item_id: item.id })
+    let error
+    try { ({ error } = await recordDocumentOpen(supabase, item.id)) } catch (failure) { error = failure }
     if (current.current !== key) return
-    if (error) setState({ key, rows: [], status: 'error' })
+    if (error) setState({ key, rows: [], status: recentErrorStatus(error) })
     else refresh()
   }
-  return { recent: state.key === key ? state.rows : [], recentStatus: state.key === key ? state.status : 'loading', recordOpen }
+  return { refreshRecent: refresh, recent: state.key === key ? state.rows : [], recentStatus: state.key === key ? state.status : 'loading', recordOpen }
 }
