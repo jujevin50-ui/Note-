@@ -55,3 +55,12 @@
  .ed-wrap:is(.tb-center,.tb-right) .toolbar-rail .bar .tb-sep{margin:0 1px;height:20px}
 }
 @media(prefers-reduced-motion:reduce){.toolbar-popover-root .toolbar-popover{animation:none}.ed-wrap:is(.tb-center,.tb-right) .toolbar-rail .bar button{transition:none}}
+
+/* Le panneau reste dans les limites de la zone de lecture, sous l’en-tête. */
+.sp{z-index:28;min-height:0;max-height:calc(100dvh - 24px)}
+.sp .sp-head,.sp .sp-seg,.sp .sp-tools,.sp .sp-foot{flex-shrink:0}
+.sp .sp-head>div{min-width:0}
+.sp .sp-head h2{line-height:1.4;overflow-wrap:anywhere}
+.sp .sp-head p{line-height:1.5}
+.sp .sp-x{flex-shrink:0;margin-left:10px}
+.sp .sp-body{min-height:0;overscroll-behavior:contain}

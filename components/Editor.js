@@ -1,6 +1,6 @@
 'use client'
 import './toolbar.css'
-import {useEffect,useState,useRef} from 'react'
+import {useEffect,useState,useRef,useLayoutEffect} from 'react'
 import ToolbarIcon from './ToolbarIcon'
 import ToolbarPopover from './ToolbarPopover'
 import * as Y from 'yjs'
@@ -193,9 +193,26 @@ function Tiptap({ydoc,provider,projectId}){
 
 export function SidePanel({ydoc,open,onClose,width=380,onWidth}){
  const [tab,setTab]=useState('summary')
+ const panelRef=useRef(null)
+ const [bounds,setBounds]=useState(null)
+ useLayoutEffect(()=>{
+  const panel=panelRef.current
+  const main=panel?.closest('main')
+  if(!main)return
+  const place=()=>{
+   const rect=main.getBoundingClientRect()
+   const inset=12
+   setBounds({top:Math.max(inset,rect.top+inset),right:Math.max(inset,window.innerWidth-rect.right+inset),bottom:Math.max(inset,window.innerHeight-rect.bottom+inset),width:Math.min(width,Math.max(0,rect.width-inset*2))})
+  }
+  place()
+  const observer=new ResizeObserver(place)
+  observer.observe(main)
+  window.addEventListener('resize',place)
+  return()=>{observer.disconnect();window.removeEventListener('resize',place)}
+ },[width])
  const ed=useEditor({immediatelyRender:false,extensions:[StarterKit.configure({history:false}),
   Collaboration.configure({document:ydoc,field:tab}),TaskList,TaskItem.configure({nested:true})]},[tab])
- useEffect(()=>{if(open&&ed&&!ed.isDestroyed){const t=setTimeout(()=>{try{ed.commands.focus('end')}catch{}},380);return()=>clearTimeout(t)}},[open,tab,ed])
+ useEffect(()=>{if(open&&ed&&!ed.isDestroyed){const t=setTimeout(()=>{try{ed.commands.focus('end',{scrollIntoView:false})}catch{}},380);return()=>clearTimeout(t)}},[open,tab,ed])
  const startResize=e=>{
   e.preventDefault();e.stopPropagation()
   const x0=e.clientX,w0=width
@@ -210,7 +227,7 @@ export function SidePanel({ydoc,open,onClose,width=380,onWidth}){
  const words=ed&&!ed.isDestroyed?ed.getText().trim().split(/\s+/).filter(Boolean).length:0
  const f=()=>ed.chain().focus()
  const T=(l,fn,a,t)=><button type="button" title={t} className={a?'on':''} onMouseDown={e=>e.preventDefault()} onClick={fn}>{l}</button>
- return <div className={'sp'+(open?' open':'')} style={{width:Math.min(width,typeof window!=='undefined'?window.innerWidth-24:width),'--spw':width+'px'}} aria-hidden={!open} onKeyDown={e=>{if(e.key==='Escape')onClose()}}>
+ return <div ref={panelRef} className={'sp'+(open?' open':'')} style={{...bounds,'--spw':width+'px',visibility:bounds?undefined:'hidden'}} role="complementary" aria-label="Résumé et notes" aria-hidden={!open} onKeyDown={e=>{if(e.key==='Escape')onClose()}}>
   <div className="sp-rz" onPointerDown={startResize} title="Redimensionner"/>
   <div className="sp-head"><div><h2>Résumé & notes</h2><p>Synchronisé en temps réel · glisse le bord gauche</p></div>
    <button type="button" className="sp-x" onClick={onClose} aria-label="Fermer">✕</button></div>
