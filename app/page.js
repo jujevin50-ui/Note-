@@ -83,7 +83,7 @@ function Settings({ user, close }) {
             {[['light', 'Clair'], ['dark', 'Sombre']].map(([k, l]) => <button key={k} type="button" className={'st-card' + (th === k ? ' on' : '')} onClick={() => setTheme(k)}>
               <span className={'st-prev ' + k}><i /><i /></span>{l}</button>)}
           </div>
-          <div className="st-field"><label>Raccourci</label><div style={{ display: 'flex', alignItems: 'center', gap: 12 }}><SquishSwitch /><span className="muted" style={{ fontSize: 13 }}>Disponible aussi en bas à gauche du menu.</span></div></div>
+          <div className="st-field"><label>Raccourci</label><div style={{ display: 'flex', alignItems: 'center', gap: 12 }}><SquishSwitch /><span className="muted" style={{ fontSize: 13 }}>Disponible aussi en haut à droite.</span></div></div>
         </>}
         {sec === 'editeur' && <>
           <h2>Éditeur</h2>
@@ -322,7 +322,7 @@ function Login() {
     <div className="login-stage">
       <div className="aurora" aria-hidden />
       <LiquidBackground />
-      <div style={{ position: 'absolute', left: 20, bottom: 20, zIndex: 3 }}><SquishSwitch /></div>
+      <div style={{ position: 'absolute', right: 20, top: 20, zIndex: 3 }}><SquishSwitch /></div>
       <form className="login login-card" onSubmit={x => { x.preventDefault(); go(0) }}>
         <div className="login-brand">
           <img src="/logo-192.png" width="44" height="44" alt="" />
@@ -484,28 +484,22 @@ function Main({ user }) {
           {!sibs(null).length && <p className="muted col-empty">Aucun fichier</p>}
           {renderTree(null, 0)}
         </div>
-        <div className="side-foot">
-          <SquishSwitch />
-          <button type="button" className="me" onClick={() => setSettings(true)} title="Paramètres">
-            <span className="me-av" style={{ background: colorOf(user.email) }}>{name[0].toUpperCase()}</span>
-            <span className="me-name">{name}<small>Paramètres</small></span>
-          </button>
-        </div>
       </aside>}
       <div className="mainc">
         <div className="topbar">
           <button type="button" className="tb-ico" onClick={() => setOpen(o => !o)} title={open ? 'Masquer le menu' : 'Afficher le menu'}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="16" rx="3" /><path d="M9 4v16" /></svg>
           </button>
-          <div className="crumbs">
-            <span>{projName || 'Aucun projet'}</span>
-            {cur ? <>{trail(cur).map(t => <span key={t.id}><i>›</i> {t.title}</span>)}<i>›</i><b>{cur.title}</b></> : <><i>›</i><b>Accueil</b></>}
-          </div>
+          <nav className="crumbs" aria-label="Chemin du dossier">
+            <button type="button" onClick={() => setSel(null)} title="Revenir à l’accueil du projet">{projName || 'Aucun projet'}</button>
+            {cur ? <>{trail(cur).map(t => <span className="crumb-parent" key={t.id}><i aria-hidden="true">›</i><button type="button" onClick={() => openFolder(t.id)} title={'Revenir au dossier ' + t.title}>{t.title}</button></span>)}<i aria-hidden="true">›</i><b aria-current="page" title={cur.title}>{cur.title}</b></> : <><i aria-hidden="true">›</i><b aria-current="page">Accueil</b></>}
+          </nav>
           <div className="tb-spacer" />
           <Presence online={online} me={user.id} titleOf={titleOf} />
           <button type="button" className="tb-ico" onClick={() => setSettings(true)} title="Paramètres">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" /></svg>
           </button>
+          <SquishSwitch />
         </div>
         {tabs.length > 0 && <div className="tabs">
           {tabItems.map(t => <div key={t.id} className={'tab' + (sel === t.id ? ' on' : '')} onClick={() => openItem(t.id)}>
