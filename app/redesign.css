@@ -31,9 +31,14 @@ body{background:var(--bg);color:var(--fg);transition:background .3s ease,color .
 .tb-ico:hover{background:var(--hov);color:var(--fg)}
 .tb-ico:active{transform:scale(.92)}
 .crumbs{display:flex;align-items:center;gap:6px;min-width:0;font-size:13.5px;color:var(--mut);overflow:hidden;white-space:nowrap}
-.crumbs span{overflow:hidden;text-overflow:ellipsis}
+.crumbs .crumb-parent{display:flex;align-items:center;gap:6px;min-width:0}
+.crumbs button{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:0;border-radius:5px;padding:4px;background:transparent;color:inherit;font:inherit;cursor:pointer}
+.crumbs button:hover{background:var(--hov);color:var(--fg)}
+.crumbs button:focus-visible{outline:2px solid var(--ac);outline-offset:-2px}
+.crumbs>i,.crumbs .crumb-parent>i{flex-shrink:0}
+.topbar>.tb-ico,.topbar>.sq{flex-shrink:0}
 .crumbs i{font-style:normal;opacity:.5}
-.crumbs b{color:var(--fg);font-weight:650}
+.crumbs b{min-width:0;overflow:hidden;text-overflow:ellipsis;color:var(--fg);font-weight:650}
 .tb-spacer{flex:1}
 
 /* ── Sidebar : suit le thème, verre dépoli, pied de page ── */
@@ -260,3 +265,14 @@ textarea,textarea:focus,textarea:focus-visible,[contenteditable],[contenteditabl
 .mainc>main.full{overflow:auto;padding:0;background:var(--bg)}
 .mainc>main.full .workspace{position:relative;inset:auto;min-height:100%;}
 .crumbs .active-space-name{flex-shrink:0;padding:3px 7px;border-radius:6px;background:var(--hov);color:var(--mut);font-size:10px;font-weight:500}
+
+/* Coins arrondis aux jonctions des menus et des panneaux. */
+.app{gap:8px;padding:8px;background:var(--tab-strip,#eeeef2)}
+:root[data-theme=dark] .app{background:#111116}
+.app aside.side-cols{border:1px solid var(--side-border);border-radius:18px;box-shadow:none}
+.app .mainc{height:100%;min-height:0;gap:6px;background:transparent;border-radius:18px}
+.mainc .topbar{border:1px solid var(--rd-glass-bd);border-radius:16px}
+.mainc .tabs{border-radius:14px 14px 0 0}
+.mainc>main{min-height:0;border-radius:16px;border:1px solid var(--rd-glass-bd)}
+.mainc .tabs+main{border-top-left-radius:12px;border-top-right-radius:12px}
+@media(max-width:720px){.app{gap:5px;padding:5px}.app aside.side-cols,.app .mainc{border-radius:14px}.mainc .topbar,.mainc>main{border-radius:12px}}
