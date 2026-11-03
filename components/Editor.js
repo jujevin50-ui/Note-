@@ -1,6 +1,8 @@
 'use client'
 import './toolbar.css'
-import {useEffect,useState} from 'react'
+import {useEffect,useState,useRef} from 'react'
+import ToolbarIcon from './ToolbarIcon'
+import ToolbarPopover from './ToolbarPopover'
 import * as Y from 'yjs'
 import {useEditor,EditorContent,BubbleMenu} from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
@@ -50,6 +52,15 @@ function Tiptap({ydoc,provider,projectId}){
  },[])
  const [hasSum,setHasSum]=useState(false)
  const [pop,setPop]=useState(null)
+ const popAnchor=useRef(null)
+ const [compact,setCompact]=useState(false)
+ useEffect(()=>{
+  const media=window.matchMedia('(max-width:900px)')
+  const sync=()=>setCompact(media.matches)
+  sync();media.addEventListener('change',sync)
+  return()=>media.removeEventListener('change',sync)
+ },[])
+ const vertical=tbPos==='right'&&!compact
  useEffect(()=>{
   if(!pop)return
   const close=()=>setPop(null)
@@ -69,7 +80,7 @@ function Tiptap({ydoc,provider,projectId}){
   TextStyle,Color,Highlight.configure({multicolor:true,HTMLAttributes:{class:'hl'}}),Youtube.configure({nocookie:true,width:640,height:360}),LinkCard,Chart,PasteLink]})
  if(!ed)return null
  const f=()=>ed.chain().focus()
- const B=(l,fn,a,t,extra='')=><button type="button" title={t} className={(a?'on ':'')+extra} onMouseDown={e=>e.preventDefault()} onClick={fn}>{l}</button>
+ const B=(l,fn,a,t,extra='')=><button type="button" title={t} aria-label={t} aria-pressed={typeof a==='boolean'?a:undefined} className={(a?'on ':'')+extra} onMouseDown={e=>e.preventDefault()} onClick={fn}>{l}</button>
  const tbl=v=>{const c=f();({ins:()=>c.insertTable({rows:3,cols:3,withHeaderRow:true}),'row+':()=>c.addRowAfter(),'col+':()=>c.addColumnAfter(),'row-':()=>c.deleteRow(),'col-':()=>c.deleteColumn(),del:()=>c.deleteTable()})[v]().run();setPop(null)}
  const block=v=>{v==='p'?f().setParagraph().run():f().setHeading({level:+v}).run();setPop(null)}
  const STYLES=[{v:'p',l:'Texte',s:'15px',w:450},{v:'1',l:'Titre 1',s:'28px',w:700},{v:'2',l:'Titre 2',s:'22px',w:650},{v:'3',l:'Titre 3',s:'18px',w:600}]
@@ -86,62 +97,62 @@ function Tiptap({ydoc,provider,projectId}){
   {c:'rgba(174,174,178,.36)',l:'Gris'},
  ]
  const CELL_BG=['#fff3a3','#ffe0b2','#ffd0d8','#c8f5d4','#cfe4ff','#ead9ff']
- const openPop=k=>e=>{e.preventDefault();e.stopPropagation();setPop(pop===k?null:k)}
- const Pop=({children})=><div className="tb-pop" onMouseDown={e=>e.stopPropagation()}>{children}</div>
+ const openPop=k=>e=>{e.preventDefault();e.stopPropagation();popAnchor.current=e.currentTarget;setPop(pop===k?null:k)}
+ const Pop=({children})=><ToolbarPopover anchor={popAnchor.current} vertical={vertical} onClose={()=>setPop(null)}>{children}</ToolbarPopover>
  return <>
   <div className={'ed-wrap'+(sp?' shift':'')+(tbPos==='right'?' tb-right':' tb-center')} style={sp?{'--spw':spw+'px'}:undefined}>
-  <div className="bar">
+  <div className="toolbar-rail"><div className="bar" role="toolbar" aria-label="Mise en forme du document" aria-orientation={vertical?'vertical':'horizontal'}>
    <div className="tb-slot">
-    <button type="button" className={'tb-trigger'+(pop==='style'?' open':'')} onMouseDown={openPop('style')} title="Style de paragraphe">
-     <span>{curStyle.l}</span><i className="tb-caret"/>
+    <button type="button" className={'tb-trigger'+(pop==='style'?' open':'')} onMouseDown={e=>e.preventDefault()} onClick={openPop('style')} title="Style de paragraphe" aria-label="Style de paragraphe" aria-expanded={pop==='style'} aria-haspopup="dialog">
+     <ToolbarIcon name="style"/><span className="toolbar-label">{curStyle.l}</span><i className="tb-caret"/>
     </button>
     {pop==='style'&&<Pop><div className="tb-menu tb-styles">
      <p className="tb-cap">Style</p>
-     {STYLES.map(s=><button type="button" key={s.v} className={'tb-style'+(cur===s.v?' on':'')} onMouseDown={e=>{e.preventDefault();block(s.v)}}>
+     {STYLES.map(s=><button type="button" key={s.v} className={'tb-style'+(cur===s.v?' on':'')} onClick={e=>{e.preventDefault();block(s.v)}}>
       <span style={{fontSize:s.s,fontWeight:s.w}}>{s.l}</span>
       {cur===s.v&&<em>✓</em>}
      </button>)}
     </div></Pop>}
    </div>
    <span className="tb-sep"/>
-   {B('•',()=>f().toggleBulletList().run(),ed.isActive('bulletList'),'Liste à puces','tb-ico')}
-   {B('1.',()=>f().toggleOrderedList().run(),ed.isActive('orderedList'),'Liste numérotée','tb-ico')}
-   {B('☑',()=>f().toggleTaskList().run(),ed.isActive('taskList'),'Cases à cocher','tb-ico')}
+   <div className="toolbar-group" role="group" aria-label="Listes">{B(<ToolbarIcon name="bullet"/>,()=>f().toggleBulletList().run(),ed.isActive('bulletList'),'Liste à puces','tb-ico')}
+   {B(<ToolbarIcon name="ordered"/>,()=>f().toggleOrderedList().run(),ed.isActive('orderedList'),'Liste numérotée','tb-ico')}
+   {B(<ToolbarIcon name="task"/>,()=>f().toggleTaskList().run(),ed.isActive('taskList'),'Cases à cocher','tb-ico')}</div>
    <span className="tb-sep"/>
-   {B('B',()=>f().toggleBold().run(),ed.isActive('bold'),'Gras','tb-b')}
-   {B('I',()=>f().toggleItalic().run(),ed.isActive('italic'),'Italique','tb-i')}
-   {B('U',()=>f().toggleMark('underline').run(),ed.isActive('underline'),'Souligner','tb-u')}
+   <div className="toolbar-group" role="group" aria-label="Format du texte">{B(<ToolbarIcon name="bold"/>,()=>f().toggleBold().run(),ed.isActive('bold'),'Gras','tb-b')}
+   {B(<ToolbarIcon name="italic"/>,()=>f().toggleItalic().run(),ed.isActive('italic'),'Italique','tb-i')}
+   {B(<ToolbarIcon name="underline"/>,()=>f().toggleMark('underline').run(),ed.isActive('underline'),'Souligner','tb-u')}</div>
    <span className="tb-sep"/>
    <div className="tb-slot">
-    <button type="button" className={'tb-swatch'+(pop==='ink'?' open':'')} title="Couleur du texte" onMouseDown={openPop('ink')}>
+    <button type="button" className={'tb-swatch'+(pop==='ink'?' open':'')} aria-label="Couleur du texte" aria-expanded={pop==='ink'} aria-haspopup="dialog" title="Couleur du texte" onMouseDown={e=>e.preventDefault()} onClick={openPop('ink')}>
      <b>A</b><u style={{background:ed.getAttributes('textStyle').color||'#e11d48'}}/>
     </button>
     {pop==='ink'&&<Pop><div className="tb-menu tb-colors">
      <p className="tb-cap">Couleur du texte</p>
-     <div className="tb-dots">{INKS.map(c=><button type="button" key={c} className="tb-dot" style={{background:c}} title={c} onMouseDown={e=>{e.preventDefault();f().setColor(c).run();setPop(null)}}/>)}</div>
-     <label className="tb-custom" onMouseDown={e=>e.preventDefault()}>Personnalisée<input type="color" onChange={e=>f().setColor(e.target.value).run()}/></label>
-     <button type="button" className="tb-clear" onMouseDown={e=>{e.preventDefault();f().unsetColor().run();setPop(null)}}>Couleur par défaut</button>
+     <div className="tb-dots">{INKS.map(c=><button type="button" key={c} className="tb-dot" style={{background:c}} title={c} onClick={e=>{e.preventDefault();f().setColor(c).run();setPop(null)}}/>)}</div>
+     <label className="tb-custom">Personnalisée<input type="color" onChange={e=>f().setColor(e.target.value).run()}/></label>
+     <button type="button" className="tb-clear" onClick={e=>{e.preventDefault();f().unsetColor().run();setPop(null)}}>Couleur par défaut</button>
     </div></Pop>}
    </div>
    <div className="tb-slot">
-    <button type="button" className={'tb-swatch'+(pop==='mark'?' open':'')} title="Surligner" onMouseDown={openPop('mark')}>
-     <span className="tb-pen"/>
+    <button type="button" className={'tb-swatch'+(pop==='mark'?' open':'')} aria-label="Surligner" aria-expanded={pop==='mark'} aria-haspopup="dialog" title="Surligner" onMouseDown={e=>e.preventDefault()} onClick={openPop('mark')}>
+     <ToolbarIcon name="highlight"/>
      <u style={{background:'#ffe14a'}}/>
     </button>
     {pop==='mark'&&<Pop><div className="tb-menu tb-colors">
      <p className="tb-cap">Surlignage</p>
-     <div className="tb-hl-grid">{MARKS.map(m=><button type="button" key={m.l} className="tb-hl-chip" title={m.l} onMouseDown={e=>{e.preventDefault();f().setHighlight({color:m.c}).run();setPop(null)}}>
+     <div className="tb-hl-grid">{MARKS.map(m=><button type="button" key={m.l} className="tb-hl-chip" title={m.l} onClick={e=>{e.preventDefault();f().setHighlight({color:m.c}).run();setPop(null)}}>
       <i style={{background:m.c}}/><span>{m.l}</span>
      </button>)}</div>
-     <button type="button" className="tb-clear" onMouseDown={e=>{e.preventDefault();f().unsetHighlight().run();setPop(null)}}>Retirer le surlignage</button>
+     <button type="button" className="tb-clear" onClick={e=>{e.preventDefault();f().unsetHighlight().run();setPop(null)}}>Retirer le surlignage</button>
     </div></Pop>}
    </div>
    <span className="tb-sep"/>
-   {B('</>',()=>f().toggleCodeBlock().run(),ed.isActive('codeBlock'),'Bloc de code','tb-code')}
-   {B('❝',()=>f().toggleBlockquote().run(),ed.isActive('blockquote'),'Citation','tb-ico')}
-   {B('—',()=>f().setHorizontalRule().run(),false,'Séparateur','tb-ico')}
-   <label className="image-upload" title="Insérer une image depuis votre ordinateur">Image<input type="file" accept="image/*" onChange={e=>{const file=e.target.files?.[0];if(!file)return;const reader=new FileReader();reader.onload=()=>f().insertContent({type:'noteImage',attrs:{src:reader.result,width:600}}).run();reader.readAsDataURL(file);e.target.value=''}}/></label>
-   <label className="image-upload" title="Insérer un PDF dans la note">PDF<input type="file" accept="application/pdf" onChange={async e=>{
+   {B(<ToolbarIcon name="code"/>,()=>f().toggleCodeBlock().run(),ed.isActive('codeBlock'),'Bloc de code','tb-code')}
+   {B(<ToolbarIcon name="quote"/>,()=>f().toggleBlockquote().run(),ed.isActive('blockquote'),'Citation','tb-ico')}
+   {B(<ToolbarIcon name="rule"/>,()=>f().setHorizontalRule().run(),false,'Séparateur','tb-ico')}
+   <label className="image-upload" title="Insérer une image depuis votre ordinateur"><ToolbarIcon name="image"/><span className="toolbar-label">Image</span><input aria-label="Insérer une image" type="file" accept="image/*" onChange={e=>{const file=e.target.files?.[0];if(!file)return;const reader=new FileReader();reader.onload=()=>f().insertContent({type:'noteImage',attrs:{src:reader.result,width:600}}).run();reader.readAsDataURL(file);e.target.value=''}}/></label>
+   <label className="image-upload" title="Insérer un PDF dans la note"><ToolbarIcon name="pdf"/><span className="toolbar-label">PDF</span><input aria-label="Insérer un PDF" type="file" accept="application/pdf" onChange={async e=>{
     const file=e.target.files?.[0];e.target.value=''
     if(!file)return
     if(!projectId){alert('Projet introuvable');return}
@@ -150,33 +161,33 @@ function Tiptap({ydoc,provider,projectId}){
     if(error){alert('Envoi du PDF impossible : '+error.message);return}
     f().insertContent([{type:'notePdf',attrs:{src:key,name:file.name,width:640,align:'left'}},{type:'paragraph'}]).run()
    }}/></label>
-   {B('Graphique',()=>f().insertContent({type:'chart'}).run(),false,'Insérer un graphique','tb-word')}
+   {B(<ToolbarIcon name="chart"/>,()=>f().insertContent({type:'chart'}).run(),false,'Insérer un graphique','tb-word')}
    <div className="tb-slot">
-    <button type="button" className={'tb-trigger tb-word'+(pop==='table'?' open':'')} onMouseDown={openPop('table')} title="Tableau">
-     <span>Tableau</span><i className="tb-caret"/>
+    <button type="button" className={'tb-trigger tb-word'+(pop==='table'?' open':'')} onMouseDown={e=>e.preventDefault()} onClick={openPop('table')} title="Tableau" aria-label="Tableau" aria-expanded={pop==='table'} aria-haspopup="dialog">
+     <ToolbarIcon name="table"/><span className="toolbar-label">Tableau</span><i className="tb-caret"/>
     </button>
     {pop==='table'&&<Pop><div className="tb-menu">
      <p className="tb-cap">Tableau</p>
      {[['ins','Insérer un tableau 3×3'],['row+','Ajouter une ligne'],['col+','Ajouter une colonne'],['row-','Supprimer la ligne'],['col-','Supprimer la colonne'],['del','Supprimer le tableau']].map(([v,l])=>
-      <button type="button" key={v} className={'tb-item'+(v==='del'?' danger':'')} onMouseDown={e=>{e.preventDefault();tbl(v)}}>{l}</button>)}
+      <button type="button" key={v} className={'tb-item'+(v==='del'?' danger':'')} onClick={e=>{e.preventDefault();tbl(v)}}>{l}</button>)}
     </div></Pop>}
    </div>
-   <button type="button" className={'sum-btn'+(sp?' active':'')} title="Résumé et notes de la page" onClick={()=>toggle(!sp)}>
+   <button type="button" className={'sum-btn'+(sp?' active':'')} aria-label="Résumé et notes de la page" aria-pressed={sp} title="Résumé et notes de la page" onClick={()=>toggle(!sp)}>
     <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="2.5" y="3.5" width="15" height="13" rx="3"/><path d="M12.5 3.5v13"/>{sp&&<rect x="12.5" y="3.5" width="5" height="13" rx="2" fill="currentColor" stroke="none" opacity=".35"/>}</svg>
-    Résumé{hasSum&&<i title="Cette page a un résumé ou des notes"/>}</button>
-  </div>
+    <span className="toolbar-label">Résumé</span>{hasSum&&<i title="Cette page a un résumé ou des notes"/>}</button>
+  </div></div>
   <BubbleMenu editor={ed} shouldShow={({editor})=>editor.isActive('table')} tippyOptions={{placement:'top',maxWidth:'none'}}>
-   <div className="bm">
+   <div className="bm" onMouseDown={e=>e.preventDefault()}>
     {B('＋ Ligne',()=>f().addRowAfter().run())}{B('＋ Colonne',()=>f().addColumnAfter().run())}
     {B('− Ligne',()=>f().deleteRow().run())}{B('− Colonne',()=>f().deleteColumn().run())}
     {B('Fusionner',()=>f().mergeOrSplit().run(),false,'Sélectionne plusieurs cellules en glissant')}
     <span className="tb-sep"/>
-    {CELL_BG.map(c=><button type="button" key={c} className="tb-dot tb-dot-hi" style={{background:c}} title="Fond de cellule" onMouseDown={e=>{e.preventDefault();f().setCellAttribute('background',c).run()}}/>)}
+    {CELL_BG.map(c=><button type="button" key={c} className="tb-dot tb-dot-hi" style={{background:c}} title="Fond de cellule" onClick={e=>{e.preventDefault();f().setCellAttribute('background',c).run()}}/>)}
     {B('∅',()=>f().setCellAttribute('background',null).run(),false,'Retirer le fond')}
     {B('En-tête',()=>f().toggleHeaderRow().run(),false,'Ligne d’en-tête')}
     {B('Suppr.',()=>f().deleteTable().run(),false,'Supprimer le tableau')}
    </div></BubbleMenu>
-  <EditorContent editor={ed}/></div>
+  <EditorContent className="editor-content" editor={ed}/></div>
   <SidePanel ydoc={ydoc} open={sp} onClose={()=>toggle(false)} width={spw} onWidth={w=>{setSpw(w);try{localStorage.setItem('spw',String(w))}catch{}}}/></>
 }
 

@@ -1,127 +1,57 @@
-/* Toolbar — design segmenté type React Bits.
-   Ce fichier est importé après globals.css : il remplace uniquement l’apparence de .bar. */
-
-.ed-wrap .bar{
-  flex-wrap:nowrap;
-  gap:4px;
-  padding:6px;
-  border-radius:16px;
-  border:1px solid color-mix(in srgb,var(--bd) 60%,transparent);
-  background:color-mix(in srgb,var(--bg) 78%,transparent);
-  -webkit-backdrop-filter:blur(22px) saturate(180%);
-  backdrop-filter:blur(22px) saturate(180%);
-  box-shadow:0 10px 30px rgba(0,0,0,.08),inset 0 1px 0 rgba(255,255,255,.32);
-  overflow-x:auto;
-  scrollbar-width:none;
+/* Toolbar and its menus share the document's light palette. */
+.ed-wrap:is(.tb-center,.tb-right) .toolbar-rail{position:sticky;top:8px;z-index:25;margin-bottom:26px}
+.ed-wrap:is(.tb-center,.tb-right) .toolbar-rail .bar{position:static;display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:center;gap:4px;width:fit-content;max-width:100%;margin:0 auto;padding:8px;border:1px solid #dddde5;border-radius:16px;background:rgba(255,255,255,.96);box-shadow:0 8px 28px #18203812;overflow:visible;color:#252638;backdrop-filter:blur(20px)}
+.toolbar-group{display:flex;align-items:center;gap:3px}
+.toolbar-icon{display:block;flex-shrink:0;pointer-events:none}
+.ed-wrap:is(.tb-center,.tb-right) .toolbar-rail .bar button,.ed-wrap:is(.tb-center,.tb-right) .toolbar-rail .bar .image-upload{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:7px;min-width:36px;min-height:36px;padding:7px 9px;border:0;border-radius:9px;background:transparent;color:#525264;font:500 12px/1.3 var(--font-sans,system-ui);white-space:nowrap;cursor:pointer;transition:background .16s,color .16s,transform .16s}
+.ed-wrap:is(.tb-center,.tb-right) .toolbar-rail .bar button:hover,.ed-wrap:is(.tb-center,.tb-right) .toolbar-rail .bar .image-upload:hover{background:#f0eff7;color:#5542a6}
+.ed-wrap:is(.tb-center,.tb-right) .toolbar-rail .bar button.on,.ed-wrap:is(.tb-center,.tb-right) .toolbar-rail .bar button.open{background:#ece8fa;color:#6045b5;box-shadow:inset 0 0 0 1px #d9d0f0}
+.ed-wrap:is(.tb-center,.tb-right) .toolbar-rail .bar button:focus-visible,.ed-wrap:is(.tb-center,.tb-right) .toolbar-rail .bar .image-upload:focus-within{outline:2px solid #8066c9;outline-offset:2px}
+.ed-wrap:is(.tb-center,.tb-right) .toolbar-rail .bar button:active{transform:scale(.95)}
+.ed-wrap:is(.tb-center,.tb-right) .toolbar-rail .bar .tb-sep{flex:none;width:1px;height:24px;margin:0 4px;border-radius:99px;background:#e3e1eb}
+.ed-wrap:is(.tb-center,.tb-right) .toolbar-rail .bar .tb-trigger{min-width:0;gap:7px}
+.ed-wrap:is(.tb-center,.tb-right) .toolbar-rail .bar .tb-swatch{flex-direction:column;gap:2px;height:36px;min-width:36px}
+.ed-wrap:is(.tb-center,.tb-right) .toolbar-rail .bar .tb-swatch .toolbar-icon{width:17px;height:17px}
+.ed-wrap:is(.tb-center,.tb-right) .toolbar-rail .bar .tb-swatch u{height:3px;width:18px;border-radius:3px}
+.ed-wrap:is(.tb-center,.tb-right) .toolbar-rail .bar .sum-btn{margin:0 0 0 4px;background:#f2f0f8;color:#65538c;font-size:12px;border-radius:9px}
+.ed-wrap:is(.tb-center,.tb-right) .toolbar-rail .bar .sum-btn.active{background:#ece8fa;color:#6045b5}
+.ed-wrap:is(.tb-center,.tb-right) .toolbar-rail .image-upload{overflow:hidden}
+.ed-wrap:is(.tb-center,.tb-right) .toolbar-rail .image-upload input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.ed-wrap .editor-content{min-width:0}
+/* Portals keep menus clear of the toolbar's scroll area and side panels. */
+.toolbar-popover-root{position:relative;z-index:80}
+.toolbar-popover-root .toolbar-popover{position:fixed;display:block;inset:auto;z-index:80;width:260px;min-width:0;max-width:calc(100vw - 24px);max-height:calc(100dvh - 24px);overflow:auto;margin:0;padding:8px;border:1px solid #dedce8;border-radius:14px;background:#fff!important;color:#252638;box-shadow:0 16px 48px #15102026;backdrop-filter:none;animation:toolbar-menu-in .14s ease-out}
+.toolbar-popover button{font-family:var(--font-sans,system-ui);font-size:13px;cursor:pointer}
+.toolbar-popover .tb-menu{display:grid;gap:4px}
+.toolbar-popover .tb-cap{color:#777386;font-size:10px;letter-spacing:.08em;margin:6px 9px}
+.toolbar-popover.bar .tb-style,.toolbar-popover.bar .tb-item,.toolbar-popover.bar .tb-clear{display:flex;align-items:center;white-space:normal;line-height:1.5}
+.toolbar-popover.bar .tb-style:hover,.toolbar-popover.bar .tb-item:hover,.toolbar-popover.bar .tb-clear:hover{background:#f2f0f8!important}
+.toolbar-popover button:focus-visible,.toolbar-popover input:focus-visible{outline:2px solid #8066c9;outline-offset:1px}
+.toolbar-popover .tb-hl-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.toolbar-popover.bar .tb-hl-chip{display:flex;align-items:center;gap:8px;padding:8px!important;border:0;border-radius:8px;background:transparent!important;color:#525264!important}
+.toolbar-popover.bar .tb-hl-chip:hover{background:#f2f0f8!important}
+.toolbar-popover .tb-hl-chip i{width:19px;height:19px;flex-shrink:0;border-radius:5px;box-shadow:inset 0 0 0 1px #00000014}
+.toolbar-popover .tb-custom{padding:8px 10px}
+@keyframes toolbar-menu-in{from{opacity:0;translate:0 4px}to{opacity:1;translate:0 0}}
+/* A true vertical rail in the editor, including beside the summary panel. */
+@media(min-width:901px){
+ .ed-wrap.tb-right{display:grid;grid-template-columns:minmax(0,1fr) 64px;align-items:start;gap:20px;padding-right:0}
+ .ed-wrap.tb-right .editor-content{grid-column:1;grid-row:1}
+ .ed-wrap.tb-right .toolbar-rail{grid-column:2;grid-row:1;position:sticky;top:8px;align-self:start;max-height:calc(100dvh - 110px);overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:#cec8de transparent;border:1px solid #dddde5;border-radius:16px;background:#fff;box-shadow:0 8px 28px #1820380c;margin:0}
+ .ed-wrap.tb-right .toolbar-rail .bar{position:static;display:flex;flex-direction:column;flex-wrap:nowrap;gap:4px;width:100%;max-width:100%;margin:0;padding:8px 6px;border:0;border-radius:0;box-shadow:none;overflow:visible}
+ .ed-wrap.tb-right .toolbar-group{flex-direction:column}
+ .ed-wrap.tb-right .toolbar-rail .bar .toolbar-label,.ed-wrap.tb-right .toolbar-rail .bar .tb-caret{display:none}
+ .ed-wrap.tb-right .toolbar-rail .bar button,.ed-wrap.tb-right .toolbar-rail .bar .image-upload{width:40px;height:38px;min-width:40px;padding:8px}
+ .ed-wrap.tb-right .toolbar-rail .bar .tb-sep{width:26px;height:1px;margin:5px 0}
+ .ed-wrap.tb-right .toolbar-rail .bar .sum-btn{margin:0;font-size:12px;gap:0;width:40px;height:38px}
 }
-.ed-wrap .bar::-webkit-scrollbar{display:none}
-
-/* Boutons compacts et homogènes */
-.ed-wrap .bar button,
-.ed-wrap .bar .image-upload{
-  min-height:32px;
-  min-width:32px;
-  border:0;
-  border-radius:9px;
-  background:transparent;
-  color:var(--fg);
-  font-size:12.5px;
-  font-weight:560;
-  line-height:1;
-  white-space:nowrap;
-  transition:background .16s ease,color .16s ease,transform .12s ease;
+@media(max-width:900px){
+ .ed-wrap.tb-right{padding-right:0}
+ .ed-wrap:is(.tb-center,.tb-right) .toolbar-rail{top:4px;margin-bottom:20px}
+ .ed-wrap:is(.tb-center,.tb-right) .toolbar-rail .bar{display:flex;flex-direction:row;flex-wrap:wrap;position:static;width:100%;max-width:100%;margin:0!important;gap:3px;padding:6px}
+ .ed-wrap:is(.tb-center,.tb-right) .toolbar-rail .bar .toolbar-label{display:none}
+ .ed-wrap:is(.tb-center,.tb-right) .toolbar-rail .bar .tb-trigger{min-width:36px}
+ .ed-wrap:is(.tb-center,.tb-right) .toolbar-rail .bar .sum-btn{width:36px;height:36px;margin:0;padding:7px;font-size:12px;gap:0}
+ .ed-wrap:is(.tb-center,.tb-right) .toolbar-rail .bar .tb-sep{margin:0 1px;height:20px}
 }
-.ed-wrap .bar button{
-  padding:0 8px;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-}
-.ed-wrap .bar .image-upload{
-  padding:0 10px;
-  gap:5px;
-}
-.ed-wrap .bar button:hover,
-.ed-wrap .bar .image-upload:hover{
-  background:var(--hov);
-}
-.ed-wrap .bar button:active{
-  transform:scale(.95);
-}
-.ed-wrap .bar button.on{
-  background:var(--ac);
-  color:var(--on-fg,#fff);
-  box-shadow:0 2px 6px color-mix(in srgb,var(--ac) 25%,transparent);
-}
-
-/* Séparateurs verticaux entre groupes */
-.ed-wrap .bar .tb-sep{
-  flex:none;
-  width:1px;
-  height:20px;
-  margin:0 3px;
-  border-radius:99px;
-  background:color-mix(in srgb,var(--bd) 75%,transparent);
-}
-
-/* Trigger / menus */
-.ed-wrap .bar .tb-trigger,
-.ed-wrap .bar .tb-swatch{
-  min-width:34px;
-  padding:0 9px;
-  gap:5px;
-}
-.ed-wrap .bar .tb-trigger{
-  justify-content:space-between;
-  min-width:104px;
-}
-.ed-wrap .bar .tb-trigger span{
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
-
-/* Position à droite : la barre suit réellement le bord droit */
-.ed-wrap.tb-right .bar{
-  margin-left:auto;
-  margin-right:0;
-}
-.ed-wrap.tb-center .bar{
-  margin-left:auto;
-  margin-right:auto;
-}
-
-/* Les menus ne débordent pas lorsque la toolbar est à droite */
-.ed-wrap.tb-right .tb-pop{
-  left:auto;
-  right:0;
-}
-
-/* Bouton Résumé : action secondaire distincte */
-.ed-wrap .bar .sum-btn{
-  margin-left:4px;
-  padding:0 10px;
-  gap:6px;
-  border-radius:10px;
-  background:color-mix(in srgb,var(--ac) 8%,transparent);
-}
-.ed-wrap .bar .sum-btn.active{
-  background:var(--ac);
-  color:var(--on-fg,#fff);
-}
-
-/* Petit écran : la toolbar reste sur une ligne et défile */
-@media (max-width:760px){
-  .ed-wrap .bar{
-    max-width:calc(100% - 16px);
-    margin-left:8px !important;
-    margin-right:8px !important;
-  }
-  .ed-wrap .bar .tb-trigger span,
-  .ed-wrap .bar .image-upload,
-  .ed-wrap .bar .tb-word span{
-    display:none;
-  }
-  .ed-wrap .bar .tb-trigger{
-    min-width:34px;
-  }
-}
+@media(prefers-reduced-motion:reduce){.toolbar-popover-root .toolbar-popover{animation:none}.ed-wrap:is(.tb-center,.tb-right) .toolbar-rail .bar button{transition:none}}

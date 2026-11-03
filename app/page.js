@@ -91,11 +91,13 @@ function Settings({ user, close, projects, projectId, onProjectChange, onCreateP
         </>}
         {sec === 'timer' && <TimerSettings value={timerConfig} onChange={onTimerChange} />}
         {sec === 'editeur' && <>
-          <h2>Éditeur</h2>
+          <h2>Barre d’outils</h2>
+          <p className="muted">Choisis la position de la barre de mise en forme. Le réglage est appliqué immédiatement et mémorisé sur cet appareil.</p>
           <div className="st-cards">
-            <button type="button" className={'st-card' + (tb === 'center' ? ' on' : '')} onClick={() => setToolbar('center')}><span className="st-prev tb-c"><b /></span>Centre (en haut)</button>
-            <button type="button" className={'st-card' + (tb === 'right' ? ' on' : '')} onClick={() => setToolbar('right')}><span className="st-prev tb-r"><b /></span>Droite (verticale)</button>
+            <button type="button" className={'st-card' + (tb === 'center' ? ' on' : '')} aria-pressed={tb === 'center'} onClick={() => setToolbar('center')}><span className="st-prev tb-c"><b /></span>En haut · horizontale</button>
+            <button type="button" className={'st-card' + (tb === 'right' ? ' on' : '')} aria-pressed={tb === 'right'} onClick={() => setToolbar('right')}><span className="st-prev tb-r"><b /></span>À droite · verticale</button>
           </div>
+          <p className="muted">Sur petit écran, la barre reste en haut pour garder toutes les commandes accessibles.</p>
         </>}
       </div>
       <div className="st-foot">
