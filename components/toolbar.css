@@ -68,18 +68,16 @@
 /* Sommaire discret : repères compacts, titres au survol ou au clic. */
 .ed-wrap .editor-content{padding-right:42px}
 .page-outline{position:fixed;z-index:26;width:32px;padding:6px 3px;border:1px solid transparent;border-radius:12px;color:#777386;font:13px/1.5 var(--font-sans,system-ui);transition:width .18s,background .18s,box-shadow .18s;overflow:hidden}
-.page-outline:hover,.page-outline:focus-within,.page-outline.expanded{width:min(280px,calc(100vw - 40px));background:#fff;border-color:#e6e2ed;box-shadow:0 8px 32px #2315361a;padding:8px}
+.page-outline:hover,.page-outline:focus-within{width:min(280px,calc(100vw - 40px));background:#fff;border-color:#e6e2ed;box-shadow:0 8px 32px #2315361a;padding:8px}
 .page-outline button{display:flex;align-items:center;gap:10px;width:100%;border:0;border-radius:6px;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}
 .page-outline button:hover{background:#f3f0f8;color:#6045b5}
 .page-outline button:focus-visible{outline:2px solid #8066c9;outline-offset:-2px}
-.outline-toggle{height:30px;padding:4px;font-weight:600!important}
-.outline-toggle>span:first-child{flex:none;width:18px;text-align:center;font-size:19px}
 .outline-label{display:none;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.page-outline:hover .outline-label,.page-outline:focus-within .outline-label,.page-outline.expanded .outline-label{display:block}
+.page-outline:hover .outline-label,.page-outline:focus-within .outline-label{display:block}
 .outline-entries{max-height: min(50dvh,400px);overflow:auto;scrollbar-width:thin}
 .page-outline .outline-entry{min-height:24px;padding:4px}
 .outline-bar{display:block;flex:none;height:2px;width:calc(22px - (var(--heading-level) - 1)*5px);margin-left:calc((var(--heading-level) - 1)*3px);border-radius:3px;background:#c9c5d2}
 .outline-entry.active{color:#6045b5;font-weight:600!important}
 .outline-entry.active .outline-bar{background:#8066c9}
-.page-outline:hover .outline-entry,.page-outline.expanded .outline-entry,.page-outline:focus-within .outline-entry{min-height:32px}
+.page-outline:hover .outline-entry,.page-outline:focus-within .outline-entry{min-height:32px}
 @media(prefers-reduced-motion:reduce){.page-outline{transition:none}}

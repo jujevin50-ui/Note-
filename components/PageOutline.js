@@ -1,13 +1,11 @@
 'use client'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 
 export default function PageOutline({ editor }) {
   const [headings, setHeadings] = useState([])
   const [active, setActive] = useState(null)
   const [bounds, setBounds] = useState(null)
-  const [expanded, setExpanded] = useState(false)
-  const box = useRef(null)
   useEffect(() => {
     if (!editor || editor.isDestroyed) return
     const main = editor.view.dom.closest('main')
@@ -41,12 +39,10 @@ export default function PageOutline({ editor }) {
     window.addEventListener('resize', refresh)
     const observer = new ResizeObserver(refresh)
     observer.observe(main); observer.observe(editor.view.dom)
-    const outside = event => { if (!box.current?.contains(event.target)) setExpanded(false) }
-    document.addEventListener('pointerdown', outside)
     return () => {
       cancelAnimationFrame(frame); editor.off('update', refresh)
       main.removeEventListener('scroll', refresh); window.removeEventListener('resize', refresh)
-      observer.disconnect(); document.removeEventListener('pointerdown', outside)
+      observer.disconnect()
     }
   }, [editor])
   if (!headings.length || !bounds) return null
@@ -58,10 +54,8 @@ export default function PageOutline({ editor }) {
     const offset = rail && rail.getBoundingClientRect().width > 100 ? rail.getBoundingClientRect().height + 32 : 32
     main.scrollTo({ top: main.scrollTop + element.getBoundingClientRect().top - main.getBoundingClientRect().top - offset, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' })
     setActive(entry.pos)
-    setExpanded(false)
   }
-  return createPortal(<nav ref={box} className={'page-outline' + (expanded ? ' expanded' : '')} style={bounds} aria-label="Sommaire de la page" onKeyDown={e => { if (e.key === 'Escape') { setExpanded(false); box.current.querySelector('button')?.focus() } }}>
-    <button type="button" className="outline-toggle" aria-expanded={expanded} aria-label="Afficher les titres de la page" onClick={() => setExpanded(value => !value)}><span aria-hidden="true">☷</span><span className="outline-label">Sommaire</span></button>
+  return createPortal(<nav className="page-outline" style={bounds} aria-label="Sommaire de la page" onKeyDown={e => { if (e.key === 'Escape') e.target.blur() }}>
     <div className="outline-entries">{headings.map(entry => <button type="button" key={entry.pos} className={'outline-entry' + (active === entry.pos ? ' active' : '')} style={{ '--heading-level': entry.level }} aria-current={active === entry.pos ? 'location' : undefined} aria-label={entry.title} title={entry.title} onClick={() => navigate(entry)}><span className="outline-bar" aria-hidden="true"/><span className="outline-label">{entry.title}</span></button>)}</div>
   </nav>, document.body)
 }
