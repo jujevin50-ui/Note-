@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 import { colorOf } from '../lib/provider'
 import Editor from '../components/Editor'
 import PdfView from '../components/PdfView'
-import { LiquidBackground, SquishSwitch, BlurText, ShinyText, GradientText, Presence, useTheme, FolderBits } from '../components/Bits'
+import { LiquidBackground, SquishSwitch, BlurText, ShinyText, GradientText, Presence, useTheme, FolderBits, PlasmaBg } from '../components/Bits'
 import { FxRoot, TextGenerate, Ticker, FxSearch } from '../components/Fx'
 
 // Composant Bouton Espace avec animation
@@ -498,6 +498,7 @@ function Main({ user }) {
       onDragOver={e => { if (pid && [...e.dataTransfer.types].includes('Files')) e.preventDefault() }}
       onDrop={e => { const f = [...e.dataTransfer.files].find(x => x.type === 'application/pdf'); if (f && pid) { e.preventDefault(); readPdf(f, null) } }}>
       {open && <aside className="side-cols">
+        <div className="plasma-wrap" aria-hidden><PlasmaBg /><span className="plasma-veil" /></div>
         <div className="rz" onMouseDown={startRz} />
         <div className="head side-top"><img src="/logo-192.png" width="24" height="24" alt="" />
           <select value={pid || ''} onChange={e => setPid(e.target.value)}>{projs.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select>

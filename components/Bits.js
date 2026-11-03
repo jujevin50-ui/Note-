@@ -190,3 +190,99 @@ export function FolderBits({ color = '#3b82f6', size = 0.5, open = false, classN
     </span>
   )
 }
+
+/* Plasma (React Bits · Backgrounds) — shader WebGL2 en plein écran, sans dépendance (pas besoin d'OGL) */
+const PLASMA_FRAG = `#version 300 es
+precision highp float;
+uniform vec2 iResolution;
+uniform float iTime;
+uniform float uSpeed;
+uniform float uScale;
+uniform float uOpacity;
+uniform vec3 uColor;
+uniform float uUseColor;
+out vec4 fragColor;
+
+void main() {
+  vec2 C = gl_FragCoord.xy;
+  vec2 r = iResolution.xy;
+  vec2 center = r * 0.5;
+  C = (C - center) / uScale + center;
+  float T = iTime * uSpeed;
+  float d = 0.0, z = 0.0;
+  vec3 O = vec3(0.0), p = vec3(0.0), S = vec3(0.0);
+  vec4 o = vec4(0.0);
+  for (float i = 1.0; i < 60.0; i++) {
+    p = z * normalize(vec3(C - 0.5 * r, r.y));
+    p.z -= 4.0;
+    S = p;
+    d = p.y - T;
+    p.x += 0.4 * (1.0 + p.y) * sin(d + p.x * 0.1) * cos(0.34 * d + p.x * 0.05);
+    mat2 m = mat2(cos(p.y + vec4(0.0, 11.0, 33.0, 0.0) - T));
+    p.xz = p.xz * m;
+    vec2 Q = p.xz;
+    d = abs(sqrt(length(Q * Q)) - 0.25 * (5.0 + S.y)) / 3.0 + 8e-4;
+    z += d;
+    o = 1.0 + sin(S.y + p.z * 0.5 + S.z - length(S - p) + vec4(2.0, 1.0, 0.0, 8.0));
+    O += o.w / d * o.xyz;
+  }
+  vec3 rgb = tanh(O / 1e4);
+  if (any(isnan(rgb)) || any(isinf(rgb))) rgb = vec3(0.0);
+  float k = (rgb.r + rgb.g + rgb.b) / 3.0;
+  vec3 col = mix(rgb, k * uColor, step(0.5, uUseColor));
+  fragColor = vec4(col, clamp(length(rgb) * uOpacity, 0.0, 1.0));
+}
+`
+const hex3 = h => { const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(h || ''); return m ? [parseInt(m[1], 16) / 255, parseInt(m[2], 16) / 255, parseInt(m[3], 16) / 255] : [1, 1, 1] }
+export function PlasmaBg({ speed = 0.5, scale = 1.1, opacity = 0.95, color = '', quality = 0.7, className = '' }) {
+  const ref = useRef(null)
+  useEffect(() => {
+    const c = ref.current
+    if (!c) return
+    const gl = c.getContext('webgl2', { alpha: true, premultipliedAlpha: false, antialias: false })
+    if (!gl) { c.style.display = 'none'; return }
+    const mk = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); return gl.getShaderParameter(s, gl.COMPILE_STATUS) ? s : null }
+    const vs = mk(gl.VERTEX_SHADER, '#version 300 es\nin vec2 position;\nvoid main(){gl_Position=vec4(position,0.0,1.0);}')
+    const fs = mk(gl.FRAGMENT_SHADER, PLASMA_FRAG)
+    if (!vs || !fs) { c.style.display = 'none'; return }
+    const prog = gl.createProgram()
+    gl.attachShader(prog, vs); gl.attachShader(prog, fs); gl.linkProgram(prog)
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) { c.style.display = 'none'; return }
+    gl.useProgram(prog)
+    const buf = gl.createBuffer()
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf)
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW)
+    const loc = gl.getAttribLocation(prog, 'position')
+    gl.enableVertexAttribArray(loc)
+    gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0)
+    const u = n => gl.getUniformLocation(prog, n)
+    const col = hex3(color)
+    gl.uniform1f(u('uSpeed'), speed); gl.uniform1f(u('uScale'), scale); gl.uniform1f(u('uOpacity'), opacity)
+    gl.uniform3f(u('uColor'), col[0], col[1], col[2]); gl.uniform1f(u('uUseColor'), color ? 1 : 0)
+    gl.clearColor(0, 0, 0, 0)
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.5) * quality
+    const resize = () => {
+      const w = Math.max(2, Math.round(c.clientWidth * dpr)), h = Math.max(2, Math.round(c.clientHeight * dpr))
+      if (c.width !== w || c.height !== h) { c.width = w; c.height = h }
+      gl.viewport(0, 0, c.width, c.height)
+      gl.uniform2f(u('iResolution'), c.width, c.height)
+    }
+    resize()
+    const ro = new ResizeObserver(resize); ro.observe(c)
+    let raf = 0
+    const t0 = performance.now()
+    const draw = now => {
+      gl.uniform1f(u('iTime'), (now - t0) * 0.001)
+      gl.clear(gl.COLOR_BUFFER_BIT)
+      gl.drawArrays(gl.TRIANGLES, 0, 3)
+      if (!reduce) raf = requestAnimationFrame(draw)
+    }
+    raf = requestAnimationFrame(draw)
+    return () => {
+      cancelAnimationFrame(raf); ro.disconnect()
+      gl.getExtension('WEBGL_lose_context')?.loseContext()
+    }
+  }, [speed, scale, opacity, color, quality])
+  return <canvas ref={ref} className={'plasma ' + className} aria-hidden />
+}
