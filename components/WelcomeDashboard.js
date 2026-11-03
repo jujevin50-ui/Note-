@@ -29,7 +29,7 @@ function reset(e) {
   e.currentTarget.style.setProperty('--rotate-y', '0deg')
 }
 
-export default function WelcomeDashboard({ items, sibs, openItem, show, projName, space, addCompany, name, section = 'home' }) {
+export default function WelcomeDashboard({ items, sibs, openItem, show, projName, space, addCompany, name, recentDocuments = [], recentStatus = 'ready', section = 'home' }) {
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState('all')
   const [sort, setSort] = useState('recent')
@@ -37,7 +37,7 @@ export default function WelcomeDashboard({ items, sibs, openItem, show, projName
   const needle = query.trim().toLocaleLowerCase('fr')
   const rootsOnly = !['pages', 'pdf'].includes(section)
   const documents = items.filter(i => i.type !== 'folder')
-  const recent = [...documents].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)).slice(0, 3)
+  const recent = recentDocuments.map(entry => { const item = documents.find(item => item.id === entry.id); return item ? { ...item, last_opened_at: entry.last_opened_at } : null }).filter(Boolean).slice(0, 3)
   const visible = selectLibraryItems(items, { query, filter, sort, rootsOnly })
   const matches = selectLibraryItems(items, { query, rootsOnly: false })
   const firstName = (name || 'vous').split(' ')[0]
@@ -59,8 +59,11 @@ export default function WelcomeDashboard({ items, sibs, openItem, show, projName
 
     </section>}
     {section === 'home' && <div className="wd-summary"><span><b>{documents.length}</b> document{documents.length > 1 ? 's' : ''}</span><span><b>{items.filter(i => i.type === 'folder').length}</b> dossier{items.filter(i => i.type === 'folder').length > 1 ? 's' : ''}</span></div>}
-    {section === 'home' && recent.length > 0 && <section className="wd-resume"><div className="wd-section-title"><h2>Reprendre le fil</h2></div><div className="wd-recent-grid">{recent.map((item, index) => <button type="button" className="wd-recent" key={item.id} style={{ '--index': index }} onClick={() => openItem(item.id)}><span className={'wd-recent-icon ' + item.type}><Icon name={item.type} /></span><span className="wd-recent-copy"><strong>{item.title}</strong><small>{date(item.created_at)}</small></span><span className="wd-recent-arrow"><Icon name="arrow" size={18} /></span></button>)}</div></section>}
     {section !== 'home' && <h1 className="wd-section-heading">{{ library: space === 'invest' ? 'Invest' : 'Notes', pages: 'Pages', pdf: 'PDF' }[section]}</h1>}
+    {section === 'library' && <section className="wd-resume" aria-label="Documents ouverts récemment par le projet">
+      <div className="wd-section-title"><h2>Ouverts récemment</h2><span>Par les membres du projet</span></div>
+      {recentStatus === 'loading' ? <p className="wd-recent-status" role="status">Chargement…</p> : recentStatus === 'error' ? <p className="wd-recent-status" role="status">L’historique partagé est indisponible pour le moment.</p> : recent.length ? <div className="wd-recent-grid">{recent.map((item, index) => <button type="button" className="wd-recent" key={item.id} style={{ '--index': index }} onClick={() => openItem(item.id)} title={item.title}><span className={'wd-recent-icon ' + item.type}><Icon name={item.type} /></span><span className="wd-recent-copy"><strong>{item.title}</strong><small>Ouvert le {new Date(item.last_opened_at).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</small></span><span className="wd-recent-arrow"><Icon name="arrow" size={18} /></span></button>)}</div> : <p className="wd-recent-status">Les documents ouverts par les membres du projet apparaîtront ici.</p>}
+    </section>}
     <section className="wd-library" aria-label="Bibliothèque"><div className="wd-library-head"><h2 className="wd-library-title">Bibliothèque</h2><button type="button" className="wd-new" onClick={create} aria-label="Créer un contenu"><Icon name="plus" size={18} /><span>Nouveau</span></button></div>
       <div className="wd-reveal">
         <div className="wd-tools"><label className="wd-search"><Icon name="search" size={18} /><input aria-label="Rechercher dans la bibliothèque" placeholder="Rechercher un dossier, une page, un PDF…" value={query} onChange={e => setQuery(e.target.value)} />{query && <button type="button" onClick={() => setQuery('')} aria-label="Effacer la recherche">×</button>}</label><select aria-label="Trier les contenus" value={sort} onChange={e => setSort(e.target.value)}><option value="recent">Plus récents</option><option value="name">Nom A → Z</option></select></div>

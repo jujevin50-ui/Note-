@@ -35,3 +35,9 @@
 .wd-folder>strong,.wd-folder>.wd-tile-meta{background:transparent}
 .wd-empty p{font-size:13px}
 @media(max-width:600px){.wd-tools{align-items:stretch;gap:10px}.wd-search{width:100%}.wd-tools select{max-width:none}.wd-tile{padding:16px 14px}.wd-tile>strong{font-size:13px}.wd-folder{min-height:200px}.wd-new span{display:inline}.wd-section-heading{margin-bottom:20px}}
+
+.wd-recent-status{margin:0;padding:16px 18px;border:1px dashed var(--wd-line);border-radius:12px;color:var(--wd-muted);font-size:13px;line-height:1.6}
+.wd .wd-recent-copy{flex:1;min-width:0}
+.wd .wd-recent-copy strong{font-size:13px;line-height:1.5}
+.wd .wd-recent-copy small{font-size:11px;line-height:1.5}
+@media(max-width:1000px){.wd .wd-recent-copy{display:grid;gap:4px}}
