@@ -6,7 +6,7 @@ import Editor from '../components/Editor'
 import PdfView from '../components/PdfView'
 import WelcomeDashboard from '../components/WelcomeDashboard'
 import SidebarNavigation from '../components/SidebarNavigation'
-import HomeSpaces from '../components/HomeSpaces'
+import HomeGreeting from '../components/HomeGreeting'
 import { LiquidBackground, SquishSwitch, Presence, useTheme, GradientWaves } from '../components/Bits'
 import { FxRoot, TextGenerate, Ticker, FxSearch } from '../components/Fx'
 
@@ -432,7 +432,7 @@ function Main({ user }) {
       {open && <aside className="side-cols">
         <div className="plasma-wrap" aria-hidden><GradientWaves /><span className="plasma-veil" /></div>
         <div className="rz" onMouseDown={startRz} />
-        <SidebarNavigation active={sel ? null : section} onChange={next => { setSection(next); setSel(null) }} onCreate={(e, folder) => pid ? show(e, folder, 'new') : setSettings(true)} items={spaceItems} activeItem={sel} onOpen={openItem} onOptions={show} />
+        <SidebarNavigation space={space} onSpaceChange={next => { switchSpace(next); setSection('library') }} active={sel ? null : section} onChange={next => { setSection(next); setSel(null) }} onCreate={(e, folder) => pid ? show(e, folder, 'new') : setSettings(true)} items={spaceItems} activeItem={sel} onOpen={openItem} onOptions={show} />
         <div className="side-foot">
           <SquishSwitch />
           <button type="button" className="me" onClick={() => setSettings(true)} title="Paramètres">
@@ -458,7 +458,7 @@ function Main({ user }) {
         </div>
         <main className={cur && (cur.type === 'page' || cur.type === 'pdf') ? 'paper' : !sel ? 'full' : ''}>
           <div className="workspace">
-            {section === 'home' && !sel ? <HomeSpaces onOpen={next => { switchSpace(next); setSection('library') }} /> : !pid ? <div className="dash-empty"><h3>Aucun projet</h3><button type="button" className="btn-primary" onClick={() => setSettings(true)}>Paramètres</button></div> : !sel ? <WelcomeDashboard section={section} items={spaceItems} sibs={sibs} openItem={openItem} show={show} projName={projName} space={space} addCompany={addCompany} name={name}><TreeHome mapOnly items={spaceItems} sibs={sibs} openItem={openItem} show={show} projName={projName} space={space} addCompany={addCompany} /></WelcomeDashboard> : cur?.type === 'pdf' ? <PdfView key={cur.id} id={cur.id} user={user} path={pid + '/' + cur.id + '.pdf'} title={cur.title} /> : cur?.type === 'page' ? <Editor key={cur.id} id={cur.id} user={user} projectId={pid} /> : cur?.type === 'folder' ? <FolderView folder={cur} sibs={sibs} openItem={openItem} openFolder={openFolder} show={show} items={items} /> : null}
+            {section === 'home' && !sel ? <HomeGreeting name={name} /> : !pid ? <div className="dash-empty"><h3>Aucun projet</h3><button type="button" className="btn-primary" onClick={() => setSettings(true)}>Paramètres</button></div> : !sel ? <WelcomeDashboard section={section} items={spaceItems} sibs={sibs} openItem={openItem} show={show} projName={projName} space={space} addCompany={addCompany} name={name}><TreeHome mapOnly items={spaceItems} sibs={sibs} openItem={openItem} show={show} projName={projName} space={space} addCompany={addCompany} /></WelcomeDashboard> : cur?.type === 'pdf' ? <PdfView key={cur.id} id={cur.id} user={user} path={pid + '/' + cur.id + '.pdf'} title={cur.title} /> : cur?.type === 'page' ? <Editor key={cur.id} id={cur.id} user={user} projectId={pid} /> : cur?.type === 'folder' ? <FolderView folder={cur} sibs={sibs} openItem={openItem} openFolder={openFolder} show={show} items={items} /> : null}
           </div>
         </main>
       </div>
