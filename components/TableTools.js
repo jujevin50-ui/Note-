@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { BubbleMenu } from '@tiptap/react'
+import { BubbleMenuPlugin } from '@tiptap/extension-bubble-menu'
 import { TableMap } from '@tiptap/pm/tables'
 import ToolbarIcon from './ToolbarIcon'
 import './table-tools.css'
@@ -10,12 +10,27 @@ const COLORS = [['#fff3a3','Jaune'],['#ffe0b2','Orange'],['#ffd0d8','Rose'],['#c
 const SECTIONS = [['rows','Lignes'],['columns','Colonnes'],['cells','Cellules'],['style','Couleurs']]
 export default function TableTools({ editor }) {
   const [section, setSection] = useState('rows')
+  const [container] = useState(() => typeof document === 'undefined' ? null : document.createElement('div'))
   const [, refresh] = useState(0)
   useEffect(() => {
     const update = () => refresh(value => value + 1)
     editor.on('transaction', update)
     return () => editor.off('transaction', update)
   }, [editor])
+  useEffect(() => {
+    if (!container || editor.isDestroyed) return
+    // Tippy moves this unmanaged shell; React owns only the content inside it.
+    editor.registerPlugin(BubbleMenuPlugin({
+      pluginKey: 'tableTools', editor, element: container,
+      shouldShow: ({ editor: current }) => !current.isDestroyed && current.isActive('table'),
+      tippyOptions: { placement:'top-start', maxWidth:'none', interactive:true, appendTo:() => document.body, zIndex:70, theme:'table-tools', offset:[0,12], popperOptions:{strategy:'fixed',modifiers:[{name:'preventOverflow',options:{padding:12}},{name:'flip',options:{fallbackPlacements:['bottom-start','top-end','bottom-end']}}]} },
+    }))
+    return () => {
+      if (!editor.isDestroyed) editor.unregisterPlugin('tableTools')
+      container.remove()
+    }
+  }, [editor, container])
+  if (!container || editor.isDestroyed) return null
   const selection = editor.state.selection
   let table
   for (let depth = selection.$from.depth; depth > 0; depth--) {
@@ -25,7 +40,7 @@ export default function TableTools({ editor }) {
   const run = (command, ...args) => editor.chain().focus()[command](...args).run()
   const action = (label, command, { danger = false, active, args = [] } = {}) => <button type="button" key={command} className={'table-action' + (danger ? ' danger' : '')} disabled={!editor.can()[command](...args)} aria-pressed={active} onClick={() => run(command, ...args)}>{label}</button>
   const background = editor.getAttributes('tableCell').background || editor.getAttributes('tableHeader').background || null
-  return createPortal(<BubbleMenu editor={editor} shouldShow={({ editor: current }) => current.isActive('table')} tippyOptions={{ placement:'top-start', maxWidth:'none', interactive:true, appendTo:() => document.body, zIndex:70, theme:'table-tools', offset:[0,12], popperOptions:{strategy:'fixed',modifiers:[{name:'preventOverflow',options:{padding:12}},{name:'flip',options:{fallbackPlacements:['bottom-start','top-end','bottom-end']}}]} }}>
+  return createPortal(
     <div className="table-tools" role="group" aria-label="Outils du tableau" onMouseDown={e => e.preventDefault()}>
       <header className="table-tools-heading"><span><ToolbarIcon name="table"/>Tableau</span><small>{dimensions ? `${dimensions.height} lignes · ${dimensions.width} colonnes` : ''}</small></header>
       <div className="table-tools-sections" aria-label="Catégorie d’outils">{SECTIONS.map(([key,label]) => <button type="button" key={key} aria-pressed={section===key} onClick={() => setSection(key)}>{label}</button>)}</div>
@@ -48,6 +63,5 @@ export default function TableTools({ editor }) {
         {section==='style' && <div className="table-colors"><p>Fond des cellules sélectionnées</p><div>{COLORS.map(([color,label]) => <button type="button" key={color} style={{'--cell-color':color}} className="table-color" aria-label={'Fond '+label.toLowerCase()} title={label} aria-pressed={background===color} onClick={() => run('setCellAttribute','background',color)} />)}</div>{action('Retirer la couleur','setCellAttribute',{args:['background',null]})}</div>}
       </div>
       <footer className="table-tools-footer"><small>Tab ↹ cellule suivante</small>{action('Supprimer le tableau','deleteTable',{danger:true})}</footer>
-    </div>
-  </BubbleMenu>, document.body)
+    </div>, container)
 }
