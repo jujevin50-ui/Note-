@@ -1,0 +1,19 @@
+.aurora-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.aurora-canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.aurora-container::before{content:'';position:absolute;inset:-15%;background:radial-gradient(ellipse at 15% 35%,#633bb8aa,transparent 60%),radial-gradient(ellipse at 80% 45%,#15877eaa,transparent 60%),radial-gradient(ellipse at 55% 0%,#316badaa,transparent 65%);animation:aurora-fallback-drift 18s ease-in-out infinite alternate}
+.aurora-container[data-ready=true]::before{display:none}
+@keyframes aurora-fallback-drift{to{transform:translate3d(8%,8%,0) scale(1.12)}}
+@media(prefers-reduced-motion:reduce){.aurora-container::before{animation:none}}

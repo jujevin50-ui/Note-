@@ -5,3 +5,5 @@
 4. `npm install` puis `npm run dev`.
 
 Historique partagé : exécuter `supabase/recent-documents.sql` dans le SQL Editor Supabase. Cette migration conserve les données existantes et active les trois derniers documents consultés par les membres, séparément pour Notes et Invest. Les ouvertures sont enregistrées à partir de son activation.
+
+Fond animé : adaptation du composant [Aurora de React Bits](https://github.com/DavidHDev/react-bits/tree/main/src/content/Backgrounds/Aurora), avec rendu limité à 30 images/s, arrêt en mouvement réduit et repli sans WebGL. Licence conservée dans `components/vendor/react-bits/LICENSE.md`.

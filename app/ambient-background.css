@@ -1,19 +1,13 @@
-/* Slow, continuous movement, shared by every screen. */
-body{isolation:isolate;background:#0d1019}
-.ambient-background{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;background:linear-gradient(145deg,#121320,#0b1119 65%,#10131e)}
-.ambient-glow{position:absolute;width:100vmax;height:85vmax;pointer-events:none;animation-timing-function:ease-in-out;animation-iteration-count:infinite;animation-direction:alternate;transform-origin:center}
-.ambient-glow-violet{left:-30vmax;top:-35vmax;background:radial-gradient(ellipse,rgba(113,91,171,.25),rgba(78,64,126,.12) 30%,transparent 65%);animation-name:ambient-violet;animation-duration:22s}
-.ambient-glow-blue{right:-35vmax;top:-10vmax;background:radial-gradient(ellipse,rgba(65,110,154,.23),rgba(39,72,112,.1) 35%,transparent 67%);animation-name:ambient-blue;animation-duration:26s;animation-delay:-9s}
-.ambient-glow-teal{left:-10vmax;bottom:-55vmax;background:radial-gradient(ellipse,rgba(60,119,118,.2),rgba(32,76,82,.09) 35%,transparent 65%);animation-name:ambient-teal;animation-duration:24s;animation-delay:-14s}
-@keyframes ambient-violet{from{transform:translate3d(-4%,-3%,0) scale(1)}to{transform:translate3d(26%,18%,0) scale(1.12)}}
-@keyframes ambient-blue{from{transform:translate3d(8%,-8%,0) scale(1.08)}to{transform:translate3d(-22%,17%,0) scale(.98)}}
-@keyframes ambient-teal{from{transform:translate3d(-15%,10%,0) scale(1)}to{transform:translate3d(20%,-20%,0) scale(1.14)}}
+/* Aurora shader adapted from React Bits; license in components/vendor/react-bits. */
+body{isolation:isolate;background:#080c16}
+.ambient-background{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;background:#080c16}
+.ambient-vignette{position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,9,18,.1),transparent 40%,rgba(6,9,18,.15))}
 .app,:root[data-theme=dark] .app{background:transparent}
 .app .mainc{background:transparent}
-.mainc>main,.mainc>main.full{background:rgba(12,15,23,.24)}
-.app aside.side-cols,:root[data-theme=dark] .app aside.side-cols{background:rgba(13,16,25,.54)}
-.mainc .topbar{background:rgba(26,28,40,.74)}
+.mainc>main,.mainc>main.full{background:rgba(10,12,22,.12)}
+.app aside.side-cols,:root[data-theme=dark] .app aside.side-cols{background:rgba(13,15,28,.42)}
+.mainc .topbar{background:rgba(22,24,38,.62)}
 .mainc>main::before,.home::before{display:none}
 .mainc>main.paper,:root[data-theme=dark] .mainc>main.paper{background:rgba(255,255,255,.95)}
 .login-stage{background:transparent}
-@media(prefers-reduced-motion:reduce){.ambient-glow{animation:none}}
+.wd-section-heading,.home-greeting h1{text-shadow:0 2px 18px #0005}
