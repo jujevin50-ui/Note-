@@ -15,7 +15,7 @@ import useRecentDocuments from '../components/useRecentDocuments'
 import useManualSort from '../components/useManualSort'
 import { reorderItems, compareItems } from '../lib/manual-order'
 import FocusTimer, { DEFAULT_TIMER, normalizeTimer, TimerSettings } from '../components/FocusTimer'
-import { LiquidBackground, Presence, GradientWaves } from '../components/Bits'
+import { Presence } from '../components/Bits'
 import { FxRoot, TextGenerate } from '../components/Fx'
 
 const NAMES = { page: 'Nom de la page', folder: 'Nom du dossier' }
@@ -167,8 +167,6 @@ function Login() {
   }
   return (
     <div className="login-stage">
-      <div className="aurora" aria-hidden />
-      <LiquidBackground />
       <form className="login login-card" onSubmit={x => { x.preventDefault(); go(0) }}>
         <div className="login-brand">
           <img src="/logo-192.png" width="44" height="44" alt="" />
@@ -294,7 +292,6 @@ function Main({ user }) {
       onDragOver={e => { if (pid && [...e.dataTransfer.types].includes('Files')) e.preventDefault() }}
       onDrop={e => { const f = [...e.dataTransfer.files].find(x => x.type === 'application/pdf'); if (f && pid) { e.preventDefault(); readPdf(f, null) } }}>
       {open && <aside className="side-cols">
-        <div className="plasma-wrap" aria-hidden><GradientWaves /><span className="plasma-veil" /></div>
         <div className="rz" onMouseDown={startRz} />
         <SidebarNavigation onReorder={reorder} space={space} onSpaceChange={next => { switchSpace(next); setSection('library') }} active={sel ? null : section} onChange={next => { setSection(next); setSel(null) }} onCreate={(e, folder) => pid ? show(e, folder, 'new') : setSettings(true)} items={spaceItems} activeItem={sel} onOpen={openItem} onOptions={show} />
       </aside>}
