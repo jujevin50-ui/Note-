@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import './sidebar-navigation.css'
 import useManualSort from './useManualSort'
+import useFolderNameHint from './useFolderNameHint'
 import { compareItems } from '../lib/manual-order'
 
 function Symbol({ item, name }) {
@@ -11,6 +12,7 @@ function Symbol({ item, name }) {
 }
 
 export default function SidebarNavigation({ active, onChange, onCreate, items = [], activeItem, onOpen, onOptions, space = 'notes', onSpaceChange, onReorder }) {
+  const folderHint = useFolderNameHint()
   const sortable = useManualSort(items, onReorder)
   const [folderId, setFolderId] = useState(null)
   const roots = items.filter(i => i.type === 'folder' && !i.parent_id).sort(compareItems)
@@ -29,11 +31,11 @@ export default function SidebarNavigation({ active, onChange, onCreate, items = 
   const enter = item => { if (item.type === 'folder') setFolderId(item.id); onOpen(item.id) }
   const goHome = () => { setFolderId(null); onChange('home') }
 
-  return <nav className="sn" aria-label="Navigation principale">
+  return <><nav {...folderHint.events} className="sn" aria-label="Navigation principale">
     <div className="sn-rail" aria-label="Dossiers principaux">
       <button type="button" className={'sn-bubble sn-home' + (!folder && active === 'home' ? ' is-active' : '')} aria-label="Accueil" aria-current={!folder && active === 'home' ? 'page' : undefined} onClick={goHome}><span className="sn-bubble-symbol"><Symbol name="home" /></span><span className="sn-bubble-label">Accueil</span></button>
       <span className="sn-rail-divider" />
-      {roots.map((item, index) => <button type="button" key={item.id} {...sortable(item)} title={item.title} className={'sn-bubble' + (root?.id === item.id ? ' is-active' : '')} style={{ '--bubble-color': item.color || ['#a596e8','#78b8a3','#dd9cae','#8aaedf'][index % 4] }} aria-label={item.title} aria-current={root?.id === item.id ? 'page' : undefined} onClick={() => enter(item)} onContextMenu={e => onOptions?.(e,item)}><span className="sn-bubble-symbol"><Symbol item={item} /></span><span className="sn-bubble-label">{item.title}</span></button>)}
+      {roots.map((item, index) => <button type="button" key={item.id} {...sortable(item)} data-folder-name={item.title} aria-describedby={folderHint.descriptionId} className={'sn-bubble' + (root?.id === item.id ? ' is-active' : '')} style={{ '--bubble-color': item.color || ['#a596e8','#78b8a3','#dd9cae','#8aaedf'][index % 4] }} aria-label={item.title} aria-current={root?.id === item.id ? 'page' : undefined} onClick={() => enter(item)} onContextMenu={e => onOptions?.(e,item)}><span className="sn-bubble-symbol"><Symbol item={item} /></span><span className="sn-bubble-label">{item.title}</span></button>)}
       <button type="button" className="sn-bubble sn-add" aria-label="Nouveau contenu" onClick={onCreate}><span className="sn-bubble-symbol">＋</span><span className="sn-bubble-label">Nouveau</span></button>
     </div>
     <div className="sn-panel">
@@ -44,5 +46,5 @@ export default function SidebarNavigation({ active, onChange, onCreate, items = 
       </div>}
       <div className="sn-contents">{children.filter(i => folder || i.type !== 'folder').map(item => <div className="sn-content-row" key={item.id}><button type="button" {...sortable(item)} className={'sn-item' + (activeItem === item.id ? ' is-active' : '')} aria-current={activeItem === item.id ? 'page' : undefined} onClick={() => enter(item)} onContextMenu={e => onOptions?.(e,item)}><Symbol item={item} /><span>{item.title}</span>{item.type === 'folder' && <span className="sn-chevron" aria-hidden="true">›</span>}</button><button type="button" className="sn-content-options" aria-label={`Options de ${item.title}`} onClick={e => onOptions?.(e,item)}>•••</button></div>)}{folder && !children.length && <span className="sn-empty">Vide</span>}</div>
     </div>
-  </nav>
+  </nav>{folderHint.tooltip}</>
 }
