@@ -3,6 +3,9 @@ import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { colorOf } from '../lib/provider'
 import Editor from '../components/Editor'
+import EmojiPicker from '../components/EmojiPicker'
+import FolderViewSettings from '../components/FolderViewSettings'
+import useVideoThumbnails from '../components/useVideoThumbnails'
 import PdfView from '../components/PdfView'
 import WelcomeDashboard from '../components/WelcomeDashboard'
 import SidebarNavigation from '../components/SidebarNavigation'
@@ -15,9 +18,7 @@ import FocusTimer, { DEFAULT_TIMER, normalizeTimer, TimerSettings } from '../com
 import { LiquidBackground, Presence, GradientWaves } from '../components/Bits'
 import { FxRoot, TextGenerate } from '../components/Fx'
 
-const COLORS = ['#f59e0b', '#ef4444', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899', '#64748b']
 const NAMES = { page: 'Nom de la page', folder: 'Nom du dossier' }
-const EMOJIS = '\ud83d\udcc4 \ud83d\udcdd \ud83d\udccc \ud83d\udcce \ud83d\udcc5 \ud83d\udcca \ud83d\udcc8 \ud83d\udcda \ud83d\udcd6 \ud83d\udcd5 \ud83d\udca1 \u2b50 \u2705 \u2757 \u2753 \ud83c\udfaf \ud83d\ude80 \ud83d\udd25 \ud83d\udcb0 \ud83d\udee0\ufe0f \ud83e\udde0 \ud83d\udcac \ud83d\udcc1 \ud83d\uddc2\ufe0f \ud83e\uddfe \ud83d\udd12 \ud83c\udfe0 \u2708\ufe0f \ud83c\udf7d\ufe0f \u2764\ufe0f \ud83c\udf93 \ud83e\uddea'.split(' ')
 
 const Folder = ({ c = '#f59e0b' }) => <svg width="16" height="14" viewBox="0 0 16 14" style={{ flex: 'none' }}><path d="M1 1.5h5l1.5 1.5H15v9.5H1z" fill={c} /></svg>
 const err = ({ error }) => error && alert(error.message)
@@ -50,9 +51,9 @@ function ShareDlg({ code, pid, onNew, close }) {
     <div className="btns"><button className="on" onClick={close}>Fermer</button></div></div></div>
 }
 
-const SET_SECS = [['projet', '◈', 'Projet'], ['profil', '👤', 'Profil'], ['timer', '◷', 'Minuteur'], ['editeur', '✍️', 'Éditeur']]
+const SET_SECS = [['projet', '◈', 'Projet'], ['profil', '👤', 'Profil'], ['timer', '◷', 'Minuteur'], ['editeur', '✍️', 'Éditeur'], ['dossiers', '📁', 'Dossiers']]
 
-function Settings({ user, close, projects, projectId, onProjectChange, onCreateProject, onJoinProject, onShareProject, timerConfig, onTimerChange }) {
+function Settings({ user, close, projects, projectId, onProjectChange, onCreateProject, onJoinProject, onShareProject, timerConfig, onTimerChange, items, videoFolderIds, onVideoFoldersChange }) {
   const [sec, setSec] = useState('projet')
   const [n, setN] = useState(user.user_metadata?.name || ''), [st, setSt] = useState('')
   const [tb, setTb] = useState(() => { try { return localStorage.getItem('tbpos') || 'center' } catch { return 'center' } })
@@ -94,6 +95,7 @@ function Settings({ user, close, projects, projectId, onProjectChange, onCreateP
           <div className="st-field"><label>Email</label><input readOnly value={user.email} /></div>
         </>}
         {sec === 'timer' && <TimerSettings value={timerConfig} onChange={onTimerChange} />}
+        {sec === 'dossiers' && <FolderViewSettings key={projectId} items={items} selected={videoFolderIds} onChange={onVideoFoldersChange} projectId={projectId}/>}
         {sec === 'editeur' && <>
           <h2>Barre d’outils</h2>
           <p className="muted">Choisis la position de la barre de mise en forme. Le réglage est appliqué immédiatement et mémorisé sur cet appareil.</p>
@@ -124,7 +126,8 @@ const INV_SECTIONS = [
   { title: 'Questions', icon: '❓', color: '#8e8e93' },
 ]
 
-function FolderView({ folder, sibs, openItem, openFolder, show, items, onReorder }) {
+function FolderView({ folder, sibs, openItem, openFolder, show, items, onReorder, projectId, videoView }) {
+  const { videos, error: videoError } = useVideoThumbnails(projectId, folder.id, videoView)
   const kids = sibs(folder.id)
   const sortable = useManualSort(items, onReorder)
   return <div className="home home-in">
@@ -136,13 +139,14 @@ function FolderView({ folder, sibs, openItem, openFolder, show, items, onReorder
       </div>
       <button type="button" className="btn-primary btn-glow" onClick={e => show(e, folder, 'new')}>＋ Ajouter</button>
     </header>
+    {videoView && videoError && <p className="video-view-status" role="status">Les miniatures sont momentanément indisponibles.</p>}
     {!kids.length ? <div className="dash-empty">
       <div className="dash-empty-ico">📁</div>
       <h3>Dossier vide</h3>
 
     </div> : <div className="tile-grid">
-      {kids.map(i => <button type="button" {...sortable(i)} className={'tile' + (i.type === 'folder' ? ' tile-folder' : '')} key={i.id} onClick={() => openItem(i.id)} onContextMenu={e => show(e, i)}>
-        <span className="tile-ico" style={{ '--c': i.color || '#8b5cf6' }}><Ic i={i} /></span>
+      {kids.map(i => <button type="button" {...sortable(i)} className={'tile' + (i.type === 'folder' ? ' tile-folder' : '') + (videoView && i.type === 'page' ? ' video-tile' : '')} key={i.id} onClick={() => openItem(i.id)} onContextMenu={e => show(e, i)}>
+        {videoView && i.type === 'page' ? <span className="video-thumbnail">{videos[i.id] ? <><img src={'https://i.ytimg.com/vi/'+videos[i.id]+'/hqdefault.jpg'} alt="" loading="lazy" onError={e=>{e.currentTarget.style.display='none'}}/><span className="video-play" aria-hidden="true">▶</span></> : <small>Ajoute un lien YouTube dans cette page</small>}</span> : <span className="tile-ico" style={{ '--c': i.color || '#8b5cf6' }}><Ic i={i} /></span>}
         <span className="tile-body"><b>{i.title}</b><small className="muted">{i.type === 'folder' ? sibs(i.id).length + ' élément(s)' : i.type === 'pdf' ? 'PDF' : 'Page'}</small></span>
         {i.type === 'folder' && <span className="tile-chev">›</span>}
       </button>)}
@@ -190,9 +194,19 @@ function Main({ user }) {
   const [projs, setProjs] = useState([])
   const [pid, setPid] = useState(null)
   const [items, setItems] = useState([])
+  const [videoFolderViews, setVideoFolderViews] = useState(user.user_metadata?.video_folder_views || {})
+  useEffect(()=>{setVideoFolderViews(user.user_metadata?.video_folder_views || {})},[user.user_metadata?.video_folder_views])
+  const videoFolderIds = videoFolderViews[pid] || []
+  const changeVideoFolders = async ids => {
+    const next = { ...videoFolderViews, [pid]: ids }
+    const {error} = await supabase.auth.updateUser({data:{video_folder_views:next}})
+    if(error)throw error
+    setVideoFolderViews(next)
+  }
   const [sel, setSel] = useState(null)
   const [dlg, setDlg] = useState(null)
   const [menu, setMenu] = useState(null)
+  const [iconItem, setIconItem] = useState(null)
   const [open, setOpen] = useState(true)
   const [share, setShare] = useState(null)
   const [settings, setSettings] = useState(false)
@@ -240,6 +254,11 @@ function Main({ user }) {
     if (!folder) { folder = await insert({ type: 'folder', title: 'Entreprises à suivre', parent_id: null, color: '#007aff', icon: '📈' }); if (!folder) return; setItems(l => [...l, { ...folder, space }]) }
     const page = await insert({ type: 'page', title, parent_id: folder.id, icon: '📊' }); if (page) setItems(l => [...l, { ...page, space }]); if (folder.closed) patch(folder.id, { closed: false })
   })
+  const saveIcon = async icon => {
+    const { error } = await supabase.from('items').update({ icon }).eq('id', iconItem.id).eq('project_id', pid)
+    if (error) throw error
+    setItems(current => current.map(item => item.id === iconItem.id ? { ...item, icon } : item))
+  }
   const ren = i => ask('Renommer', i.title, title => patch(i.id, { title }))
   const del = i => setDlg({ label: `Supprimer « ${i.title} » et son contenu ?`, confirm: true, k: Math.random(), ok: async () => { if (i.type === 'pdf') supabase.storage.from('pdfs').remove([pid + '/' + i.id + '.pdf']); await supabase.from('items').delete().eq('id', i.id); if (sel === i.id) setSel(null) } })
   const readPdf = async (f, parent_id) => { const row = await insert({ type: 'pdf', title: f.name.replace(/.pdf$/i, ''), parent_id }); if (!row) return; const { error } = await supabase.storage.from('pdfs').upload(pid + '/' + row.id + '.pdf', f, { contentType: 'application/pdf' }); if (error) { alert("Envoi du PDF impossible : " + error.message); await supabase.from('items').delete().eq('id', row.id) } }
@@ -284,6 +303,7 @@ function Main({ user }) {
           <button type="button" className="tb-ico" onClick={() => setOpen(o => !o)} title={open ? 'Masquer le menu' : 'Afficher le menu'}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="16" rx="3" /><path d="M9 4v16" /></svg>
           </button>
+          {cur && <button type="button" className="tb-ico" aria-label="Changer l’emoji" title="Changer l’emoji" onClick={() => setIconItem(cur)}><Ic i={cur}/></button>}
           <nav className="crumbs" aria-label="Chemin du dossier">
             {(section !== 'home' || cur) && <button type="button" className="active-space-name" onClick={() => { setSection('library'); setSel(null) }} title="Revenir à la racine">{space === 'invest' ? 'Invest' : 'Notes'}</button>}
             {cur ? <>{trail(cur).map(t => <span className="crumb-parent" key={t.id}><i aria-hidden="true">›</i><button type="button" onClick={() => openFolder(t.id)} title={'Revenir au dossier ' + t.title}>{t.title}</button></span>)}<i aria-hidden="true">›</i><b aria-current="page" title={cur.title}>{cur.title}</b></> : <><i aria-hidden="true">›</i><b aria-current="page">{{ home: 'Accueil', library: space === 'invest' ? 'Invest' : 'Notes', pages: 'Pages', pdf: 'PDF' }[section]}</b></>}
@@ -297,7 +317,7 @@ function Main({ user }) {
         </div>
         <main className={cur && (cur.type === 'page' || cur.type === 'pdf') ? 'paper' : !sel ? 'full' : ''}>
           <div className="workspace">
-            {section === 'home' && !sel ? <HomeGreeting name={name} /> : !pid ? <div className="dash-empty"><h3>Aucun projet</h3><button type="button" className="btn-primary" onClick={() => setSettings(true)}>Paramètres</button></div> : !sel ? <WelcomeDashboard onReorder={reorder} recentDocuments={recent} recentStatus={recentStatus} refreshRecent={refreshRecent} section={section} items={spaceItems} sibs={sibs} openItem={openItem} show={show} projName={projName} space={space} addCompany={addCompany} name={name} /> : cur?.type === 'pdf' ? <PdfView key={cur.id} id={cur.id} user={user} path={pid + '/' + cur.id + '.pdf'} title={cur.title} /> : cur?.type === 'page' ? <Editor key={cur.id} id={cur.id} user={user} projectId={pid} /> : cur?.type === 'folder' ? <FolderView onReorder={reorder} folder={cur} sibs={sibs} openItem={openItem} openFolder={openFolder} show={show} items={items} /> : null}
+            {section === 'home' && !sel ? <HomeGreeting name={name} /> : !pid ? <div className="dash-empty"><h3>Aucun projet</h3><button type="button" className="btn-primary" onClick={() => setSettings(true)}>Paramètres</button></div> : !sel ? <WelcomeDashboard onReorder={reorder} recentDocuments={recent} recentStatus={recentStatus} refreshRecent={refreshRecent} section={section} items={spaceItems} sibs={sibs} openItem={openItem} show={show} projName={projName} space={space} addCompany={addCompany} name={name} /> : cur?.type === 'pdf' ? <PdfView key={cur.id} id={cur.id} user={user} path={pid + '/' + cur.id + '.pdf'} title={cur.title} /> : cur?.type === 'page' ? <Editor key={cur.id} id={cur.id} user={user} projectId={pid} /> : cur?.type === 'folder' ? <FolderView projectId={pid} videoView={videoFolderIds.includes(cur.id)} onReorder={reorder} folder={cur} sibs={sibs} openItem={openItem} openFolder={openFolder} show={show} items={items} /> : null}
           </div>
         </main>
       </div>
@@ -308,6 +328,7 @@ function Main({ user }) {
           {pid && <div className="ctx-item" onClick={e => { e.stopPropagation(); invite(); setMenu(null) }}><span>👥 Partager</span></div>}
         </> : m && <>
           <div className="ctx-item" onClick={e => { e.stopPropagation(); openItem(m.id); setMenu(null) }}><span>👁️ Ouvrir</span></div>
+          <div className="ctx-item" onClick={e => { e.stopPropagation(); setIconItem(m); setMenu(null) }}><span>😀 Changer l’emoji</span></div>
           <div className="ctx-item" onClick={e => { e.stopPropagation(); ren(m); setMenu(null) }}><span>✏️ Renommer</span></div>
           <div className="ctx-item" onClick={e => { e.stopPropagation(); del(m); setMenu(null) }}><span style={{ color: '#ef4444' }}>🗑️ Supprimer</span></div>
           {m.type === 'folder' && <>
@@ -318,9 +339,10 @@ function Main({ user }) {
         </>}
         <div className="ctx-item" onClick={e => { e.stopPropagation(); setMenu(null) }}><span>✕ Annuler</span></div>
       </div>}
+      {iconItem && <EmojiPicker item={iconItem} onSave={saveIcon} onClose={() => setIconItem(null)}/>}
       {dlg && <Dlg d={dlg} close={() => setDlg(null)} />}
       {share && <ShareDlg code={share} pid={pid} onNew={newCode} close={() => setShare(null)} />}
-      {settings && <Settings timerConfig={timerConfig} onTimerChange={changeTimer} user={user} projects={projs} projectId={pid} onProjectChange={setPid} onCreateProject={newProj} onJoinProject={joinProj} onShareProject={invite} close={() => setSettings(false)} />}
+      {settings && <Settings items={items} videoFolderIds={videoFolderIds} onVideoFoldersChange={changeVideoFolders} timerConfig={timerConfig} onTimerChange={changeTimer} user={user} projects={projs} projectId={pid} onProjectChange={setPid} onCreateProject={newProj} onJoinProject={joinProj} onShareProject={invite} close={() => setSettings(false)} />}
       <input type="file" accept=".pdf" ref={fi} onChange={onPdf} style={{ display: 'none' }} />
     </div>
   )

@@ -2,10 +2,11 @@
 import './toolbar.css'
 import {useEffect,useState,useRef,useLayoutEffect} from 'react'
 import ToolbarIcon from './ToolbarIcon'
+import TableTools from './TableTools'
 import PageOutline from './PageOutline'
 import ToolbarPopover from './ToolbarPopover'
 import * as Y from 'yjs'
-import {useEditor,EditorContent,BubbleMenu} from '@tiptap/react'
+import {useEditor,EditorContent} from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Collaboration from '@tiptap/extension-collaboration'
 import CollaborationCursor from '@tiptap/extension-collaboration-cursor'
@@ -97,7 +98,6 @@ function Tiptap({ydoc,provider,projectId}){
   {c:'rgba(191,90,242,.34)',l:'Violet'},
   {c:'rgba(174,174,178,.36)',l:'Gris'},
  ]
- const CELL_BG=['#fff3a3','#ffe0b2','#ffd0d8','#c8f5d4','#cfe4ff','#ead9ff']
  const openPop=k=>e=>{e.preventDefault();e.stopPropagation();popAnchor.current=e.currentTarget;setPop(pop===k?null:k)}
  const Pop=({children})=><ToolbarPopover anchor={popAnchor.current} vertical={vertical} onClose={()=>setPop(null)}>{children}</ToolbarPopover>
  return <>
@@ -177,17 +177,7 @@ function Tiptap({ydoc,provider,projectId}){
     <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="2.5" y="3.5" width="15" height="13" rx="3"/><path d="M12.5 3.5v13"/>{sp&&<rect x="12.5" y="3.5" width="5" height="13" rx="2" fill="currentColor" stroke="none" opacity=".35"/>}</svg>
     <span className="toolbar-label">Résumé</span>{hasSum&&<i title="Cette page a un résumé ou des notes"/>}</button>
   </div></div>
-  <BubbleMenu editor={ed} shouldShow={({editor})=>editor.isActive('table')} tippyOptions={{placement:'top',maxWidth:'none'}}>
-   <div className="bm" onMouseDown={e=>e.preventDefault()}>
-    {B('＋ Ligne',()=>f().addRowAfter().run())}{B('＋ Colonne',()=>f().addColumnAfter().run())}
-    {B('− Ligne',()=>f().deleteRow().run())}{B('− Colonne',()=>f().deleteColumn().run())}
-    {B('Fusionner',()=>f().mergeOrSplit().run(),false,'Sélectionne plusieurs cellules en glissant')}
-    <span className="tb-sep"/>
-    {CELL_BG.map(c=><button type="button" key={c} className="tb-dot tb-dot-hi" style={{background:c}} title="Fond de cellule" onClick={e=>{e.preventDefault();f().setCellAttribute('background',c).run()}}/>)}
-    {B('∅',()=>f().setCellAttribute('background',null).run(),false,'Retirer le fond')}
-    {B('En-tête',()=>f().toggleHeaderRow().run(),false,'Ligne d’en-tête')}
-    {B('Suppr.',()=>f().deleteTable().run(),false,'Supprimer le tableau')}
-   </div></BubbleMenu>
+  <TableTools editor={ed}/>
   <PageOutline editor={ed}/>
   <EditorContent className="editor-content" editor={ed}/></div>
   <SidePanel ydoc={ydoc} open={sp} onClose={()=>toggle(false)} width={spw} onWidth={w=>{setSpw(w);try{localStorage.setItem('spw',String(w))}catch{}}}/></>
