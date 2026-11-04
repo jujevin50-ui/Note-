@@ -3,3 +3,11 @@
 
 .sn .sn-bubble:hover,.sn .sn-bubble:focus-visible{height:auto;min-height:44px;padding-top:6px;padding-bottom:6px}
 .sn-chevron{flex-shrink:0}
+
+/* Survol stable : les bulles ne redimensionnent plus la navigation. */
+.sn .sn-bubble,.sn .sn-bubble:hover,.sn .sn-bubble:focus-visible{width:44px;max-width:44px;height:44px;min-height:44px;padding:0;transition:background .16s,border-color .16s,box-shadow .16s}
+.sn .sn-bubble .sn-bubble-label{display:none}
+.sn .sn-bubble .sn-bubble-symbol{transform:none;transition:none}
+.sn .sn-panel{animation:none}
+.sn .sn-item:hover{translate:0 0}
+.sn .sn-item{transition:background .15s,color .15s}

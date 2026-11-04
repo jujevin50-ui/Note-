@@ -9,6 +9,8 @@ import SidebarNavigation from '../components/SidebarNavigation'
 import HomeGreeting from '../components/HomeGreeting'
 import useProjectPresence from '../components/useProjectPresence'
 import useRecentDocuments from '../components/useRecentDocuments'
+import useManualSort from '../components/useManualSort'
+import { reorderItems, compareItems } from '../lib/manual-order'
 import FocusTimer, { DEFAULT_TIMER, normalizeTimer, TimerSettings } from '../components/FocusTimer'
 import { LiquidBackground, Presence, GradientWaves } from '../components/Bits'
 import { FxRoot, TextGenerate } from '../components/Fx'
@@ -122,10 +124,9 @@ const INV_SECTIONS = [
   { title: 'Questions', icon: '❓', color: '#8e8e93' },
 ]
 
-function FolderView({ folder, sibs, openItem, openFolder, show, items }) {
+function FolderView({ folder, sibs, openItem, openFolder, show, items, onReorder }) {
   const kids = sibs(folder.id)
-  const folders = kids.filter(i => i.type === 'folder')
-  const files = kids.filter(i => i.type !== 'folder')
+  const sortable = useManualSort(items, onReorder)
   return <div className="home home-in">
     <header className="dash-hd dash-hd-sm">
       <div>
@@ -140,14 +141,10 @@ function FolderView({ folder, sibs, openItem, openFolder, show, items }) {
       <h3>Dossier vide</h3>
 
     </div> : <div className="tile-grid">
-      {folders.map(i => <button type="button" className="tile tile-folder" key={i.id} onClick={() => openFolder(i.id)} onContextMenu={e => show(e, i)}>
-        <span className="tile-ico" style={{ '--c': i.color || '#f59e0b' }}><Ic i={i} /></span>
-        <span className="tile-body"><b>{i.title}</b><small className="muted">{sibs(i.id).length} élément{sibs(i.id).length !== 1 ? 's' : ''}</small></span>
-        <span className="tile-chev">›</span>
-      </button>)}
-      {files.map(i => <button type="button" className="tile" key={i.id} onClick={() => openItem(i.id)} onContextMenu={e => show(e, i)}>
-        <span className="tile-ico" style={{ '--c': i.color || (i.type === 'pdf' ? '#ef4444' : '#3b82f6') }}><Ic i={i} /></span>
-        <span className="tile-body"><b>{i.title}</b><small className="muted">{i.type === 'pdf' ? 'PDF' : 'Page'}</small></span>
+      {kids.map(i => <button type="button" {...sortable(i)} className={'tile' + (i.type === 'folder' ? ' tile-folder' : '')} key={i.id} onClick={() => openItem(i.id)} onContextMenu={e => show(e, i)}>
+        <span className="tile-ico" style={{ '--c': i.color || '#8b5cf6' }}><Ic i={i} /></span>
+        <span className="tile-body"><b>{i.title}</b><small className="muted">{i.type === 'folder' ? sibs(i.id).length + ' élément(s)' : i.type === 'pdf' ? 'PDF' : 'Page'}</small></span>
+        {i.type === 'folder' && <span className="tile-chev">›</span>}
       </button>)}
     </div>}
   </div>
@@ -214,9 +211,13 @@ function Main({ user }) {
   const switchSpace = s => { setSpace(s); try { localStorage.setItem('space', s) } catch {}; setSel(null); setSection('home') }
   const fi = useRef(), pp = useRef(null)
   const loadP = async () => { const { data } = await supabase.from('projects').select('*'); setProjs(data || []); if (!pid && data?.[0]) setPid(data[0].id) }
+  const reordering = useRef(false)
+  const loadRevision = useRef(0)
   const loadI = async () => {
-    if (!pid) return
+    if (!pid || reordering.current) return
+    const revision = ++loadRevision.current
     const { data } = await supabase.from('items').select('id,parent_id,type,title,color,closed,icon,pos,created_at,space').eq('project_id', pid).order('created_at')
+    if (reordering.current || revision !== loadRevision.current) return
     setItems((data || []).filter(x => x.type !== 'board').map(x => ({ ...x, space: x.space || 'notes' })))
   }
   useEffect(() => { loadP() }, [])
@@ -247,9 +248,21 @@ function Main({ user }) {
   const show = (e, i, mode) => { e.preventDefault(); e.stopPropagation(); setMenu({ x: Math.min(e.clientX, innerWidth - 230), y: Math.min(e.clientY, innerHeight - 340), i, mode }) }
   const openItem = id => { recordOpen(items.find(item => item.id === id)); setSel(id) }
   const openFolder = id => openItem(id)
-  const key = x => x.pos ?? new Date(x.created_at).getTime()
+  const reorder = async (dragged, target, after) => {
+    if (reordering.current) return
+    const updates = reorderItems(items, dragged, target, after)
+    if (!updates.length) return
+    reordering.current = true
+    ++loadRevision.current
+    setItems(current => current.map(item => { const update = updates.find(u => u.id === item.id); return update ? { ...item, pos: update.pos } : item }))
+    try {
+      const results = await Promise.all(updates.map(update => supabase.from('items').update({ pos: update.pos }).eq('id', update.id).eq('project_id', pid)))
+      if (results.some(result => result.error)) alert('Impossible d’enregistrer cet ordre. Réessaie.')
+    } catch { alert('Impossible d’enregistrer cet ordre. Réessaie.') }
+    finally { reordering.current = false; loadI() }
+  }
   const spaceItems = items.filter(i => (i.space || 'notes') === space)
-  const sibs = p => spaceItems.filter(i => i.parent_id === p).sort((a, b) => key(a) - key(b))
+  const sibs = p => spaceItems.filter(i => i.parent_id === p).sort(compareItems)
   const cur = items.find(i => i.id === sel && (i.space || 'notes') === space)
   const trail = i => { const a = []; let c = items.find(x => x.id === i.parent_id); while (c) { a.unshift(c); c = items.find(x => x.id === c.parent_id) }; return a }
   const sideW = open ? w : 0
@@ -264,7 +277,7 @@ function Main({ user }) {
       {open && <aside className="side-cols">
         <div className="plasma-wrap" aria-hidden><GradientWaves /><span className="plasma-veil" /></div>
         <div className="rz" onMouseDown={startRz} />
-        <SidebarNavigation space={space} onSpaceChange={next => { switchSpace(next); setSection('library') }} active={sel ? null : section} onChange={next => { setSection(next); setSel(null) }} onCreate={(e, folder) => pid ? show(e, folder, 'new') : setSettings(true)} items={spaceItems} activeItem={sel} onOpen={openItem} onOptions={show} />
+        <SidebarNavigation onReorder={reorder} space={space} onSpaceChange={next => { switchSpace(next); setSection('library') }} active={sel ? null : section} onChange={next => { setSection(next); setSel(null) }} onCreate={(e, folder) => pid ? show(e, folder, 'new') : setSettings(true)} items={spaceItems} activeItem={sel} onOpen={openItem} onOptions={show} />
       </aside>}
       <div className="mainc">
         <div className="topbar">
@@ -284,7 +297,7 @@ function Main({ user }) {
         </div>
         <main className={cur && (cur.type === 'page' || cur.type === 'pdf') ? 'paper' : !sel ? 'full' : ''}>
           <div className="workspace">
-            {section === 'home' && !sel ? <HomeGreeting name={name} /> : !pid ? <div className="dash-empty"><h3>Aucun projet</h3><button type="button" className="btn-primary" onClick={() => setSettings(true)}>Paramètres</button></div> : !sel ? <WelcomeDashboard recentDocuments={recent} recentStatus={recentStatus} refreshRecent={refreshRecent} section={section} items={spaceItems} sibs={sibs} openItem={openItem} show={show} projName={projName} space={space} addCompany={addCompany} name={name} /> : cur?.type === 'pdf' ? <PdfView key={cur.id} id={cur.id} user={user} path={pid + '/' + cur.id + '.pdf'} title={cur.title} /> : cur?.type === 'page' ? <Editor key={cur.id} id={cur.id} user={user} projectId={pid} /> : cur?.type === 'folder' ? <FolderView folder={cur} sibs={sibs} openItem={openItem} openFolder={openFolder} show={show} items={items} /> : null}
+            {section === 'home' && !sel ? <HomeGreeting name={name} /> : !pid ? <div className="dash-empty"><h3>Aucun projet</h3><button type="button" className="btn-primary" onClick={() => setSettings(true)}>Paramètres</button></div> : !sel ? <WelcomeDashboard onReorder={reorder} recentDocuments={recent} recentStatus={recentStatus} refreshRecent={refreshRecent} section={section} items={spaceItems} sibs={sibs} openItem={openItem} show={show} projName={projName} space={space} addCompany={addCompany} name={name} /> : cur?.type === 'pdf' ? <PdfView key={cur.id} id={cur.id} user={user} path={pid + '/' + cur.id + '.pdf'} title={cur.title} /> : cur?.type === 'page' ? <Editor key={cur.id} id={cur.id} user={user} projectId={pid} /> : cur?.type === 'folder' ? <FolderView onReorder={reorder} folder={cur} sibs={sibs} openItem={openItem} openFolder={openFolder} show={show} items={items} /> : null}
           </div>
         </main>
       </div>
@@ -295,7 +308,7 @@ function Main({ user }) {
           {pid && <div className="ctx-item" onClick={e => { e.stopPropagation(); invite(); setMenu(null) }}><span>👥 Partager</span></div>}
         </> : m && <>
           <div className="ctx-item" onClick={e => { e.stopPropagation(); openItem(m.id); setMenu(null) }}><span>👁️ Ouvrir</span></div>
-          {m.type !== 'folder' && <div className="ctx-item" onClick={e => { e.stopPropagation(); ren(m); setMenu(null) }}><span>✏️ Renommer</span></div>}
+          <div className="ctx-item" onClick={e => { e.stopPropagation(); ren(m); setMenu(null) }}><span>✏️ Renommer</span></div>
           <div className="ctx-item" onClick={e => { e.stopPropagation(); del(m); setMenu(null) }}><span style={{ color: '#ef4444' }}>🗑️ Supprimer</span></div>
           {m.type === 'folder' && <>
             <div className="ctx-item" onClick={e => { e.stopPropagation(); add('page', m.id); setMenu(null) }}><span>📄 Nouvelle page</span></div>

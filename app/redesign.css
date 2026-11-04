@@ -303,3 +303,8 @@ textarea,textarea:focus,textarea:focus-visible,[contenteditable],[contenteditabl
 .crumbs{flex-wrap:wrap;white-space:normal}
 .crumbs .crumb-parent{max-width:100%}
 .crumbs button,.crumbs b{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;line-height:1.5}
+
+[data-sort-id][draggable=true]{cursor:grab}
+[data-sort-id][draggable=true]:active{cursor:grabbing}
+[data-sort-id][data-drop=before]{box-shadow:inset 0 3px 0 #a99bdc!important}
+[data-sort-id][data-drop=after]{box-shadow:inset 0 -3px 0 #a99bdc!important}

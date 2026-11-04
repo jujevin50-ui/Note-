@@ -137,8 +137,8 @@ export function Presence({ online, me, titleOf, status = 'connected' }) {
   }, [open])
   const list = [...online].sort((a, b) => (a.id === me ? -1 : b.id === me ? 1 : 0))
   const shown = list.slice(0, 4), extra = list.length - shown.length
-  const connected = status === 'connected'
-  const label = connected ? `${list.length} en ligne` : status === 'connecting' ? 'Connexion…' : 'Reconnexion…'
+  const connected = status === 'connected' || status === 'syncing'
+  const label = connected ? `${list.length} en ligne` : status === 'connecting' ? 'Présence…' : 'Présence en attente…'
   return (
     <div className={'prs' + (!connected ? ' prs-pending' : '')} ref={box}>
       <button type="button" className={'prs-btn' + (open ? ' on' : '')} onClick={() => setOpen(o => !o)} aria-expanded={open} aria-label={label + ", membres du projet"} title="Personnes en ligne dans ce projet">
@@ -152,7 +152,7 @@ export function Presence({ online, me, titleOf, status = 'connected' }) {
       {open && (
         <div className="prs-pop" role="dialog" aria-label="Personnes en ligne">
           <div className="prs-hd">Membres en ligne dans ce projet</div>
-          {!connected && <p className="prs-message" role="status">Connexion à la présence en temps réel…</p>}
+          {!connected && <p className="prs-message" role="status">La liste des membres se reconnecte…</p>}
           {connected && !list.length && <p className="prs-message" role="status">Actualisation des membres…</p>}
           {list.map(u => {
             const where = u.item && titleOf(u.item)
