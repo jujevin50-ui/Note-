@@ -27,7 +27,7 @@
 .wd-section-title>span{font-size:12px}
 .wd-tile{gap:14px;padding:22px 20px;min-height:160px}
 .wd-tile-top{flex-shrink:0}
-.wd-tile>strong{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;white-space:normal;overflow:hidden;overflow-wrap:anywhere;font-size:14px;font-weight:600;line-height:1.5;letter-spacing:normal}
+.wd-tile>strong{display:block;white-space:normal;overflow:visible;overflow-wrap:anywhere;font-size:14px;font-weight:600;line-height:1.5;letter-spacing:normal}
 .wd-tile-meta{margin-top:auto;gap:8px;font-size:11px;line-height:1.6;flex-wrap:wrap}
 .wd-folder{min-height:210px}
 .wd-paper-stack{height:36px;margin-top:2px;flex-shrink:0;pointer-events:none}
@@ -41,3 +41,7 @@
 .wd .wd-recent-copy strong{font-size:13px;line-height:1.5}
 .wd .wd-recent-copy small{font-size:11px;line-height:1.5}
 @media(max-width:1000px){.wd .wd-recent-copy{display:grid;gap:4px}}
+
+.wd .wd-recent-copy strong{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere}
+.wd .wd-recent{align-items:flex-start}
+.wd .wd-recent-arrow{flex-shrink:0}

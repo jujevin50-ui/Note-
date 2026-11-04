@@ -294,3 +294,12 @@ textarea,textarea:focus,textarea:focus-visible,[contenteditable],[contenteditabl
 .prs-mobile-count{display:none}
 .prs-pop{max-width:calc(100vw - 24px);max-height:60dvh;overflow:auto}
 @media(max-width:720px){.prs-mobile-count{display:inline;font-size:12px}.prs-btn{gap:5px;padding:4px 8px}.prs-stack i:nth-child(n+3){display:none}}
+
+/* Noms complets des fichiers et sous-dossiers, même dans une colonne étroite. */
+.tile-body b{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;line-height:1.5}
+.tile-chev{flex-shrink:0}
+.home .dash-hd h1{overflow-wrap:anywhere}
+.mainc .topbar{height:auto;min-height:54px;padding-top:7px;padding-bottom:7px}
+.crumbs{flex-wrap:wrap;white-space:normal}
+.crumbs .crumb-parent{max-width:100%}
+.crumbs button,.crumbs b{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;line-height:1.5}
