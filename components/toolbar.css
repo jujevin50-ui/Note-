@@ -81,3 +81,6 @@
 .outline-entry.active .outline-bar{background:#8066c9}
 .page-outline:hover .outline-entry,.page-outline:focus-within .outline-entry{min-height:32px}
 @media(prefers-reduced-motion:reduce){.page-outline{transition:none}}
+
+/* Espace cliquable sous la dernière ligne pour écrire et faire défiler confortablement. */
+.ed-wrap .editor-content>.ProseMirror{padding-bottom:clamp(220px,45vh,520px)}
