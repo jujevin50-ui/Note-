@@ -207,6 +207,18 @@ function Main({ user }) {
   const [sel, setSel] = useState(null)
   const [dlg, setDlg] = useState(null)
   const [menu, setMenu] = useState(null)
+  const menuRef = useRef(null)
+  useEffect(() => {
+    if (!menu) return
+    const outside = event => { if (!menuRef.current?.contains(event.target)) setMenu(null) }
+    const escape = event => { if (event.key === 'Escape') setMenu(null) }
+    document.addEventListener('pointerdown', outside, true)
+    document.addEventListener('keydown', escape)
+    return () => {
+      document.removeEventListener('pointerdown', outside, true)
+      document.removeEventListener('keydown', escape)
+    }
+  }, [menu])
   const [iconItem, setIconItem] = useState(null)
   const [colorItem, setColorItem] = useState(null)
   const [open, setOpen] = useState(true)
@@ -327,7 +339,7 @@ function Main({ user }) {
           </div>
         </main>
       </div>
-      {menu && <div className="ctx-menu" style={{ left: menu.x, top: menu.y }} onClick={() => setMenu(null)}>
+      {menu && <div ref={menuRef} className="ctx-menu" style={{ left: menu.x, top: menu.y }} onClick={() => setMenu(null)}>
         {menu.mode === 'new' ? news(menu.i?.id).map(([l, a]) => <div key={l} className="ctx-item" onClick={e => { e.stopPropagation(); a(); setMenu(null) }}><span>{l}</span></div>) : menu.mode === 'proj' ? <>
           <div className="ctx-item" onClick={e => { e.stopPropagation(); newProj(); setMenu(null) }}><span>＋ Nouveau projet</span></div>
           <div className="ctx-item" onClick={e => { e.stopPropagation(); joinProj(); setMenu(null) }}><span>🔗 Rejoindre un projet</span></div>
@@ -344,7 +356,6 @@ function Main({ user }) {
             <div className="ctx-item" onClick={e => { e.stopPropagation(); pick(m.id); setMenu(null) }}><span>📎 Importer PDF</span></div>
           </>}
         </>}
-        <div className="ctx-item" onClick={e => { e.stopPropagation(); setMenu(null) }}><span>✕ Annuler</span></div>
       </div>}
       {colorItem && <ColorPicker item={colorItem} onSave={saveColor} onClose={() => setColorItem(null)}/>}
       {iconItem && <EmojiPicker item={iconItem} onSave={saveIcon} onClose={() => setIconItem(null)}/>}
