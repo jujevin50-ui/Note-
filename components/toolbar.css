@@ -82,5 +82,5 @@
 .page-outline:hover .outline-entry,.page-outline:focus-within .outline-entry{min-height:32px}
 @media(prefers-reduced-motion:reduce){.page-outline{transition:none}}
 
-/* Espace cliquable sous la dernière ligne pour écrire et faire défiler confortablement. */
-.ed-wrap .editor-content>.ProseMirror{padding-bottom:clamp(220px,45vh,520px)}
+/* Réserve de défilement réelle après le document, sans ajouter de lignes enregistrées. */
+.ed-wrap .editor-scroll-space{height:max(70svh,420px);width:100%;cursor:text;flex-shrink:0}

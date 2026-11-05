@@ -179,7 +179,10 @@ function Tiptap({ydoc,provider,projectId}){
   </div></div>
   <TableTools editor={ed}/>
   <PageOutline editor={ed}/>
-  <EditorContent className="editor-content" editor={ed}/></div>
+  <div className="editor-content">
+    <EditorContent editor={ed}/>
+    <div className="editor-scroll-space" aria-hidden="true" onMouseDown={e=>{e.preventDefault();if(!ed.isDestroyed)ed.commands.focus('end',{scrollIntoView:false})}}/>
+  </div></div>
   <SidePanel ydoc={ydoc} open={sp} onClose={()=>toggle(false)} width={spw} onWidth={w=>{setSpw(w);try{localStorage.setItem('spw',String(w))}catch{}}}/></>
 }
 
