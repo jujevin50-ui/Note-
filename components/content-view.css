@@ -1,0 +1,11 @@
+.content-view-switch{display:inline-flex;align-items:center;gap:3px;padding:3px;border:1px solid var(--bd);border-radius:10px;background:var(--hov);flex-shrink:0}
+.content-view-switch button{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:30px;padding:5px 9px;border:0;border-radius:7px;background:transparent;color:var(--mut);font:500 12px/1.4 var(--font-sans,system-ui);cursor:pointer;transition:background .15s,color .15s}
+.content-view-switch button[aria-pressed=true]{background:var(--bg);color:var(--fg);box-shadow:0 1px 4px #0002}.content-view-switch button:focus-visible{outline:2px solid #a99bdc;outline-offset:1px}.content-view-switch svg{flex-shrink:0}
+.content-view-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.dash-hd{flex-wrap:wrap;gap:16px}
+.wd .wd-grid.wd-list{display:flex;flex-direction:column;gap:8px}
+.wd .wd-list .wd-tile{display:grid;grid-template-columns:44px minmax(0,1fr) auto;align-items:center;column-gap:16px;row-gap:6px;min-height:76px;padding:14px 18px;transform:none}
+.wd-list .wd-tile-top{grid-column:1;grid-row:1}.wd-list .wd-tile>strong{grid-column:2;grid-row:1}.wd-list .wd-tile-meta{grid-column:3;grid-row:1;flex-direction:column;align-items:flex-end;justify-content:center;margin:0;gap:2px}
+.wd-list .wd-paper-stack,.wd-list .wd-open{display:none}
+.tile-grid.folder-list{display:flex;flex-direction:column;gap:8px}.folder-list .tile{width:100%;min-height:68px}.folder-list .tile.video-tile{flex-direction:row;align-items:center;gap:0}.folder-list .video-thumbnail{width:120px;flex:0 0 120px;align-self:stretch;min-height:76px}.folder-list .video-tile .tile-body{width:auto;flex:1}
+@media(max-width:600px){.content-view-switch button{padding:5px 7px}.wd .wd-list .wd-tile{grid-template-columns:36px minmax(0,1fr);gap:4px 12px;padding:12px}.wd-list .wd-tile-top{grid-row:1/3}.wd-list .wd-file-icon{width:34px;height:34px}.wd-list .wd-tile-meta{grid-column:2;grid-row:2;flex-direction:row;justify-content:flex-start;align-items:center;gap:10px;flex-wrap:wrap}.folder-list .video-thumbnail{width:92px;flex-basis:92px}.folder-list .video-tile .tile-body{padding:10px 12px}}
+@media(prefers-reduced-motion:reduce){.content-view-switch button{transition:none}}

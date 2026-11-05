@@ -4,6 +4,8 @@ import { supabase } from '../lib/supabase'
 import { colorOf } from '../lib/provider'
 import Editor from '../components/Editor'
 import EmojiPicker from '../components/EmojiPicker'
+import ColorPicker from '../components/ColorPicker'
+import ContentViewSwitch, { useContentView } from '../components/ContentViewSwitch'
 import FolderViewSettings from '../components/FolderViewSettings'
 import useVideoThumbnails from '../components/useVideoThumbnails'
 import PdfView from '../components/PdfView'
@@ -23,7 +25,7 @@ const NAMES = { page: 'Nom de la page', folder: 'Nom du dossier' }
 const Folder = ({ c = '#f59e0b' }) => <svg width="16" height="14" viewBox="0 0 16 14" style={{ flex: 'none' }}><path d="M1 1.5h5l1.5 1.5H15v9.5H1z" fill={c} /></svg>
 const err = ({ error }) => error && alert(error.message)
 const Doc = ({ c }) => <svg width="14" height="16" viewBox="0 0 14 16" style={{ flex: 'none' }}><path d="M1 1h8l4 4v10H1z" fill={c} /><path d="M9 1v4h4" fill="rgba(255,255,255,.45)" /></svg>
-const Ic = ({ i }) => i.icon ? <span>{i.icon}</span> : i.type === 'folder' ? <Folder c={i.color} /> : i.type === 'pdf' ? <Doc c={i.color || '#ef4444'} /> : <span>📄</span>
+const Ic = ({ i }) => i.icon ? <span>{i.icon}</span> : i.type === 'folder' ? <Folder c={i.color} /> : i.type === 'pdf' ? <Doc c={i.color || '#ef4444'} /> : <Doc c={i.color || '#8b5cf6'} />
 
 function Dlg({ d, close }) {
   const [v, setV] = useState(d.value || '')
@@ -127,6 +129,7 @@ const INV_SECTIONS = [
 ]
 
 function FolderView({ folder, sibs, openItem, openFolder, show, items, onReorder, projectId, videoView }) {
+  const [view, setView] = useContentView()
   const { videos, error: videoError } = useVideoThumbnails(projectId, folder.id, videoView)
   const kids = sibs(folder.id)
   const sortable = useManualSort(items, onReorder)
@@ -137,14 +140,14 @@ function FolderView({ folder, sibs, openItem, openFolder, show, items, onReorder
         <h1><TextGenerate text={folder.title} /></h1>
         <p className="dash-sub muted">{kids.length ? kids.length + ' élément' + (kids.length > 1 ? 's' : '') : 'Aucun contenu'}</p>
       </div>
-      <button type="button" className="btn-primary btn-glow" onClick={e => show(e, folder, 'new')}>＋ Ajouter</button>
+      <div className="content-view-controls"><ContentViewSwitch value={view} onChange={setView}/><button type="button" className="btn-primary btn-glow" onClick={e => show(e, folder, 'new')}>＋ Ajouter</button></div>
     </header>
     {videoView && videoError && <p className="video-view-status" role="status">Les miniatures sont momentanément indisponibles.</p>}
     {!kids.length ? <div className="dash-empty">
       <div className="dash-empty-ico">📁</div>
       <h3>Dossier vide</h3>
 
-    </div> : <div className="tile-grid">
+    </div> : <div className={'tile-grid' + (view==='list' ? ' folder-list' : '')}>
       {kids.map(i => <button type="button" {...sortable(i)} className={'tile' + (i.type === 'folder' ? ' tile-folder' : '') + (videoView && i.type === 'page' ? ' video-tile' : '')} key={i.id} onClick={() => openItem(i.id)} onContextMenu={e => show(e, i)}>
         {videoView && i.type === 'page' ? <span className="video-thumbnail">{videos[i.id] ? <><img src={'https://i.ytimg.com/vi/'+videos[i.id]+'/hqdefault.jpg'} alt="" loading="lazy" onError={e=>{e.currentTarget.style.display='none'}}/><span className="video-play" aria-hidden="true">▶</span></> : <small>Ajoute un lien YouTube dans cette page</small>}</span> : <span className="tile-ico" style={{ '--c': i.color || '#8b5cf6' }}><Ic i={i} /></span>}
         <span className="tile-body"><b>{i.title}</b><small className="muted">{i.type === 'folder' ? sibs(i.id).length + ' élément(s)' : i.type === 'pdf' ? 'PDF' : 'Page'}</small></span>
@@ -205,6 +208,7 @@ function Main({ user }) {
   const [dlg, setDlg] = useState(null)
   const [menu, setMenu] = useState(null)
   const [iconItem, setIconItem] = useState(null)
+  const [colorItem, setColorItem] = useState(null)
   const [open, setOpen] = useState(true)
   const [share, setShare] = useState(null)
   const [settings, setSettings] = useState(false)
@@ -252,6 +256,11 @@ function Main({ user }) {
     if (!folder) { folder = await insert({ type: 'folder', title: 'Entreprises à suivre', parent_id: null, color: '#007aff', icon: '📈' }); if (!folder) return; setItems(l => [...l, { ...folder, space }]) }
     const page = await insert({ type: 'page', title, parent_id: folder.id, icon: '📊' }); if (page) setItems(l => [...l, { ...page, space }]); if (folder.closed) patch(folder.id, { closed: false })
   })
+  const saveColor = async color => {
+    const { error } = await supabase.from('items').update({ color }).eq('id', colorItem.id).eq('project_id', pid)
+    if (error) throw error
+    setItems(current => current.map(item => item.id === colorItem.id ? { ...item, color } : item))
+  }
   const saveIcon = async icon => {
     const { error } = await supabase.from('items').update({ icon }).eq('id', iconItem.id).eq('project_id', pid)
     if (error) throw error
@@ -326,6 +335,7 @@ function Main({ user }) {
         </> : m && <>
           <div className="ctx-item" onClick={e => { e.stopPropagation(); openItem(m.id); setMenu(null) }}><span>👁️ Ouvrir</span></div>
           <div className="ctx-item" onClick={e => { e.stopPropagation(); setIconItem(m); setMenu(null) }}><span>😀 Changer l’emoji</span></div>
+          <div className="ctx-item" onClick={e => { e.stopPropagation(); setColorItem(m); setMenu(null) }}><span>🎨 Changer la couleur</span></div>
           <div className="ctx-item" onClick={e => { e.stopPropagation(); ren(m); setMenu(null) }}><span>✏️ Renommer</span></div>
           <div className="ctx-item" onClick={e => { e.stopPropagation(); del(m); setMenu(null) }}><span style={{ color: '#ef4444' }}>🗑️ Supprimer</span></div>
           {m.type === 'folder' && <>
@@ -336,6 +346,7 @@ function Main({ user }) {
         </>}
         <div className="ctx-item" onClick={e => { e.stopPropagation(); setMenu(null) }}><span>✕ Annuler</span></div>
       </div>}
+      {colorItem && <ColorPicker item={colorItem} onSave={saveColor} onClose={() => setColorItem(null)}/>}
       {iconItem && <EmojiPicker item={iconItem} onSave={saveIcon} onClose={() => setIconItem(null)}/>}
       {dlg && <Dlg d={dlg} close={() => setDlg(null)} />}
       {share && <ShareDlg code={share} pid={pid} onNew={newCode} close={() => setShare(null)} />}
