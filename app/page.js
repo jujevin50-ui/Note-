@@ -15,7 +15,7 @@ import HomeGreeting from '../components/HomeGreeting'
 import useProjectPresence from '../components/useProjectPresence'
 import useRecentDocuments from '../components/useRecentDocuments'
 import useManualSort from '../components/useManualSort'
-import { reorderItems, compareItems } from '../lib/manual-order'
+import { dropItems, compareItems } from '../lib/manual-order'
 import FocusTimer, { DEFAULT_TIMER, normalizeTimer, TimerSettings } from '../components/FocusTimer'
 import { Presence } from '../components/Bits'
 import { FxRoot, TextGenerate } from '../components/Fx'
@@ -133,7 +133,7 @@ function FolderView({ folder, sibs, openItem, openFolder, show, items, onReorder
   const { videos, error: videoError } = useVideoThumbnails(projectId, folder.id, videoView)
   const kids = sibs(folder.id)
   const sortable = useManualSort(items, onReorder)
-  return <div className="home home-in">
+  return <div className="home home-in" {...sortable(folder, { destinationOnly: true })}>
     <header className="dash-hd dash-hd-sm">
       <div>
         <p className="dash-kicker">Dossier</p>
@@ -146,6 +146,7 @@ function FolderView({ folder, sibs, openItem, openFolder, show, items, onReorder
     {!kids.length ? <div className="dash-empty">
       <div className="dash-empty-ico">📁</div>
       <h3>Dossier vide</h3>
+      <p className="muted">Glisse un fichier ou un dossier ici pour le déplacer.</p>
 
     </div> : <div className={'tile-grid' + (view==='list' ? ' folder-list' : '')}>
       {kids.map(i => <button type="button" {...sortable(i)} className={'tile' + (i.type === 'folder' ? ' tile-folder' : '') + (videoView && i.type === 'page' ? ' video-tile' : '')} key={i.id} onClick={() => openItem(i.id)} onContextMenu={e => show(e, i)}>
@@ -286,17 +287,17 @@ function Main({ user }) {
   const show = (e, i, mode) => { e.preventDefault(); e.stopPropagation(); setMenu({ x: Math.min(e.clientX, innerWidth - 230), y: Math.min(e.clientY, innerHeight - 340), i, mode }) }
   const openItem = id => { recordOpen(items.find(item => item.id === id)); setSel(id) }
   const openFolder = id => openItem(id)
-  const reorder = async (dragged, target, after) => {
+  const reorder = async (dragged, target, zone) => {
     if (reordering.current) return
-    const updates = reorderItems(items, dragged, target, after)
+    const updates = dropItems(items, dragged, target, zone)
     if (!updates.length) return
     reordering.current = true
     ++loadRevision.current
-    setItems(current => current.map(item => { const update = updates.find(u => u.id === item.id); return update ? { ...item, pos: update.pos } : item }))
+    setItems(current => current.map(item => { const update = updates.find(u => u.id === item.id); return update ? { ...item, ...update } : item }))
     try {
-      const results = await Promise.all(updates.map(update => supabase.from('items').update({ pos: update.pos }).eq('id', update.id).eq('project_id', pid)))
-      if (results.some(result => result.error)) alert('Impossible d’enregistrer cet ordre. Réessaie.')
-    } catch { alert('Impossible d’enregistrer cet ordre. Réessaie.') }
+      const results = await Promise.all(updates.map(({ id, ...changes }) => supabase.from('items').update(changes).eq('id', id).eq('project_id', pid)))
+      if (results.some(result => result.error)) alert('Impossible d’enregistrer le déplacement. Réessaie.')
+    } catch { alert('Impossible d’enregistrer le déplacement. Réessaie.') }
     finally { reordering.current = false; loadI() }
   }
   const spaceItems = items.filter(i => (i.space || 'notes') === space)
