@@ -25,8 +25,8 @@ export const PasteLink=Extension.create({name:'pasteLink',addProseMirrorPlugins(
   const t=(e.clipboardData?.getData('text/plain')||'').trim()
   if(!/^https?:\/\/\S+$/.test(t)||/youtu\.?be/.test(t))return false
   supabase.auth.getSession().then(({data})=>fetch('/api/preview?url='+encodeURIComponent(t),{headers:{Authorization:'Bearer '+data.session?.access_token}}))
-   .then(r=>r.json()).then(d=>{if(d.error)throw 0;ed.chain().focus().insertContent({type:'linkCard',attrs:{url:t,title:d.title,desc:d.desc,image:d.image,site:d.site}}).run()})
-   .catch(()=>ed.chain().focus().insertContent({type:'text',text:t,marks:[{type:'link',attrs:{href:t}}]}).run())
+   .then(r=>r.json()).then(d=>{if(ed.isDestroyed)return;if(d.error)throw 0;ed.chain().focus().insertContent({type:'linkCard',attrs:{url:t,title:d.title,desc:d.desc,image:d.image,site:d.site}}).run()})
+   .catch(()=>{if(!ed.isDestroyed)ed.chain().focus().insertContent({type:'text',text:t}).run()})
   return true},
  handleClick(view,pos,e){const a=e.target.closest&&e.target.closest('a.lc');if(a){window.open(a.href,'_blank','noopener');return true}return false}}})]}})
 
@@ -148,7 +148,7 @@ export const ImagePaste=Extension.create({
   const files=Array.from(event.clipboardData?.items||[]).map(i=>i.getAsFile?.()).filter(f=>f&&f.type.startsWith('image/'))
   if(!files.length)return false
   event.preventDefault()
-  files.forEach(file=>{const reader=new FileReader();reader.onload=()=>editor.chain().focus().insertContent({type:'noteImage',attrs:{src:reader.result,width:600}}).run();reader.readAsDataURL(file)})
+  files.forEach(file=>{const reader=new FileReader();reader.onload=()=>{if(!editor.isDestroyed)editor.chain().focus().insertContent({type:'noteImage',attrs:{src:reader.result,width:600}}).run()};reader.readAsDataURL(file)})
   return true
  }}})]}
 })

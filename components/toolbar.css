@@ -84,3 +84,4 @@
 
 /* Réserve de défilement réelle après le document, sans ajouter de lignes enregistrées. */
 .ed-wrap .editor-scroll-space{height:max(70svh,420px);width:100%;cursor:text;flex-shrink:0}
+@media(min-width:901px){.ed-wrap.tb-right .toolbar-rail .bar>select{width:40px;max-width:40px;min-width:0;padding:6px 1px;font-size:10px;text-overflow:ellipsis}}
