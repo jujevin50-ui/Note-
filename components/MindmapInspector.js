@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useRef } from 'react'
 import './mindmap-inspector.css'
+import MindmapConnectionInspector from './MindmapConnectionInspector'
 import MindmapDimension from './MindmapDimension'
 import { MAP_COLORS, nodeSize, branchIds } from '../lib/mindmap'
 
@@ -9,14 +10,14 @@ function ToolIcon({name}) {
  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]||paths.style}</svg>
 }
 const SHAPES=[['card','Rectangle'],['pill','Arrondie'],['ellipse','Ellipse'],['note','Note']]
-export default function MindmapInspector({node,nodes,tab,onTab,onClose,onPatch,onSize,onFitText,mapStyle,onMapPatch,onTextAlign,textAlign,onEditText,editing,onAddBranch,onLink}) {
+export default function MindmapInspector({connection,connections=[],onSelectConnection,onConnectionPatch,onConnectionRemove,onConnectionReset,node,nodes,tab,onTab,onClose,onPatch,onSize,onFitText,mapStyle,onMapPatch,onTextAlign,textAlign,onEditText,editing,onAddBranch,onLink}) {
  const body=useRef(null)
- useEffect(()=>{if(body.current)body.current.scrollTop=0},[tab,node?.id])
+ useEffect(()=>{if(body.current)body.current.scrollTop=0},[tab,node?.id,connection?.id])
  const descendants=node?branchIds(nodes,node.id):new Set()
  const section=(title,content)=><section className="mm-inspector-section"><h3>{title}</h3>{content}</section>
  const colorField=(label,key,value)=><label className="mm-color-field"><span>{label}</span><span className="mm-color-value"><input type="color" aria-label={label==='Contour'?'Couleur personnalisée du bloc':'Fond du bloc'} value={value} disabled={!node} onChange={e=>onPatch({[key]:e.target.value})}/><span>{value.toUpperCase()}</span></span></label>
  return <aside className="mm-inspector" aria-label="Personnaliser le bloc">
-   <header className="mm-inspector-header"><div><strong>Personnaliser</strong><span>{node?.text?.split('\n')[0]||'Aucun bloc sélectionné'}</span></div><button type="button" aria-label="Fermer le panneau de style" onClick={onClose}>×</button></header>
+   <header className="mm-inspector-header"><div><strong>Personnaliser</strong><span>{connection?'Liaison sélectionnée':node?.text?.split('\n')[0]||'Aucun bloc sélectionné'}</span></div><button type="button" aria-label="Fermer le panneau de style" onClick={onClose}>×</button></header>
    <div className="mm-inspector-tabs" role="group" aria-label="Catégorie de personnalisation">{[['style','style','Style'],['text','text','Texte'],['links','links','Liaisons']].map(([key,icon,label])=><button type="button" key={key} aria-pressed={tab===key} onClick={()=>onTab(key)}><ToolIcon name={icon}/>{label}</button>)}</div>
    <div ref={body} className="mm-inspector-body">
    {!node&&tab!=='links'?<div className="mm-inspector-empty"><ToolIcon name={tab==='text'?'text':'style'}/><p>Aucun bloc sélectionné</p></div>:<>
@@ -34,8 +35,12 @@ export default function MindmapInspector({node,nodes,tab,onTab,onClose,onPatch,o
     </>}
    </>}
    {tab==='links'&&<>
+     {section('Liaison',<label className="mm-parent-label"><select aria-label="Liaison à modifier" value={connection?.id||''} onChange={e=>{if(e.target.value)onSelectConnection(e.target.value)}}><option value="" disabled>Choisir une liaison</option>{connections.filter(link=>!node||link.from===node.id||link.to===node.id).map(link=><option key={link.id} value={link.id}>{nodes.find(item=>item.id===link.from)?.text.slice(0,24)||'Idée'} → {nodes.find(item=>item.id===link.to)?.text.slice(0,24)||'Idée'}</option>)}</select></label>)}
+     {connection&&<MindmapConnectionInspector connection={connection} nodes={nodes} mapStyle={mapStyle} onPatch={onConnectionPatch} onRemove={onConnectionRemove} onReset={onConnectionReset}/>}
+     <details className="mm-map-defaults" open={connection?undefined:true}><summary>Réglages du tableau</summary>
      {section('Tracé des liaisons',<div className="mm-segmented">{[['curve','Courbes'],['straight','Droites'],['step','Angles']].map(([lineStyle,label])=><button type="button" key={lineStyle} aria-pressed={(mapStyle.lineStyle||'curve')===lineStyle} onClick={()=>onMapPatch({lineStyle})}>{label}</button>)}</div>)}
      {section('Direction',<button type="button" className="mm-toggle-row" aria-pressed={Boolean(mapStyle.arrows)} onClick={()=>onMapPatch({arrows:!mapStyle.arrows})}><span>Afficher les flèches</span><i aria-hidden="true"/></button>)}
+     </details>
      {node&&<>{section('Branche parente',<label className="mm-parent-label"><span>Rattacher ce bloc à</span><select aria-label="Parent de la branche" value={node.parentId||''} onChange={e=>onPatch({parentId:e.target.value||null})}><option value="">Sujet indépendant</option>{nodes.filter(item=>!descendants.has(item.id)).map(item=><option key={item.id} value={item.id}>{item.text.slice(0,60)||'Idée'}</option>)}</select></label>)}<button type="button" className="mm-wide-button" onClick={onAddBranch}>＋ Ajouter une branche</button><button type="button" className="mm-primary-button" onClick={onLink}>Relier à un autre bloc</button></>}
    </>}
    </div>
