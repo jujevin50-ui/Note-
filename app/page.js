@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { colorOf } from '../lib/provider'
 import Editor from '../components/Editor'
+import Whiteboard from '../components/Whiteboard'
 import EmojiPicker from '../components/EmojiPicker'
 import ColorPicker from '../components/ColorPicker'
 import ContentViewSwitch, { useContentView } from '../components/ContentViewSwitch'
@@ -20,12 +21,12 @@ import FocusTimer, { DEFAULT_TIMER, normalizeTimer, TimerSettings } from '../com
 import { Presence } from '../components/Bits'
 import { FxRoot, TextGenerate } from '../components/Fx'
 
-const NAMES = { page: 'Nom de la page', folder: 'Nom du dossier' }
+const NAMES = { page: 'Nom de la page', folder: 'Nom du dossier', board: 'Nom du tableau blanc' }
 
 const Folder = ({ c = '#f59e0b' }) => <svg width="16" height="14" viewBox="0 0 16 14" style={{ flex: 'none' }}><path d="M1 1.5h5l1.5 1.5H15v9.5H1z" fill={c} /></svg>
 const err = ({ error }) => error && alert(error.message)
 const Doc = ({ c }) => <svg width="14" height="16" viewBox="0 0 14 16" style={{ flex: 'none' }}><path d="M1 1h8l4 4v10H1z" fill={c} /><path d="M9 1v4h4" fill="rgba(255,255,255,.45)" /></svg>
-const Ic = ({ i }) => i.icon ? <span>{i.icon}</span> : i.type === 'folder' ? <Folder c={i.color} /> : i.type === 'pdf' ? <Doc c={i.color || '#ef4444'} /> : <Doc c={i.color || '#8b5cf6'} />
+const Ic = ({ i }) => i.icon ? <span>{i.icon}</span> : i.type === 'folder' ? <Folder c={i.color} /> : i.type === 'pdf' ? <Doc c={i.color || '#ef4444'} /> : i.type === 'board' ? <span aria-hidden="true">✣</span> : <Doc c={i.color || '#8b5cf6'} />
 
 function Dlg({ d, close }) {
   const [v, setV] = useState(d.value || '')
@@ -151,7 +152,7 @@ function FolderView({ folder, sibs, openItem, openFolder, show, items, onReorder
     </div> : <div className={'tile-grid' + (view==='list' ? ' folder-list' : '')}>
       {kids.map(i => <button type="button" {...sortable(i)} className={'tile' + (i.type === 'folder' ? ' tile-folder' : '') + (videoView && i.type === 'page' ? ' video-tile' : '')} key={i.id} onClick={() => openItem(i.id)} onContextMenu={e => show(e, i)}>
         {videoView && i.type === 'page' ? <span className="video-thumbnail">{videos[i.id] ? <><img src={'https://i.ytimg.com/vi/'+videos[i.id]+'/hqdefault.jpg'} alt="" loading="lazy" onError={e=>{e.currentTarget.style.display='none'}}/><span className="video-play" aria-hidden="true">▶</span></> : <small>Ajoute un lien YouTube dans cette page</small>}</span> : <span className="tile-ico" style={{ '--c': i.color || '#8b5cf6' }}><Ic i={i} /></span>}
-        <span className="tile-body"><b>{i.title}</b><small className="muted">{i.type === 'folder' ? sibs(i.id).length + ' élément(s)' : i.type === 'pdf' ? 'PDF' : 'Page'}</small></span>
+        <span className="tile-body"><b>{i.title}</b><small className="muted">{i.type === 'folder' ? sibs(i.id).length + ' élément(s)' : i.type === 'pdf' ? 'PDF' : i.type === 'board' ? 'Tableau blanc' : 'Page'}</small></span>
         {i.type === 'folder' && <span className="tile-chev">›</span>}
       </button>)}
     </div>}
@@ -247,7 +248,7 @@ function Main({ user }) {
     const revision = ++loadRevision.current
     const { data } = await supabase.from('items').select('id,parent_id,type,title,color,closed,icon,pos,created_at,space').eq('project_id', pid).order('created_at')
     if (reordering.current || revision !== loadRevision.current) return
-    setItems((data || []).filter(x => x.type !== 'board').map(x => ({ ...x, space: x.space || 'notes' })))
+    setItems((data || []).map(x => ({ ...x, space: x.space || 'notes' })))
   }
   useEffect(() => { loadP() }, [])
   useEffect(() => { setSel(null); setSection('home'); loadI(); if (!pid) return; const ch = supabase.channel('items:' + pid).on('postgres_changes', { event: '*', schema: 'public', table: 'items', filter: 'project_id=eq.' + pid }, loadI).subscribe(); return () => supabase.removeChannel(ch) }, [pid])
@@ -262,7 +263,7 @@ function Main({ user }) {
   const invite = () => code ? setShare(code) : alert("Partage indisponible.")
   const newCode = async () => { const { data, error } = await supabase.rpc('new_code', { p_pid: pid }); if (error) { alert(error.message); return code } await loadP(); return data }
   const joinProj = () => ask('Code du projet', '', async p_code => { const { data, error } = await supabase.rpc('join_project', { p_code }); if (error) return alert(error.message); await loadP(); setPid(data) })
-  const add = (type, parent_id) => ask(NAMES[type], '', async title => { await insert({ type, title, parent_id }); if (parent_id) patch(parent_id, { closed: false }) })
+  const add = (type, parent_id) => ask(NAMES[type], '', async title => { const row = await insert({ type, title, parent_id }); if (!row) return; setItems(current => current.some(item => item.id === row.id) ? current : [...current, row]); if (parent_id) patch(parent_id, { closed: false }); if (type === 'board') setSel(row.id) })
   const addCompany = () => ask('Nom de l\'entreprise', '', async title => {
     if (!title) return
     let folder = spaceItems.find(i => !i.parent_id && i.type === 'folder' && (i.title || '').toLowerCase() === 'entreprises à suivre')
@@ -305,7 +306,7 @@ function Main({ user }) {
   const cur = items.find(i => i.id === sel && (i.space || 'notes') === space)
   const trail = i => { const a = []; let c = items.find(x => x.id === i.parent_id); while (c) { a.unshift(c); c = items.find(x => x.id === c.parent_id) }; return a }
   const sideW = open ? w : 0
-  const news = p => [['📄 Nouvelle page', () => add('page', p)], ['📁 Nouveau dossier', () => add('folder', p)], ['📎 Importer un PDF', () => pick(p)]]
+  const news = p => [['📄 Nouvelle page', () => add('page', p)], ['✣ Nouveau tableau blanc', () => add('board', p)], ['📁 Nouveau dossier', () => add('folder', p)], ['📎 Importer un PDF', () => pick(p)]]
   const m = menu && menu.i && items.find(x => x.id === menu.i.id)
   const titleOf = id => items.find(x => x.id === id)?.title
   const projName = projs.find(p => p.id === pid)?.name
@@ -334,9 +335,9 @@ function Main({ user }) {
           </button>
           <FocusTimer key={timerConfig.mode + timerConfig.seconds} config={timerConfig} />
         </div>
-        <main className={cur && (cur.type === 'page' || cur.type === 'pdf') ? 'paper' : !sel ? 'full' : ''}>
+        <main className={cur?.type === 'board' ? 'whiteboard-main' : cur && (cur.type === 'page' || cur.type === 'pdf') ? 'paper' : !sel ? 'full' : ''}>
           <div className="workspace">
-            {section === 'home' && !sel ? <HomeGreeting name={name} /> : !pid ? <div className="dash-empty"><h3>Aucun projet</h3><button type="button" className="btn-primary" onClick={() => setSettings(true)}>Paramètres</button></div> : !sel ? <WelcomeDashboard onReorder={reorder} recentDocuments={recent} recentStatus={recentStatus} refreshRecent={refreshRecent} section={section} items={spaceItems} sibs={sibs} openItem={openItem} show={show} projName={projName} space={space} addCompany={addCompany} name={name} /> : cur?.type === 'pdf' ? <PdfView key={cur.id} id={cur.id} user={user} path={pid + '/' + cur.id + '.pdf'} title={cur.title} /> : cur?.type === 'page' ? <Editor key={cur.id} id={cur.id} user={user} projectId={pid} /> : cur?.type === 'folder' ? <FolderView projectId={pid} videoView={videoFolderIds.includes(cur.id)} onReorder={reorder} folder={cur} sibs={sibs} openItem={openItem} openFolder={openFolder} show={show} items={items} /> : null}
+            {section === 'home' && !sel ? <HomeGreeting name={name} /> : !pid ? <div className="dash-empty"><h3>Aucun projet</h3><button type="button" className="btn-primary" onClick={() => setSettings(true)}>Paramètres</button></div> : !sel ? <WelcomeDashboard onReorder={reorder} recentDocuments={recent} recentStatus={recentStatus} refreshRecent={refreshRecent} section={section} items={spaceItems} sibs={sibs} openItem={openItem} show={show} projName={projName} space={space} addCompany={addCompany} name={name} /> : cur?.type === 'pdf' ? <PdfView key={cur.id} id={cur.id} user={user} path={pid + '/' + cur.id + '.pdf'} title={cur.title} /> : cur?.type === 'page' ? <Editor key={cur.id} id={cur.id} user={user} projectId={pid} /> : cur?.type === 'board' ? <Whiteboard key={cur.id} id={cur.id} projectId={pid} user={user} title={cur.title}/> : cur?.type === 'folder' ? <FolderView projectId={pid} videoView={videoFolderIds.includes(cur.id)} onReorder={reorder} folder={cur} sibs={sibs} openItem={openItem} openFolder={openFolder} show={show} items={items} /> : null}
           </div>
         </main>
       </div>
@@ -353,6 +354,7 @@ function Main({ user }) {
           <div className="ctx-item" onClick={e => { e.stopPropagation(); del(m); setMenu(null) }}><span style={{ color: '#ef4444' }}>🗑️ Supprimer</span></div>
           {m.type === 'folder' && <>
             <div className="ctx-item" onClick={e => { e.stopPropagation(); add('page', m.id); setMenu(null) }}><span>📄 Nouvelle page</span></div>
+            <div className="ctx-item" onClick={e => { e.stopPropagation(); add('board', m.id); setMenu(null) }}><span>✣ Nouveau tableau blanc</span></div>
             <div className="ctx-item" onClick={e => { e.stopPropagation(); add('folder', m.id); setMenu(null) }}><span>📁 Nouveau dossier</span></div>
             <div className="ctx-item" onClick={e => { e.stopPropagation(); pick(m.id); setMenu(null) }}><span>📎 Importer PDF</span></div>
           </>}

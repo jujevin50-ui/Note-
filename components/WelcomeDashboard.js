@@ -12,6 +12,7 @@ function Icon({ name, size = 20 }) {
     search: <><circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 4 4" /></>,
     folder: <path d="M3 8V6a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />,
     page: <><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z M14 3v6h6M8 13h8M8 17h5" /></>,
+    board: <><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 12h8M12 8v8"/></>,
     pdf: <><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z M14 3v6h6M12 12v6m-3-3 3 3 3-3" /></>,
     spark: <path d="m12 2 2.6 7.4L22 12l-7.4 2.6L12 22l-2.6-7.4L2 12l7.4-2.6Z" />,
   }
@@ -53,7 +54,7 @@ export default function WelcomeDashboard({ items, sibs, openItem, show, projName
     <span className="wd-tile-top"><span className="wd-file-icon">{item.icon || <Icon name={item.type} size={24} />}</span><span className="wd-open"><Icon name="arrow" size={18} /></span></span>
     {folder && <span className="wd-paper-stack" aria-hidden="true"><i /><i /><i /></span>}
     <strong title={item.title}>{item.title}</strong>
-    <span className="wd-tile-meta">{folder ? `${sibs(item.id).length} élément${sibs(item.id).length > 1 ? 's' : ''}` : item.type === 'pdf' ? 'Document PDF' : 'Page de notes'}<span>{!folder && date(item.created_at)}</span></span>
+    <span className="wd-tile-meta">{folder ? `${sibs(item.id).length} élément${sibs(item.id).length > 1 ? 's' : ''}` : item.type === 'pdf' ? 'Document PDF' : item.type === 'board' ? 'Tableau blanc' : 'Page de notes'}<span>{!folder && date(item.created_at)}</span></span>
   </button>
 
   return <div className="wd">
@@ -72,8 +73,8 @@ export default function WelcomeDashboard({ items, sibs, openItem, show, projName
     <section className="wd-library" aria-label="Bibliothèque"><div className="wd-library-head"><h2 className="wd-library-title">Bibliothèque</h2><button type="button" className="wd-new" onClick={create} aria-label="Créer un contenu"><Icon name="plus" size={18} /><span>Nouveau</span></button></div>
       <div className="wd-reveal">
         <div className="wd-tools"><label className="wd-search"><Icon name="search" size={18} /><input aria-label="Rechercher dans la bibliothèque" placeholder="Rechercher un dossier, une page, un PDF…" value={query} onChange={e => setQuery(e.target.value)} />{query && <button type="button" onClick={() => setQuery('')} aria-label="Effacer la recherche">×</button>}</label><ContentViewSwitch value={view} onChange={setView}/><select aria-label="Trier les contenus" value={sort} onChange={e => setSort(e.target.value)}><option value="manual">Ordre manuel</option><option value="recent">Plus récents</option><option value="name">Nom A → Z</option></select></div>
-        {(!rootsOnly || needle) && <div className={"wd-filters" + (['pages', 'pdf'].includes(section) ? " wd-filters-hidden" : "")} aria-label="Type de contenu">{[['all', 'Tout'], ['page', 'Pages'], ['folder', 'Dossiers'], ['pdf', 'PDF']].map(([value, label]) => <button type="button" key={value} aria-pressed={filter === value} className={filter === value ? 'selected' : ''} onClick={() => setFilter(value)}>{label}<span>{value === 'all' ? matches.length : matches.filter(i => i.type === value).length}</span></button>)}</div>}
-        <div className="wd-section-title"><h2>{needle ? 'Résultats de recherche' : rootsOnly ? 'Vos dossiers' : filter === 'all' ? 'Tous les contenus' : { page: 'Vos pages', folder: 'Vos dossiers', pdf: 'Vos PDF' }[filter]}</h2><span role="status">{visible.length} {needle || !rootsOnly ? 'résultat' : 'dossier'}{visible.length > 1 ? 's' : ''}</span></div>
+        {(!rootsOnly || needle) && <div className={"wd-filters" + (['pages', 'pdf'].includes(section) ? " wd-filters-hidden" : "")} aria-label="Type de contenu">{[['all', 'Tout'], ['page', 'Pages'], ['folder', 'Dossiers'], ['pdf', 'PDF'], ['board', 'Tableaux blancs']].map(([value, label]) => <button type="button" key={value} aria-pressed={filter === value} className={filter === value ? 'selected' : ''} onClick={() => setFilter(value)}>{label}<span>{value === 'all' ? matches.length : matches.filter(i => i.type === value).length}</span></button>)}</div>}
+        <div className="wd-section-title"><h2>{needle ? 'Résultats de recherche' : rootsOnly ? 'Vos dossiers' : filter === 'all' ? 'Tous les contenus' : { page: 'Vos pages', folder: 'Vos dossiers', pdf: 'Vos PDF', board: 'Vos tableaux blancs' }[filter]}</h2><span role="status">{visible.length} {needle || !rootsOnly ? 'résultat' : 'dossier'}{visible.length > 1 ? 's' : ''}</span></div>
         {visible.length ? <div className={'wd-grid' + (view==='list' ? ' wd-list' : '')} key={`${filter}-${sort}-${needle}`}>{visible.map((item, index) => tile(item, index, item.type === 'folder'))}</div> : <div className="wd-empty"><span className="wd-empty-icon"><Icon name={needle ? 'search' : 'spark'} size={28} /></span><h3>{needle ? 'Aucun résultat' : rootsOnly ? 'Aucun dossier principal' : 'Aucun contenu'}</h3><button type="button" className="wd-create" onClick={needle ? () => { setQuery(''); setFilter(section === 'pages' ? 'page' : section === 'pdf' ? 'pdf' : 'all') } : create}>{needle ? 'Réinitialiser la recherche' : 'Nouveau contenu'}<Icon name={needle ? 'arrow' : 'plus'} size={17} /></button></div>}
       </div>
     </section>
