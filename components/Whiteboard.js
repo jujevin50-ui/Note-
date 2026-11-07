@@ -263,7 +263,7 @@ export function MindMapCanvas({doc,projectId,title='Tableau blanc',status='saved
         <ConnectorHandles geometry={link.geometry} scale={view.k} onStart={startSegment} onNudge={nudgeSegment}/>
         {['from','to'].map(endpoint=>{
           const point=link.geometry[endpoint==='from'?'start':'end']
-          return <circle key={endpoint} className="mindmap-anchor" cx={point.x} cy={point.y} r={7/view.k} strokeWidth={2/view.k} tabIndex={0} role="slider" aria-label={endpoint==='from'?"Point d’accroche de départ":"Point d’accroche d’arrivée"} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round((link[endpoint+'Offset']??.5)*100)} onPointerDown={event=>startAnchor(event,link,endpoint)} onKeyDown={event=>{
+          return <circle key={endpoint} className="mindmap-anchor" cx={point.x} cy={point.y} r={6/view.k} strokeWidth={1/view.k} tabIndex={0} role="slider" aria-label={endpoint==='from'?"Point d’accroche de départ":"Point d’accroche d’arrivée"} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round((link[endpoint+'Offset']??.5)*100)} onPointerDown={event=>startAnchor(event,link,endpoint)} onKeyDown={event=>{
             if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key)){
               event.preventDefault();event.stopPropagation()
               if(link[endpoint])patchLink({[endpoint+'Offset']:Math.max(0,Math.min(1,(link[endpoint+'Offset']??.5)+(['ArrowLeft','ArrowUp'].includes(event.key)?-.05:.05)))})
