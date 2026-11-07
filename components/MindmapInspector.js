@@ -10,7 +10,7 @@ function ToolIcon({name}) {
  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]||paths.style}</svg>
 }
 const SHAPES=[['card','Rectangle'],['pill','Arrondie'],['ellipse','Ellipse'],['note','Note']]
-export default function MindmapInspector({connection,connections=[],onSelectConnection,onConnectionPatch,onConnectionRemove,onConnectionReset,onEndpointPatch,node,nodes,tab,onTab,onClose,onPatch,onSize,onFitText,mapStyle,onMapPatch,onTextAlign,textAlign,onEditText,editing,onLink}) {
+export default function MindmapInspector({connection,connections=[],onSelectConnection,onConnectionPatch,onConnectionRemove,onConnectionReset,onEndpointPatch,onConnectionTransform,node,nodes,tab,onTab,onClose,onPatch,onSize,onFitText,mapStyle,onMapPatch,onTextAlign,textAlign,onEditText,editing,onLink}) {
  const body=useRef(null)
  useEffect(()=>{if(body.current)body.current.scrollTop=0},[tab,node?.id,connection?.id])
  const section=(title,content)=><section className="mm-inspector-section"><h3>{title}</h3>{content}</section>
@@ -35,7 +35,7 @@ export default function MindmapInspector({connection,connections=[],onSelectConn
    </>}
    {tab==='links'&&<>
      {section('Liaison',<label className="mm-parent-label"><select aria-label="Liaison à modifier" value={connection?.id||''} onChange={e=>{if(e.target.value)onSelectConnection(e.target.value)}}><option value="" disabled>Choisir une liaison</option>{connections.filter(link=>!node||link.from===node.id||link.to===node.id).map(link=><option key={link.id} value={link.id}>{nodes.find(item=>item.id===link.from)?.text.slice(0,24)||(link.from?'Forme':'Libre')} → {nodes.find(item=>item.id===link.to)?.text.slice(0,24)||(link.to?'Forme':'Libre')}</option>)}</select></label>)}
-     {connection&&<MindmapConnectionInspector connection={connection} nodes={nodes} mapStyle={mapStyle} onPatch={onConnectionPatch} onRemove={onConnectionRemove} onReset={onConnectionReset} onEndpointPatch={onEndpointPatch}/>}
+     {connection&&<MindmapConnectionInspector connection={connection} nodes={nodes} mapStyle={mapStyle} onPatch={onConnectionPatch} onRemove={onConnectionRemove} onReset={onConnectionReset} onEndpointPatch={onEndpointPatch} onTransform={onConnectionTransform}/>}
      <details className="mm-map-defaults" open={connection?undefined:true}><summary>Réglages du tableau</summary>
      {section('Tracé des liaisons',<div className="mm-segmented">{[['curve','Courbes'],['straight','Droites'],['step','Angles']].map(([lineStyle,label])=><button type="button" key={lineStyle} aria-pressed={(mapStyle.lineStyle||'curve')===lineStyle} onClick={()=>onMapPatch({lineStyle})}>{label}</button>)}</div>)}
      {section('Direction',<button type="button" className="mm-toggle-row" aria-pressed={Boolean(mapStyle.arrows)} onClick={()=>onMapPatch({arrows:!mapStyle.arrows})}><span>Afficher les flèches</span><i aria-hidden="true"/></button>)}
