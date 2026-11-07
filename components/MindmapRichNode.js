@@ -11,7 +11,7 @@ export default function MindmapRichNode({fragment,navigation=false,editing,onAct
   addProseMirrorPlugins(){return [ySyncPlugin(fragment)]},
   addKeyboardShortcuts(){return {'Mod-z':()=>{if(!this.editor.isEditable)return false;undoManager.current?.undo();return true},'Mod-Shift-z':()=>{if(!this.editor.isEditable)return false;undoManager.current?.redo();return true},'Mod-y':()=>{if(!this.editor.isEditable)return false;undoManager.current?.redo();return true}}},
  })]),[fragment])
- const editor=useEditor({immediatelyRender:false,extensions,editable:editing,editorProps:{attributes:{'aria-label':'Texte du sujet'}}},[fragment])
+ const editor=useEditor({immediatelyRender:false,extensions,editable:editing,editorProps:{attributes:{'aria-label':'Texte de la forme'}}},[fragment])
  useEffect(()=>{if(!editor)return;onReady?.(editor);return()=>onReady?.(null)},[editor])
  useEffect(()=>{
   if(!editor||editor.isDestroyed)return

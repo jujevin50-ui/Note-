@@ -55,3 +55,4 @@
 @media(max-width:600px){.mindmap-heading{padding:5px 8px}.mindmap-heading>div{display:grid;gap:0}.mindmap-heading h1{font-size:13px}.mindmap-heading .mindmap-save-status{font-size:9px}.mindmap-toolbar{padding:4px 7px}}
 
 .mindmap-heading h1{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mindmap-heading>div{overflow:hidden}.mindmap-heading button,.mindmap-heading .mindmap-save-status{flex-shrink:0}
+.whiteboard-guides{position:absolute;inset:0;z-index:2;pointer-events:none;overflow:visible}.whiteboard-guides line{stroke:#c17deb;stroke-dasharray:4 3}.mm-anchor-side{margin-top:10px}
