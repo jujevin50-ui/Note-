@@ -17,6 +17,7 @@ import useProjectPresence from '../components/useProjectPresence'
 import useRecentDocuments from '../components/useRecentDocuments'
 import useManualSort from '../components/useManualSort'
 import { dropItems, compareItems } from '../lib/manual-order'
+import ItemPresence, { ItemPresenceProvider } from '../components/ItemPresence'
 import { DEFAULT_TIMER, normalizeTimer, TimerSettings } from '../components/FocusTimer'
 import { Presence } from '../components/Bits'
 import { FxRoot, TextGenerate } from '../components/Fx'
@@ -153,7 +154,7 @@ function FolderView({ folder, sibs, openItem, openFolder, show, items, onReorder
       {kids.map(i => <button type="button" {...sortable(i)} className={'tile' + (i.type === 'folder' ? ' tile-folder' : '') + (videoView && i.type === 'page' ? ' video-tile' : '')} key={i.id} onClick={() => openItem(i.id)} onContextMenu={e => show(e, i)}>
         {videoView && i.type === 'page' ? <span className="video-thumbnail">{videos[i.id] ? <><img src={'https://i.ytimg.com/vi/'+videos[i.id]+'/hqdefault.jpg'} alt="" loading="lazy" onError={e=>{e.currentTarget.style.display='none'}}/><span className="video-play" aria-hidden="true">▶</span></> : <small>Ajoute un lien YouTube dans cette page</small>}</span> : <span className="tile-ico" style={{ '--c': i.color || '#8b5cf6' }}><Ic i={i} /></span>}
         <span className="tile-body"><b>{i.title}</b><small className="muted">{i.type === 'folder' ? sibs(i.id).length + ' élément(s)' : i.type === 'pdf' ? 'PDF' : i.type === 'board' ? 'Tableau blanc' : 'Page'}</small></span>
-        {i.type === 'folder' && <span className="tile-chev">›</span>}
+        <ItemPresence itemId={i.id}/>{i.type === 'folder' && <span className="tile-chev">›</span>}
       </button>)}
     </div>}
   </div>
@@ -311,7 +312,7 @@ function Main({ user }) {
   const titleOf = id => items.find(x => x.id === id)?.title
   const projName = projs.find(p => p.id === pid)?.name
   return (
-    <div className="app" style={{ gridTemplateColumns: open ? sideW + 'px 1fr' : '1fr' }}
+    <ItemPresenceProvider members={online} me={user.id}><div className="app" style={{ gridTemplateColumns: open ? sideW + 'px 1fr' : '1fr' }}
       onDragOver={e => { if (pid && [...e.dataTransfer.types].includes('Files')) e.preventDefault() }}
       onDrop={e => { const f = [...e.dataTransfer.files].find(x => x.type === 'application/pdf'); if (f && pid) { e.preventDefault(); readPdf(f, null) } }}>
       {open && <aside className="side-cols">
@@ -365,6 +366,6 @@ function Main({ user }) {
       {share && <ShareDlg code={share} pid={pid} onNew={newCode} close={() => setShare(null)} />}
       {settings && <Settings items={items} videoFolderIds={videoFolderIds} onVideoFoldersChange={changeVideoFolders} timerConfig={timerConfig} onTimerChange={changeTimer} user={user} projects={projs} projectId={pid} onProjectChange={setPid} onCreateProject={newProj} onJoinProject={joinProj} onShareProject={invite} close={() => setSettings(false)} />}
       <input type="file" accept=".pdf" ref={fi} onChange={onPdf} style={{ display: 'none' }} />
-    </div>
+    </div></ItemPresenceProvider>
   )
 }

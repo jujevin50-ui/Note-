@@ -1,4 +1,5 @@
 'use client'
+import ItemPresence from './ItemPresence'
 import { useEffect, useState } from 'react'
 import './sidebar-navigation.css'
 import useManualSort from './useManualSort'
@@ -35,7 +36,7 @@ export default function SidebarNavigation({ active, onChange, onCreate, items = 
     <div className="sn-rail" aria-label="Dossiers principaux">
       <button type="button" {...sortable({id:null,type:'folder'}, {destinationOnly:true})} className={'sn-bubble sn-home' + (!folder && active === 'home' ? ' is-active' : '')} aria-label="Accueil" aria-current={!folder && active === 'home' ? 'page' : undefined} onClick={goHome}><span className="sn-bubble-symbol"><Symbol name="home" /></span><span className="sn-bubble-label">Accueil</span></button>
       <span className="sn-rail-divider" />
-      {roots.map((item, index) => <button type="button" key={item.id} {...sortable(item)} data-folder-name={item.title} aria-describedby={folderHint.descriptionId} className={'sn-bubble' + (root?.id === item.id ? ' is-active' : '')} style={{ '--bubble-color': item.color || ['#a596e8','#78b8a3','#dd9cae','#8aaedf'][index % 4] }} aria-label={item.title} aria-current={root?.id === item.id ? 'page' : undefined} onClick={() => enter(item)} onContextMenu={e => onOptions?.(e,item)}><span className="sn-bubble-symbol"><Symbol item={item} /></span><span className="sn-bubble-label">{item.title}</span></button>)}
+      {roots.map((item, index) => <button type="button" key={item.id} {...sortable(item)} data-folder-name={item.title} aria-describedby={folderHint.descriptionId} className={'sn-bubble' + (root?.id === item.id ? ' is-active' : '')} style={{ '--bubble-color': item.color || ['#a596e8','#78b8a3','#dd9cae','#8aaedf'][index % 4] }} aria-label={item.title} aria-current={root?.id === item.id ? 'page' : undefined} onClick={() => enter(item)} onContextMenu={e => onOptions?.(e,item)}><span className="sn-bubble-symbol"><Symbol item={item} /></span><span className="sn-bubble-label">{item.title}</span><ItemPresence itemId={item.id} compact/></button>)}
       <button type="button" className="sn-bubble sn-add" aria-label="Nouveau contenu" onClick={onCreate}><span className="sn-bubble-symbol">＋</span><span className="sn-bubble-label">Nouveau</span></button>
     </div>
     <div className="sn-panel">
@@ -44,7 +45,7 @@ export default function SidebarNavigation({ active, onChange, onCreate, items = 
         <button type="button" className={'sn-item' + (active === 'home' ? ' is-active' : '')} aria-current={active === 'home' ? 'page' : undefined} onClick={goHome}><Symbol name="home" /><span>Accueil</span></button>
         {[['notes','Notes','page'],['invest','Invest','invest']].map(([id,label,icon]) => <button type="button" key={id} className={'sn-item' + (active && active !== 'home' && space === id ? ' is-active' : '')} aria-current={active && active !== 'home' && space === id ? 'page' : undefined} onClick={() => { setFolderId(null); onSpaceChange(id) }}><Symbol name={icon} /><span>{label}</span></button>)}
       </div>}
-      <div className="sn-contents">{children.filter(i => folder || i.type !== 'folder').map(item => <div className="sn-content-row" key={item.id}><button type="button" {...sortable(item)} className={'sn-item' + (activeItem === item.id ? ' is-active' : '')} aria-current={activeItem === item.id ? 'page' : undefined} onClick={() => enter(item)} onContextMenu={e => onOptions?.(e,item)}><Symbol item={item} /><span>{item.title}</span>{item.type === 'folder' && <span className="sn-chevron" aria-hidden="true">›</span>}</button><button type="button" className="sn-content-options" aria-label={`Options de ${item.title}`} onClick={e => onOptions?.(e,item)}>•••</button></div>)}{folder && !children.length && <span className="sn-empty">Vide</span>}</div>
+      <div className="sn-contents">{children.filter(i => folder || i.type !== 'folder').map(item => <div className="sn-content-row" key={item.id}><button type="button" {...sortable(item)} className={'sn-item' + (activeItem === item.id ? ' is-active' : '')} aria-current={activeItem === item.id ? 'page' : undefined} onClick={() => enter(item)} onContextMenu={e => onOptions?.(e,item)}><Symbol item={item} /><span>{item.title}</span><ItemPresence itemId={item.id}/>{item.type === 'folder' && <span className="sn-chevron" aria-hidden="true">›</span>}</button><button type="button" className="sn-content-options" aria-label={`Options de ${item.title}`} onClick={e => onOptions?.(e,item)}>•••</button></div>)}{folder && !children.length && <span className="sn-empty">Vide</span>}</div>
     </div>
   </nav>{folderHint.tooltip}</>
 }
