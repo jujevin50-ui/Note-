@@ -30,3 +30,5 @@
 .mm-map-defaults>summary{font-size:12px;font-weight:600;color:#796687;cursor:pointer}
 .mm-map-defaults .mm-inspector-section:last-child{border-bottom:0;padding-bottom:4px}
 .mindmap .mm-inspector .mm-danger-button{color:#b65165;background:#fff9fa;border-color:#f0dce2}
+
+.mindmap .mm-route-types button{flex-direction:column;gap:5px;min-height:66px;padding:8px 4px;white-space:normal;line-height:1.25;text-align:center}.mm-route-types svg{flex-shrink:0}.mm-route-types span{max-width:100%}

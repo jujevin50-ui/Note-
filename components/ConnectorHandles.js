@@ -1,10 +1,10 @@
 'use client'
 import { lineEditHandles } from '../lib/line-editing'
 const labels={'from-leg':'Déplacer le segment de départ','first-bend':'Déplacer le premier coude',middle:'Déplacer le segment central','last-bend':'Déplacer le dernier coude','to-leg':'Déplacer le segment d’arrivée'}
-export default function ConnectorHandles({geometry,scale,onStart,onNudge}) {
+export default function ConnectorHandles({geometry,scale,onStart,onNudge,onOpenSettings}) {
  return lineEditHandles(geometry,scale).map(handle=>{
   const angle=handle.angle??(handle.axis==='x'?90:0),label=labels[handle.id]||(handle.kind==='bow'?'Glisser pour courber le trait':'Glisser le segment '+(handle.index+1))
-  return <g key={handle.id} className="connector-segment connector-slider" transform={`translate(${handle.x} ${handle.y}) rotate(${angle})`} role="slider" tabIndex={0} aria-label={label} aria-orientation={handle.axis==='x'||handle.normal&&Math.abs(handle.normal.x)>Math.abs(handle.normal.y)?'horizontal':'vertical'} aria-valuemin={-5000} aria-valuemax={5000} aria-valuenow={Math.round(handle.value??0)} onPointerDown={event=>onStart(event,handle)} onDoubleClick={event=>event.stopPropagation()} onKeyDown={event=>{
+  return <g key={handle.id} className="connector-segment connector-slider" transform={`translate(${handle.x} ${handle.y}) rotate(${angle})`} role="slider" tabIndex={0} aria-label={label} aria-orientation={handle.axis==='x'||handle.normal&&Math.abs(handle.normal.x)>Math.abs(handle.normal.y)?'horizontal':'vertical'} aria-valuemin={-5000} aria-valuemax={5000} aria-valuenow={Math.round(handle.value??0)} onPointerDown={event=>onStart(event,handle)} onDoubleClick={event=>{event.stopPropagation();onOpenSettings?.()}} onKeyDown={event=>{
    const keys=handle.axis==='normal'?['ArrowLeft','ArrowRight','ArrowUp','ArrowDown']:handle.axis==='x'?['ArrowLeft','ArrowRight']:['ArrowUp','ArrowDown']
    if(keys.includes(event.key)){event.preventDefault();event.stopPropagation();onNudge(handle,(event.key==='ArrowLeft'||event.key==='ArrowUp'?-1:1)*(event.shiftKey?20:5),['ArrowLeft','ArrowRight'].includes(event.key)?'x':'y')}
   }}>
