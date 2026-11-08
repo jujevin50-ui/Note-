@@ -16,6 +16,7 @@ import { arrowDimensions, transformArrow, translateArrow, commitArrowTransform }
 import { resolveArrowGeometries, nearestArrowJunction } from '../lib/arrow-junctions'
 import { deformLine } from '../lib/line-editing'
 import { connectorSegmentPatch } from '../lib/rounded-connector'
+import { arrowInsertion } from '../lib/arrow-insertion'
 import { snapMapNode } from '../lib/whiteboard-alignment'
 import './whiteboard.css'
 
@@ -40,6 +41,8 @@ export function MindMapCanvas({doc,projectId,title='Tableau blanc',status='saved
   const canvas=useRef(null),gesture=useRef(null),undo=useRef(null),initialFit=useRef(false),editors=useRef(new Map())
   const [,refreshTextSelection]=useState(0)
   useEffect(()=>{if(!activeEditor)return;const refresh=()=>refreshTextSelection(value=>value+1);activeEditor.on('selectionUpdate',refresh);return()=>activeEditor.off('selectionUpdate',refresh)},[activeEditor])
+  const currentView=useRef(view)
+  currentView.current=view
   const markerPrefix=useId().replace(/:/g,'')
   const resolvedLinks=useMemo(()=>resolveArrowGeometries(connections,nodes,mapStyle),[connections,nodes,mapStyle])
   const active=nodes.find(node=>node.id===selected),activeLink=resolvedLinks.find(link=>link.id===selectedLink)
@@ -129,8 +132,8 @@ export function MindMapCanvas({doc,projectId,title='Tableau blanc',status='saved
     undo.current?.stopCapturing();setSelectedLink(null)
   }
   const resetLink=()=>{if(!activeLink)return;undo.current?.stopCapturing();clearConnectionStyle(doc,linkStyles,activeLink.id);undo.current?.stopCapturing()}
-  const segmentPatch=(link,geometry,handle,dx,dy)=>{
-    if(handle.kind)return deformLine(geometry,handle,dx,dy)
+  const segmentPatch=(link,geometry,handle,dx,dy,disableSnap=false)=>{
+    if(handle.kind)return deformLine(geometry,handle,dx,dy,view.k,disableSnap)
     const patch=connectorSegmentPatch(geometry,handle,dx,dy)
     if(!handle.endpoint)return patch
     const endpoint=handle.endpoint,node=nodes.find(item=>item.id===link[endpoint]),point=patch.point
@@ -139,19 +142,19 @@ export function MindMapCanvas({doc,projectId,title='Tableau blanc',status='saved
   }
   const commitSegment=(link,handle,patch)=>{
     if(!link||navigation)return
-    if(handle.endpoint)moveConnectionEndpoint(doc,store,links,linkStyles,link,handle.endpoint,patch)
+    if(handle.endpoint&&!handle.kind)moveConnectionEndpoint(doc,store,links,linkStyles,link,handle.endpoint,patch)
     else updateConnection(doc,linkStyles,link.id,patch)
   }
   const startSegment=(event,handle)=>{
     if(navigation||!activeLink||event.button!==0)return
-    event.preventDefault();event.stopPropagation();event.currentTarget.setPointerCapture(event.pointerId)
+    event.preventDefault();event.stopPropagation();canvas.current?.setPointerCapture(event.pointerId)
     const geometry=geometryFor(activeLink)
     undo.current?.stopCapturing();gesture.current={type:'connector-segment',pointer:event.pointerId,id:activeLink.id,link:activeLink,geometry,handle,startX:event.clientX,startY:event.clientY}
   }
   const nudgeSegment=(handle,amount,axis=handle.axis)=>{
     if(!activeLink||navigation)return
     const geometry=geometryFor(activeLink)
-    undo.current?.stopCapturing();commitSegment(activeLink,handle,segmentPatch(activeLink,geometry,handle,axis==='x'?amount:0,axis==='y'?amount:0));undo.current?.stopCapturing()
+    undo.current?.stopCapturing();commitSegment(activeLink,handle,segmentPatch(activeLink,geometry,handle,axis==='x'?amount:0,axis==='y'?amount:0,true));undo.current?.stopCapturing()
   }
   const startAnchor=(event,link,endpoint)=>{
     if(navigation)return
@@ -167,11 +170,19 @@ export function MindMapCanvas({doc,projectId,title='Tableau blanc',status='saved
     return {[current.endpoint]:target?.id||null,[current.endpoint+'Point']:target?null:arrow?.point||point,[current.endpoint+'Arrow']:arrow?{id:arrow.id,position:arrow.position}:null,...(anchor?{[current.endpoint+'Side']:anchor.side,[current.endpoint+'Offset']:anchor.offset}:{})}
   }
   const patchEndpoint=(endpoint,patch)=>{if(!activeLink||navigation)return;undo.current?.stopCapturing();moveConnectionEndpoint(doc,store,links,linkStyles,activeLink,endpoint,patch);undo.current?.stopCapturing()}
-  const addArrow=()=>{
+  const addArrow=event=>{
     if(navigation)return
-    finishEdit();const rect=canvas.current.getBoundingClientRect(),center={x:(rect.width/2-view.x)/view.k,y:(rect.height/2-view.y)/view.k},id=crypto.randomUUID()
-    undo.current?.stopCapturing();doc.transact(()=>{links.set(id,{from:null,to:null,fromPoint:{x:center.x-100,y:center.y},toPoint:{x:center.x+100,y:center.y}});updateConnection(doc,linkStyles,id,{lineStyle:'rounded',arrowEnd:true,dash:'solid',stroke:'#aab7c0',width:3.5})},LOCAL_MAP_CHANGE);undo.current?.stopCapturing()
-    setSelected(null);setSelectedLink(id);setLinking(false);setProperties(false);setInspectorTab('links')
+    const button=event.currentTarget.getBoundingClientRect(),layoutChanges=Boolean(editing||properties)
+    finishEdit();setProperties(false)
+    const insert=()=>{
+      const surface=canvas.current;if(!surface?.isConnected)return
+      const placement=arrowInsertion(surface.getBoundingClientRect(),button,currentView.current),id=crypto.randomUUID()
+      initialFit.current=true
+      undo.current?.stopCapturing();doc.transact(()=>{links.set(id,{from:null,to:null,fromPoint:placement.fromPoint,toPoint:placement.toPoint});updateConnection(doc,linkStyles,id,placement.styles)},LOCAL_MAP_CHANGE);undo.current?.stopCapturing()
+      setSelected(null);setSelectedLink(id);setLinking(false);setInspectorTab('links')
+    }
+    // Wait for editor/inspector resizing before positioning against the visible button.
+    if(layoutChanges)requestAnimationFrame(()=>requestAnimationFrame(insert));else insert()
   }
   const toggleNavigation=()=>{finishEdit();setNavigation(value=>!value);setSelected(null);setSelectedLink(null);setLinking(false);setProperties(false);setPreview(null);setLinkPreview(null);setGuides([]);setSpacing([]);gesture.current=null}
   const configure=patch=>doc.transact(()=>Object.entries(patch).forEach(([key,value])=>settings.set(key,value)),LOCAL_MAP_CHANGE)
@@ -219,21 +230,21 @@ export function MindMapCanvas({doc,projectId,title='Tableau blanc',status='saved
     const current=gesture.current
     if(!current||current.pointer!==event.pointerId)return
     const dx=event.clientX-current.startX,dy=event.clientY-current.startY
-    if(current.type==='connector-segment'){setLinkPreview({id:current.id,...segmentPatch(current.link,current.geometry,current.handle,dx/view.k,dy/view.k)});return}
+    if(current.type==='connector-segment'){setLinkPreview({id:current.id,...segmentPatch(current.link,current.geometry,current.handle,dx/view.k,dy/view.k,event.altKey)});return}
     if(current.type.startsWith('arrow-')){const points=arrowTransformAt(event,current);setLinkPreview({id:current.id,from:null,to:null,fromArrow:null,toArrow:null,fromPoint:points.start,toPoint:points.end});return}
     if(current.type==='anchor'){const patch=anchorPatch(event,current);if(patch)setLinkPreview({id:current.id,...patch});return}
     if(current.type==='pan')setView({...view,x:current.x+dx,y:current.y+dy})
-    else if(current.type==='resize')setPreview({id:current.id,...resizeMapNode(current.node,current.handle,dx/view.k,dy/view.k)})
+    else if(current.type==='resize')setPreview({id:current.id,...resizeMapNode(current.node,current.handle,dx/view.k,dy/view.k,event.altKey)})
     else {const node=nodes.find(item=>item.id===current.id);if(node){const snapped=snapMapNode(node,{x:current.x+dx/view.k,y:current.y+dy/view.k},nodes,view.k,event.altKey);setPreview({id:current.id,x:snapped.x,y:snapped.y});setGuides(snapped.guides);setSpacing(snapped.spacing)}}
   }
   const end=event=>{
     const current=gesture.current
     if(!current||current.pointer!==event.pointerId)return
-    if(current.type==='connector-segment'){if(Math.hypot(event.clientX-current.startX,event.clientY-current.startY)>2&&connections.some(link=>link.id===current.id))commitSegment(current.link,current.handle,segmentPatch(current.link,current.geometry,current.handle,(event.clientX-current.startX)/view.k,(event.clientY-current.startY)/view.k));undo.current?.stopCapturing();setLinkPreview(null)}
+    if(current.type==='connector-segment'){if(Math.hypot(event.clientX-current.startX,event.clientY-current.startY)>2&&connections.some(link=>link.id===current.id))commitSegment(current.link,current.handle,segmentPatch(current.link,current.geometry,current.handle,(event.clientX-current.startX)/view.k,(event.clientY-current.startY)/view.k,event.altKey));undo.current?.stopCapturing();setLinkPreview(null)}
     if(current.type.startsWith('arrow-')){if(Math.hypot(event.clientX-current.startX,event.clientY-current.startY)>2&&connections.some(link=>link.id===current.id))commitArrowTransform(doc,store,links,linkStyles,current.link,current.geometry,arrowTransformAt(event,current));undo.current?.stopCapturing();setLinkPreview(null)}
     if(current.type==='anchor'){const patch=anchorPatch(event,current);if(patch)moveConnectionEndpoint(doc,store,links,linkStyles,connections.find(link=>link.id===current.id),current.endpoint,patch);undo.current?.stopCapturing();setLinkPreview(null)}
     if(current.type==='node'&&Math.hypot(event.clientX-current.startX,event.clientY-current.startY)>2){const node=nodes.find(item=>item.id===current.id);if(node){const snapped=snapMapNode(node,{x:current.x+(event.clientX-current.startX)/view.k,y:current.y+(event.clientY-current.startY)/view.k},nodes,view.k,event.altKey);undo.current?.stopCapturing();updateMapNode(doc,store,current.id,{x:snapped.x,y:snapped.y});undo.current?.stopCapturing()}}
-    if(current.type==='resize'){undo.current?.stopCapturing();updateMapNode(doc,store,current.id,resizeMapNode(current.node,current.handle,(event.clientX-current.startX)/view.k,(event.clientY-current.startY)/view.k));undo.current?.stopCapturing()}
+    if(current.type==='resize'){undo.current?.stopCapturing();updateMapNode(doc,store,current.id,resizeMapNode(current.node,current.handle,(event.clientX-current.startX)/view.k,(event.clientY-current.startY)/view.k,event.altKey));undo.current?.stopCapturing()}
     gesture.current=null;setPreview(null);setGuides([]);setSpacing([])
   }
   const keyboard=event=>{
