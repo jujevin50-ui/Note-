@@ -60,4 +60,7 @@
 .connector-segment{pointer-events:all;touch-action:none;outline:none}.connector-segment.horizontal{cursor:ns-resize}.connector-segment.vertical{cursor:ew-resize}.connector-handle-hit{fill:transparent;stroke:none}.connector-handle-pill{fill:#fff;stroke:#a9b6c0;filter:drop-shadow(0 1px 1px #75818a1a);pointer-events:none}.connector-segment:hover .connector-handle-pill,.connector-segment:focus-visible .connector-handle-pill{stroke:#8d9ca7;fill:#fff}.mindmap-anchor{stroke:#a9b6c0}
 
 .mindmap-anchor:hover,.mindmap-anchor:focus-visible{fill:#fff;stroke:#8d9ca7}
-.connector-segment.direct-point{cursor:move}.connector-line-point{fill:#fff;stroke:#8598a7;filter:drop-shadow(0 1px 1px #75818a1a);pointer-events:none}.connector-line-point.insert-point{fill:#f9fbfc;stroke:#a7b7c4}.connector-segment:hover .connector-line-point,.connector-segment:focus-visible .connector-line-point{fill:#e7f1fc;stroke:#638bb6}.mm-route-types{flex-wrap:wrap}.mm-route-types>button{flex-basis:28%!important}
+.mm-route-types{flex-wrap:wrap}.mm-route-types>button{flex-basis:28%!important}
+
+.connector-slider{cursor:grab}.connector-slider:active{cursor:grabbing}.connector-slider-grip{stroke:#a6b5c0;stroke-linecap:round;pointer-events:none}.connector-slider:hover .connector-handle-pill,.connector-slider:focus-visible .connector-handle-pill{fill:#eef4fa;stroke:#819bae}
+.arrow-junction-layer{position:absolute;inset:0;z-index:2;pointer-events:none;overflow:visible}.arrow-junction-halo{fill:#e0f1f5aa;stroke:#6d9bad;stroke-dasharray:3 2}.arrow-junction-pin{fill:#fff;stroke:#6d9bad}

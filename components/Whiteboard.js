@@ -10,9 +10,10 @@ import TableTools from './TableTools'
 import { supabase } from '../lib/supabase'
 import { openWhiteboardSession } from '../lib/whiteboard-session'
 import { LOCAL_MAP_CHANGE, MAP_COLORS, nodeHeight, nodeSize, resizeMapNode, ensureRichText, duplicateMapNode, mapNodes, insertMapNode, updateMapNode, removeMapNode, mapConnections, fitMap } from '../lib/mindmap'
-import { connectionStyle, connectionGeometry, nearestConnectionAnchor, updateConnection, clearConnectionStyle, moveConnectionEndpoint } from '../lib/mindmap-connections'
+import { connectionStyle, nearestConnectionAnchor, updateConnection, clearConnectionStyle, moveConnectionEndpoint } from '../lib/mindmap-connections'
 import { arrowDimensions, transformArrow, translateArrow, commitArrowTransform } from '../lib/arrow-transform'
-import { deformLine, insertLinePoint, removeLinePoint } from '../lib/line-editing'
+import { resolveArrowGeometries, nearestArrowJunction } from '../lib/arrow-junctions'
+import { deformLine } from '../lib/line-editing'
 import { connectorSegmentPatch } from '../lib/rounded-connector'
 import { snapMapNode } from '../lib/whiteboard-alignment'
 import './whiteboard.css'
@@ -36,13 +37,15 @@ export function MindMapCanvas({doc,projectId,title='Tableau blanc',status='saved
   const [properties,setProperties]=useState(false),[mapStyle,setMapStyle]=useState(()=>settings.toJSON())
   const [history,setHistory]=useState({undo:false,redo:false})
   const canvas=useRef(null),gesture=useRef(null),undo=useRef(null),initialFit=useRef(false),editors=useRef(new Map())
+  const [,refreshTextSelection]=useState(0)
+  useEffect(()=>{if(!activeEditor)return;const refresh=()=>refreshTextSelection(value=>value+1);activeEditor.on('selectionUpdate',refresh);return()=>activeEditor.off('selectionUpdate',refresh)},[activeEditor])
   const markerPrefix=useId().replace(/:/g,'')
-  const active=nodes.find(node=>node.id===selected),activeLink=connections.find(link=>link.id===selectedLink)
-  const fitItems=useMemo(()=>[...nodes,...connections.flatMap(link=>{
-    const geometry=connectionGeometry(nodes.find(node=>node.id===link.from),nodes.find(node=>node.id===link.to),link,mapStyle)
-    if(!geometry)return []
-    const b=geometry.bounds;return [{x:b.x,y:b.y,point:true},{x:b.x+b.width,y:b.y+b.height,point:true}]
-  })],[nodes,connections,mapStyle])
+  const resolvedLinks=useMemo(()=>resolveArrowGeometries(connections,nodes,mapStyle),[connections,nodes,mapStyle])
+  const active=nodes.find(node=>node.id===selected),activeLink=resolvedLinks.find(link=>link.id===selectedLink)
+  const geometryFor=link=>link?.geometry||resolvedLinks.find(item=>item.id===link?.id)?.geometry
+  const fitItems=useMemo(()=>[...nodes,...resolvedLinks.flatMap(link=>{
+    const b=link.geometry.bounds;return [{x:b.x,y:b.y,point:true},{x:b.x+b.width,y:b.y+b.height,point:true}]
+  })],[nodes,resolvedLinks])
   useEffect(()=>{
     const manager=new Y.UndoManager([store,links,settings,linkStyles],{trackedOrigins:new Set([LOCAL_MAP_CHANGE,ySyncPluginKey]),captureTimeout:400})
     undo.current=manager
@@ -86,6 +89,8 @@ export function MindMapCanvas({doc,projectId,title='Tableau blanc',status='saved
   const alignText=align=>{
     if(!active)return
     undo.current?.stopCapturing()
+    const selectedEditor=editors.current.get(active.id)
+    if(editing===active.id&&selectedEditor&&!selectedEditor.isDestroyed){selectedEditor.chain().focus(null,{scrollIntoView:false}).setTextAlign(align).run();undo.current?.stopCapturing();return}
     doc.transact(()=>{
       updateMapNode(doc,store,active.id,{textAlign:align})
       const editor=editors.current.get(active.id)
@@ -100,7 +105,7 @@ export function MindMapCanvas({doc,projectId,title='Tableau blanc',status='saved
   const patchLink=patch=>{if(!activeLink||navigation)return;undo.current?.stopCapturing();updateConnection(doc,linkStyles,activeLink.id,patch);undo.current?.stopCapturing()}
   const transformLink=(key,value)=>{
     if(!activeLink||navigation)return
-    const geometry=connectionGeometry(nodes.find(node=>node.id===activeLink.from),nodes.find(node=>node.id===activeLink.to),activeLink,mapStyle)
+    const geometry=geometryFor(activeLink)
     if(!geometry)return
     const next=transformArrow(geometry,key,value)
     undo.current?.stopCapturing();commitArrowTransform(doc,store,links,linkStyles,activeLink,geometry,next);undo.current?.stopCapturing();return arrowDimensions(next)[key]
@@ -108,7 +113,7 @@ export function MindMapCanvas({doc,projectId,title='Tableau blanc',status='saved
   const startArrowMove=(event,link)=>{
     if(navigation||!link||event.button!==0)return
     event.preventDefault();event.stopPropagation();event.currentTarget.setPointerCapture(event.pointerId)
-    const geometry=connectionGeometry(nodes.find(node=>node.id===link.from),nodes.find(node=>node.id===link.to),link,mapStyle)
+    const geometry=geometryFor(link)
     if(!geometry)return
     undo.current?.stopCapturing();gesture.current={type:'arrow-move',link,geometry,id:link.id,pointer:event.pointerId,startX:event.clientX,startY:event.clientY}
   }
@@ -116,7 +121,10 @@ export function MindMapCanvas({doc,projectId,title='Tableau blanc',status='saved
   const removeLink=(target=activeLink)=>{
     if(!target||navigation)return
     undo.current?.stopCapturing()
-    doc.transact(()=>{if(target.extra)links.delete(target.id);else updateMapNode(doc,store,target.to,{parentId:null});clearConnectionStyle(doc,linkStyles,target.id)},LOCAL_MAP_CHANGE)
+    doc.transact(()=>{
+      for(const dependant of resolvedLinks)for(const endpoint of ['from','to'])if(dependant[endpoint+'Arrow']?.id===target.id){const p=dependant.geometry[endpoint==='from'?'start':'end'];moveConnectionEndpoint(doc,store,links,linkStyles,dependant,endpoint,{[endpoint]:null,[endpoint+'Point']:{x:p.x,y:p.y},[endpoint+'Arrow']:null})}
+      if(target.extra)links.delete(target.id);else updateMapNode(doc,store,target.to,{parentId:null});clearConnectionStyle(doc,linkStyles,target.id)
+    },LOCAL_MAP_CHANGE)
     undo.current?.stopCapturing();setSelectedLink(null)
   }
   const resetLink=()=>{if(!activeLink)return;undo.current?.stopCapturing();clearConnectionStyle(doc,linkStyles,activeLink.id);undo.current?.stopCapturing()}
@@ -136,24 +144,13 @@ export function MindMapCanvas({doc,projectId,title='Tableau blanc',status='saved
   const startSegment=(event,handle)=>{
     if(navigation||!activeLink||event.button!==0)return
     event.preventDefault();event.stopPropagation();event.currentTarget.setPointerCapture(event.pointerId)
-    const geometry=connectionGeometry(nodes.find(node=>node.id===activeLink.from),nodes.find(node=>node.id===activeLink.to),activeLink,mapStyle)
+    const geometry=geometryFor(activeLink)
     undo.current?.stopCapturing();gesture.current={type:'connector-segment',pointer:event.pointerId,id:activeLink.id,link:activeLink,geometry,handle,startX:event.clientX,startY:event.clientY}
   }
   const nudgeSegment=(handle,amount,axis=handle.axis)=>{
     if(!activeLink||navigation)return
-    const geometry=connectionGeometry(nodes.find(node=>node.id===activeLink.from),nodes.find(node=>node.id===activeLink.to),activeLink,mapStyle)
+    const geometry=geometryFor(activeLink)
     undo.current?.stopCapturing();commitSegment(activeLink,handle,segmentPatch(activeLink,geometry,handle,axis==='x'?amount:0,axis==='y'?amount:0));undo.current?.stopCapturing()
-  }
-  const addLinePoint=(event,link)=>{
-    if(navigation)return
-    event.preventDefault();event.stopPropagation()
-    const rect=canvas.current.getBoundingClientRect(),geometry=connectionGeometry(nodes.find(node=>node.id===link.from),nodes.find(node=>node.id===link.to),link,mapStyle),point={x:(event.clientX-rect.left-view.x)/view.k,y:(event.clientY-rect.top-view.y)/view.k}
-    undo.current?.stopCapturing();updateConnection(doc,linkStyles,link.id,insertLinePoint(geometry,point));undo.current?.stopCapturing();selectLink(link)
-  }
-  const deleteLinePoint=index=>{
-    if(navigation||!activeLink)return
-    const geometry=connectionGeometry(nodes.find(node=>node.id===activeLink.from),nodes.find(node=>node.id===activeLink.to),activeLink,mapStyle)
-    patchLink(removeLinePoint(geometry,index))
   }
   const startAnchor=(event,link,endpoint)=>{
     if(navigation)return
@@ -165,7 +162,8 @@ export function MindMapCanvas({doc,projectId,title='Tableau blanc',status='saved
     const rect=canvas.current.getBoundingClientRect(),point={x:(event.clientX-rect.left-view.x)/view.k,y:(event.clientY-rect.top-view.y)/view.k},other=link[current.endpoint==='from'?'to':'from']
     const margin=12/view.k,target=event.altKey?null:[...nodes].reverse().find(node=>{const size=nodeSize(node);return node.id!==other&&point.x>=node.x-margin&&point.x<=node.x+size.width+margin&&point.y>=node.y-margin&&point.y<=node.y+size.height+margin})
     const anchor=target?nearestConnectionAnchor(target,point):null
-    return {[current.endpoint]:target?.id||null,[current.endpoint+'Point']:target?null:point,...(anchor?{[current.endpoint+'Side']:anchor.side,[current.endpoint+'Offset']:anchor.offset}:{})}
+    const arrow=!target&&!event.altKey?nearestArrowJunction(drawnLinks,current.id,point,12/view.k):null
+    return {[current.endpoint]:target?.id||null,[current.endpoint+'Point']:target?null:arrow?.point||point,[current.endpoint+'Arrow']:arrow?{id:arrow.id,position:arrow.position}:null,...(anchor?{[current.endpoint+'Side']:anchor.side,[current.endpoint+'Offset']:anchor.offset}:{})}
   }
   const patchEndpoint=(endpoint,patch)=>{if(!activeLink||navigation)return;undo.current?.stopCapturing();moveConnectionEndpoint(doc,store,links,linkStyles,activeLink,endpoint,patch);undo.current?.stopCapturing()}
   const addArrow=()=>{
@@ -187,7 +185,14 @@ export function MindMapCanvas({doc,projectId,title='Tableau blanc',status='saved
     undo.current?.stopCapturing();insertMapNode(doc,store,node);undo.current?.stopCapturing()
     setSelected(node.id);setSelectedLink(null);setEditing(null);setActiveEditor(null);setLinking(false);setProperties(true);setInspectorTab('style')
   }
-  const remove=()=>{if(!active)return;undo.current?.stopCapturing();removeMapNode(doc,store,links,active.id);undo.current?.stopCapturing();setSelected(null);setLinking(false)}
+  const remove=()=>{
+    if(!active)return
+    const removedIds=new Set(resolvedLinks.filter(link=>link.from===active.id||link.to===active.id).map(link=>link.id))
+    undo.current?.stopCapturing();doc.transact(()=>{
+      for(const dependant of resolvedLinks)if(!removedIds.has(dependant.id))for(const endpoint of ['from','to'])if(removedIds.has(dependant[endpoint+'Arrow']?.id)){const p=dependant.geometry[endpoint==='from'?'start':'end'];moveConnectionEndpoint(doc,store,links,linkStyles,dependant,endpoint,{[endpoint]:null,[endpoint+'Point']:{x:p.x,y:p.y},[endpoint+'Arrow']:null})}
+      removeMapNode(doc,store,links,active.id)
+    },LOCAL_MAP_CHANGE);undo.current?.stopCapturing();setSelected(null);setLinking(false)
+  }
   const fit=()=>{const rect=canvas.current.getBoundingClientRect();setView(fitMap(fitItems,rect.width,rect.height))}
   const zoom=(factor,point)=>setView(current=>{const rect=canvas.current.getBoundingClientRect(),x=point?.x??rect.width/2,y=point?.y??rect.height/2,k=Math.max(.15,Math.min(2.5,current.k*factor));return{k,x:x-(x-current.x)*k/current.k,y:y-(y-current.y)*k/current.k}})
   const selectNode=node=>{
@@ -214,7 +219,7 @@ export function MindMapCanvas({doc,projectId,title='Tableau blanc',status='saved
     if(!current||current.pointer!==event.pointerId)return
     const dx=event.clientX-current.startX,dy=event.clientY-current.startY
     if(current.type==='connector-segment'){setLinkPreview({id:current.id,...segmentPatch(current.link,current.geometry,current.handle,dx/view.k,dy/view.k)});return}
-    if(current.type.startsWith('arrow-')){const points=arrowTransformAt(event,current);setLinkPreview({id:current.id,from:null,to:null,fromPoint:points.start,toPoint:points.end});return}
+    if(current.type.startsWith('arrow-')){const points=arrowTransformAt(event,current);setLinkPreview({id:current.id,from:null,to:null,fromArrow:null,toArrow:null,fromPoint:points.start,toPoint:points.end});return}
     if(current.type==='anchor'){const patch=anchorPatch(event,current);if(patch)setLinkPreview({id:current.id,...patch});return}
     if(current.type==='pan')setView({...view,x:current.x+dx,y:current.y+dy})
     else if(current.type==='resize')setPreview({id:current.id,...resizeMapNode(current.node,current.handle,dx/view.k,dy/view.k)})
@@ -241,7 +246,7 @@ export function MindMapCanvas({doc,projectId,title='Tableau blanc',status='saved
     if(['Delete','Backspace'].includes(event.key)&&active){event.preventDefault();remove()}
   }
   const rendered=nodes.map(node=>preview?.id===node.id?{...node,...preview}:node)
-  const drawnLinks=connections.map(original=>{const link=linkPreview?.id===original.id?{...original,...linkPreview}:original,from=rendered.find(node=>node.id===link.from),to=rendered.find(node=>node.id===link.to),geometry=connectionGeometry(from,to,link,mapStyle);return geometry?{...link,geometry}:null}).filter(Boolean)
+  const drawnLinks=resolveArrowGeometries(connections,rendered,mapStyle,linkPreview)
   return <section className={'mindmap'+(navigation?' navigation-mode':'')} aria-label={'Tableau blanc : '+title} onKeyDown={keyboard}>
     <header className="mindmap-heading"><div><h1 title={title}>{title}</h1><span className={'mindmap-save-status '+status} role="status">{status==='saved'?'Enregistré':status==='error'?'Enregistrement à réessayer':'Enregistrement…'}</span></div>{status==='error'&&<button type="button" onClick={retry}>Réessayer</button>}<button type="button" className="mm-navigation-toggle" title={navigation?'Passer en mode édition':'Passer en mode navigation'} aria-pressed={navigation} onClick={toggleNavigation}>{navigation?'Mode navigation':'Mode édition'}</button></header>
     {!navigation&&<div className="mindmap-toolbar" role="toolbar" aria-label="Outils du tableau blanc">
@@ -264,7 +269,7 @@ export function MindMapCanvas({doc,projectId,title='Tableau blanc',status='saved
           {selectedLink===link.id&&!navigation&&g.lineStyle!=='rounded'&&<path d={g.d} stroke="#ba9cea55" strokeWidth={g.width+9} fill="none"/>}
           <path className="mindmap-link-stroke" d={g.d} stroke={g.color} strokeWidth={g.width} strokeLinecap="round" strokeLinejoin="round" mask={g.arrowStart||g.arrowEnd?`url(#${markerPrefix}-shaft-${index})`:undefined} strokeDasharray={g.dash==='dashed'?'7 5':g.dash==='dotted'?'1 5':undefined} fill="none"/>
           {(g.arrowStart||g.arrowEnd)&&<path className="mindmap-arrowheads" d={g.d} fill="none" stroke="transparent" strokeWidth={g.width} markerStart={g.arrowStart?`url(#${markerPrefix}-arrow-${index})`:undefined} markerEnd={g.arrowEnd?`url(#${markerPrefix}-arrow-${index})`:undefined}/>}
-          {!navigation&&<path className="mindmap-connection" d={g.d} fill="none" stroke="transparent" strokeWidth={Math.max(18,20/view.k)} tabIndex={0} role="button" aria-label={label} aria-pressed={selectedLink===link.id} onPointerDown={event=>{event.stopPropagation();if(selectedLink===link.id)startArrowMove(event,link)}} onClick={()=>selectLink(link)} onDoubleClick={event=>addLinePoint(event,link)} onKeyDown={event=>{if(['Enter',' '].includes(event.key)){event.preventDefault();event.stopPropagation();selectLink(link)}if(['Delete','Backspace'].includes(event.key)){event.preventDefault();event.stopPropagation();removeLink(link)}}}/>}
+          {!navigation&&<path className="mindmap-connection" d={g.d} fill="none" stroke="transparent" strokeWidth={Math.max(18,20/view.k)} tabIndex={0} role="button" aria-label={label} aria-pressed={selectedLink===link.id} onPointerDown={event=>{event.stopPropagation();if(selectedLink===link.id)startArrowMove(event,link)}} onClick={()=>selectLink(link)} onDoubleClick={event=>event.stopPropagation()} onKeyDown={event=>{if(['Enter',' '].includes(event.key)){event.preventDefault();event.stopPropagation();selectLink(link)}if(['Delete','Backspace'].includes(event.key)){event.preventDefault();event.stopPropagation();removeLink(link)}}}/>}
         </g>
       })}</g></svg>
       <div className="mindmap-world" style={{transform:`translate(${view.x}px,${view.y}px) scale(${view.k})`}}>{rendered.map(node=><div key={node.id} role="group" tabIndex={0} aria-label={'Forme : '+(node.text||({card:'Rectangle',pill:'Arrondie',ellipse:'Ellipse',note:'Note'}[node.shape])||'Rectangle')} data-valign={node.verticalAlign||'center'} className={'mindmap-node'+(selected===node.id?' selected':'')+' '+(node.shape||'card')+(editing===node.id?' editing':'' )} style={{left:node.x,top:node.y,...nodeSize(node),...(Number.isFinite(node.padding)?{padding:Math.max(0,Math.min(64,node.padding))}:node.shape==='ellipse'?{padding:`${nodeSize(node).height*.18}px ${nodeSize(node).width*.15}px`}:{}),'--node-color':node.color,'--node-text-align':node.textAlign||'center',borderWidth:Math.max(1,Math.min(6,node.borderWidth||2)),borderStyle:node.borderStyle||'solid',...(node.background?{background:node.background}:{})}} onPointerDown={event=>nodeDown(event,node)} onDoubleClick={()=>{if(!navigation&&editing!==node.id)beginEdit(node)}} onFocus={()=>{if(!navigation&&!editing){setSelectedLink(null);setSelected(node.id)}}}>
@@ -273,7 +278,7 @@ export function MindMapCanvas({doc,projectId,title='Tableau blanc',status='saved
       </div>)}</div>
       {!navigation&&guides.length>0&&<svg className="whiteboard-guides" width="100%" height="100%" aria-hidden="true"><g transform={`translate(${view.x} ${view.y}) scale(${view.k})`}>{guides.map((guide,index)=><line key={index} {...guide} strokeWidth={1/view.k}/>)}</g></svg>}
       {!navigation&&activeLink&&<svg className="mindmap-anchor-layer" width="100%" height="100%"><g transform={`translate(${view.x} ${view.y}) scale(${view.k})`}>{drawnLinks.filter(link=>link.id===selectedLink).map(link=><g key={link.id}>
-        <ConnectorHandles geometry={link.geometry} scale={view.k} onStart={startSegment} onNudge={nudgeSegment} onRemove={deleteLinePoint}/>
+        <ConnectorHandles geometry={link.geometry} scale={view.k} onStart={startSegment} onNudge={nudgeSegment}/>
         {['from','to'].map(endpoint=>{
           const point=link.geometry[endpoint==='from'?'start':'end']
           return <circle key={endpoint} className="mindmap-anchor" cx={point.x} cy={point.y} r={6/view.k} strokeWidth={1/view.k} tabIndex={0} role="slider" aria-label={endpoint==='from'?"Point d’accroche de départ":"Point d’accroche d’arrivée"} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round((link[endpoint+'Offset']??.5)*100)} onPointerDown={event=>startAnchor(event,link,endpoint)} onKeyDown={event=>{
@@ -285,9 +290,10 @@ export function MindMapCanvas({doc,projectId,title='Tableau blanc',status='saved
           }}/>
         })}
       </g>)}</g></svg>}
+      <svg className="arrow-junction-layer" width="100%" height="100%" aria-hidden="true"><g transform={`translate(${view.x} ${view.y}) scale(${view.k})`}>{drawnLinks.flatMap(link=>['from','to'].filter(endpoint=>link[endpoint+'Arrow']).map(endpoint=>{const p=link.geometry[endpoint==='from'?'start':'end'],snapping=gesture.current?.type==='anchor'&&linkPreview?.id===link.id;return <g key={link.id+endpoint}>{snapping&&<circle className="arrow-junction-halo" cx={p.x} cy={p.y} r={12/view.k} strokeWidth={1/view.k}/>}<circle className="arrow-junction-pin" cx={p.x} cy={p.y} r={3.5/view.k} strokeWidth={1/view.k}/></g>}))}</g></svg>
       {!navigation&&!nodes.length&&!connections.length&&<div className="mindmap-empty"><button type="button" onClick={event=>{event.stopPropagation();add()}}>Ajouter une forme</button></div>}
     </div>
-    {properties&&!navigation&&<MindmapInspector connection={activeLink} connections={connections} onSelectConnection={id=>selectLink(connections.find(link=>link.id===id),true)} onConnectionPatch={patchLink} onConnectionRemove={()=>removeLink()} onConnectionReset={resetLink} onEndpointPatch={patchEndpoint} onConnectionTransform={transformLink} node={active} nodes={nodes} tab={inspectorTab} onTab={setInspectorTab} onClose={()=>setProperties(false)} onPatch={patchNode} onSize={patchSize} onFitText={fitText} mapStyle={mapStyle} onMapPatch={configure} onTextAlign={alignText} textAlign={active?.textAlign||editors.current.get(active?.id)?.getAttributes('paragraph').textAlign||editors.current.get(active?.id)?.getAttributes('heading').textAlign||'center'} onEditText={()=>{if(active){if(editing===active.id)activeEditor?.commands.focus('end',{scrollIntoView:false});else beginEdit(active)}}} editing={editing===active?.id} onLink={()=>setLinking(value=>!value)}/>}
+    {properties&&!navigation&&<MindmapInspector connection={activeLink} connections={connections} onSelectConnection={id=>selectLink(connections.find(link=>link.id===id),true)} onConnectionPatch={patchLink} onConnectionRemove={()=>removeLink()} onConnectionReset={resetLink} onEndpointPatch={patchEndpoint} onConnectionTransform={transformLink} node={active} nodes={nodes} tab={inspectorTab} onTab={setInspectorTab} onClose={()=>setProperties(false)} onPatch={patchNode} onSize={patchSize} onFitText={fitText} mapStyle={mapStyle} onMapPatch={configure} onTextAlign={alignText} textAlign={(editing===active?.id?(activeEditor?.getAttributes('paragraph').textAlign||activeEditor?.getAttributes('heading').textAlign):null)||active?.textAlign||'center'} onEditText={()=>{if(active){if(editing===active.id)activeEditor?.commands.focus('end',{scrollIntoView:false});else beginEdit(active)}}} editing={editing===active?.id} onLink={()=>setLinking(value=>!value)}/>}
     </div>
     <footer className="mindmap-footer"><span>{nodes.length} forme{nodes.length>1?'s':''} · {connections.length} liaison{connections.length>1?'s':''}</span><div><button type="button" aria-label="Zoom arrière" onClick={()=>zoom(1/1.2)}>−</button><span>{Math.round(view.k*100)} %</span><button type="button" aria-label="Zoom avant" onClick={()=>zoom(1.2)}>＋</button><button type="button" onClick={fit}>Tout voir</button></div></footer>
   </section>
