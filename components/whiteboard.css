@@ -64,3 +64,4 @@
 
 .connector-slider{cursor:grab}.connector-slider:active{cursor:grabbing}.connector-slider-grip{stroke:#a6b5c0;stroke-linecap:round;pointer-events:none}.connector-slider:hover .connector-handle-pill,.connector-slider:focus-visible .connector-handle-pill{fill:#eef4fa;stroke:#819bae}
 .arrow-junction-layer{position:absolute;inset:0;z-index:2;pointer-events:none;overflow:visible}.arrow-junction-halo{fill:#e0f1f5aa;stroke:#6d9bad;stroke-dasharray:3 2}.arrow-junction-pin{fill:#fff;stroke:#6d9bad}
+.whiteboard-spacing-guides{position:absolute;inset:0;z-index:4;pointer-events:none;overflow:visible}.whiteboard-spacing-guides line{stroke:#ba76d9}.spacing-label-bg{fill:#f5eafb;stroke:none}.spacing-label{fill:#9654b2;font-family:var(--font-sans,system-ui);font-weight:600}
