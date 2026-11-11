@@ -225,6 +225,28 @@ function Main({ user }) {
   const [iconItem, setIconItem] = useState(null)
   const [colorItem, setColorItem] = useState(null)
   const [open, setOpen] = useState(true)
+  const [mobile,setMobile] = useState(false)
+  useEffect(()=>{
+    const media=window.matchMedia('(max-width:720px)')
+    const sync=()=>{setMobile(media.matches);setOpen(!media.matches)}
+    sync();media.addEventListener('change',sync);return()=>media.removeEventListener('change',sync)
+  },[])
+  useEffect(()=>{
+    if(!mobile||!open)return
+    const drawer=document.querySelector('.side-cols')
+    const menuButton=document.querySelector('.topbar>button')
+    drawer?.querySelector('input,button')?.focus()
+    const escape=event=>{
+      if(event.key==='Escape')setOpen(false)
+      if(event.key==='Tab'){
+        const controls=[...drawer.querySelectorAll('button,input')].filter(el=>!el.disabled)
+        const first=controls[0],last=controls[controls.length-1]
+        if(event.shiftKey&&document.activeElement===first){event.preventDefault();last?.focus()}
+        else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first?.focus()}
+      }
+    }
+    document.addEventListener('keydown',escape);return()=>{document.removeEventListener('keydown',escape);menuButton?.focus()}
+  },[mobile,open])
   const [share, setShare] = useState(null)
   const [settings, setSettings] = useState(false)
   const [timerConfig, setTimerConfig] = useState(DEFAULT_TIMER)
@@ -287,7 +309,7 @@ function Main({ user }) {
   const pick = p => { pp.current = p; fi.current.click() }
   const onPdf = e => { const f = e.target.files[0]; e.target.value = ''; if (f) readPdf(f, pp.current) }
   const show = (e, i, mode) => { e.preventDefault(); e.stopPropagation(); setMenu({ x: Math.min(e.clientX, innerWidth - 230), y: Math.min(e.clientY, innerHeight - 340), i, mode }) }
-  const openItem = id => { recordOpen(items.find(item => item.id === id)); setSel(id) }
+  const openItem = id => { if(mobile&&items.find(item=>item.id===id)?.type!=='folder')setOpen(false); recordOpen(items.find(item => item.id === id)); setSel(id) }
   const openFolder = id => openItem(id)
   const reorder = async (dragged, target, zone) => {
     if (reordering.current) return
@@ -312,16 +334,16 @@ function Main({ user }) {
   const titleOf = id => items.find(x => x.id === id)?.title
   const projName = projs.find(p => p.id === pid)?.name
   return (
-    <ItemPresenceProvider members={online} me={user.id}><div className="app" style={{ gridTemplateColumns: open ? sideW + 'px 1fr' : '1fr' }}
+    <ItemPresenceProvider members={online} me={user.id}><div className="app" style={{ gridTemplateColumns: open&&!mobile ? sideW + 'px 1fr' : '1fr' }}
       onDragOver={e => { if (pid && [...e.dataTransfer.types].includes('Files')) e.preventDefault() }}
       onDrop={e => { const f = [...e.dataTransfer.files].find(x => x.type === 'application/pdf'); if (f && pid) { e.preventDefault(); readPdf(f, null) } }}>
-      {open && <aside className="side-cols">
+      {mobile&&open&&<button type="button" className="sidebar-backdrop" aria-label="Fermer le menu" onClick={()=>setOpen(false)}/>}{open && <aside className="side-cols" role={mobile?'dialog':undefined} aria-modal={mobile?true:undefined} aria-label="Menu des dossiers">
         <div className="rz" onMouseDown={startRz} />
-        <SidebarNavigation onReorder={reorder} space={space} onSpaceChange={next => { switchSpace(next); setSection('library') }} active={sel ? null : section} onChange={next => { setSection(next); setSel(null) }} onCreate={(e, folder) => pid ? show(e, folder, 'new') : setSettings(true)} items={spaceItems} activeItem={sel} onOpen={openItem} onOptions={show} />
+        <SidebarNavigation onClose={mobile?()=>setOpen(false):undefined} onReorder={reorder} space={space} onSpaceChange={next => { switchSpace(next); setSection('library') }} active={sel ? null : section} onChange={next => { setSection(next); setSel(null); if(mobile)setOpen(false) }} onCreate={(e, folder) => pid ? show(e, folder, 'new') : setSettings(true)} items={spaceItems} activeItem={sel} onOpen={openItem} onOptions={show} />
       </aside>}
-      <div className="mainc">
+      <div className="mainc" inert={mobile&&open?'':undefined}>
         <div className="topbar">
-          <button type="button" className="tb-ico" onClick={() => setOpen(o => !o)} title={open ? 'Masquer le menu' : 'Afficher le menu'}>
+          <button type="button" className="tb-ico" aria-expanded={open} onClick={() => setOpen(o => !o)} title={open ? 'Masquer le menu' : 'Afficher le menu'}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="16" rx="3" /><path d="M9 4v16" /></svg>
           </button>
           {cur && <button type="button" className="tb-ico" aria-label="Changer l’emoji" title="Changer l’emoji" onClick={() => setIconItem(cur)}><Ic i={cur}/></button>}

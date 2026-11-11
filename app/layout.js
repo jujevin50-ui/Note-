@@ -2,14 +2,13 @@ import './globals.css'
 import './sidebar-slider.css'
 import './aceternity.css'
 import './redesign.css'
-import './ambient-background.css'
-import AmbientBackground from '../components/AmbientBackground'
+import './minimal.css'
 import {Plus_Jakarta_Sans,Bricolage_Grotesque} from 'next/font/google'
 const sans=Plus_Jakarta_Sans({subsets:['latin'],variable:'--font-sans',display:'swap'})
 const display=Bricolage_Grotesque({subsets:['latin'],variable:'--font-display-face',display:'swap'})
 export const metadata={title:'Notes'}
 export default function L({children}){return <html lang="fr" data-theme="dark" suppressHydrationWarning className={sans.variable+' '+display.variable}><body>
-<AmbientBackground/>
+
 {/* SVG filter for liquid-glass refraction (Chromium / Edge / Arc). Safari & Firefox fall back to frosted blur. */}
 <svg aria-hidden style={{position:'absolute',width:0,height:0,overflow:'hidden'}}>
   <defs>
