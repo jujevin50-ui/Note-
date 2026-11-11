@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { colorOf } from '../lib/provider'
+import MoveDocumentDialog from '../components/MoveDocumentDialog'
 import Editor from '../components/Editor'
 import Whiteboard from '../components/Whiteboard'
 import EmojiPicker from '../components/EmojiPicker'
@@ -16,7 +17,7 @@ import HomeGreeting from '../components/HomeGreeting'
 import useProjectPresence from '../components/useProjectPresence'
 import useRecentDocuments from '../components/useRecentDocuments'
 import useManualSort from '../components/useManualSort'
-import { dropItems, compareItems } from '../lib/manual-order'
+import { dropItems, compareItems, moveDocumentToFolder } from '../lib/manual-order'
 import ItemPresence, { ItemPresenceProvider } from '../components/ItemPresence'
 import { DEFAULT_TIMER, normalizeTimer, TimerSettings } from '../components/FocusTimer'
 import { Presence } from '../components/Bits'
@@ -223,6 +224,7 @@ function Main({ user }) {
     }
   }, [menu])
   const [iconItem, setIconItem] = useState(null)
+  const [moveItem,setMoveItem] = useState(null)
   const [colorItem, setColorItem] = useState(null)
   const [open, setOpen] = useState(true)
   const [mobile,setMobile] = useState(false)
@@ -324,6 +326,18 @@ function Main({ user }) {
     } catch { alert('Impossible d’enregistrer le déplacement. Réessaie.') }
     finally { reordering.current = false; loadI() }
   }
+  const moveDocument = async (id,parentId) => {
+    if(reordering.current)throw new Error('Déplacement en cours')
+    const updates=moveDocumentToFolder(items,id,parentId)
+    if(!updates.length)throw new Error('Destination indisponible')
+    reordering.current=true;++loadRevision.current
+    try{
+      const results=await Promise.all(updates.map(({id,...changes})=>supabase.from('items').update(changes).eq('id',id).eq('project_id',pid)))
+      if(results.some(result=>result.error))throw new Error('Déplacement refusé')
+      setItems(current=>current.map(item=>({...item,...updates.find(update=>update.id===item.id)})))
+      if(sel===id){const moved=updates.find(update=>update.id===id);if(moved.space!==space)switchSpace(moved.space)}
+    }finally{reordering.current=false;loadI()}
+  }
   const spaceItems = items.filter(i => (i.space || 'notes') === space)
   const sibs = p => spaceItems.filter(i => i.parent_id === p).sort(compareItems)
   const cur = items.find(i => i.id === sel && (i.space || 'notes') === space)
@@ -372,6 +386,7 @@ function Main({ user }) {
           <div className="ctx-item" onClick={e => { e.stopPropagation(); openItem(m.id); setMenu(null) }}><span>👁️ Ouvrir</span></div>
           <div className="ctx-item" onClick={e => { e.stopPropagation(); setIconItem(m); setMenu(null) }}><span>😀 Changer l’emoji</span></div>
           <div className="ctx-item" onClick={e => { e.stopPropagation(); setColorItem(m); setMenu(null) }}><span>🎨 Changer la couleur</span></div>
+          {m.type!=='folder'&&<div className="ctx-item" onClick={e=>{e.stopPropagation();setMoveItem(m);setMenu(null)}}><span>Déplacer vers…</span></div>}
           <div className="ctx-item" onClick={e => { e.stopPropagation(); ren(m); setMenu(null) }}><span>✏️ Renommer</span></div>
           <div className="ctx-item" onClick={e => { e.stopPropagation(); del(m); setMenu(null) }}><span style={{ color: '#ef4444' }}>🗑️ Supprimer</span></div>
           {m.type === 'folder' && <>
@@ -382,6 +397,7 @@ function Main({ user }) {
           </>}
         </>}
       </div>}
+      {moveItem&&<MoveDocumentDialog item={moveItem} items={items} onMove={moveDocument} onClose={()=>setMoveItem(null)}/>}
       {colorItem && <ColorPicker item={colorItem} onSave={saveColor} onClose={() => setColorItem(null)}/>}
       {iconItem && <EmojiPicker item={iconItem} onSave={saveIcon} onClose={() => setIconItem(null)}/>}
       {dlg && <Dlg d={dlg} close={() => setDlg(null)} />}

@@ -14,3 +14,5 @@
 - Ne pas afficher de bouton « Nouveau » en bas du panneau de navigation gauche.
 
 - Les pages de notes ont un fond blanc et un texte sombre, avec un menu et un habillage noirs. Éviter le défilement horizontal global ; conserver le défilement local des tableaux et outils larges.
+
+- Afficher les documents à la racine dans une section « Sans dossier » des vues Notes et Invest. Ne pas les masquer quand ils n’ont pas de dossier parent.
