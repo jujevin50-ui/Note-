@@ -1,7 +1,7 @@
 # Préférences produit
 
 - L’utilisateur veut une interface épurée : ne pas ajouter de textes d’aide, de slogans, de consignes d’utilisation ou d’indications techniques dans l’application. Conserver les libellés d’action, les états utiles et les noms accessibles.
-- La navigation gauche est minimaliste : fond noir, liste de dossiers avec noms toujours visibles, recherche et contenu du dossier sélectionné dans la même colonne, sans arborescence dépliable. Sur mobile, utiliser un tiroir refermable. Conserver le déplacement manuel et les badges de présence.
+- La navigation gauche est minimaliste : fond noir, liste de dossiers avec noms toujours visibles, recherche dans la colonne gauche ; les fichiers et sous-dossiers sont affichés au centre, sans liste en doublon à gauche, sans arborescence dépliable. Sur mobile, utiliser un tiroir refermable. Conserver le déplacement manuel et les badges de présence.
 
 - Les animations accompagnent les actions et respectent `prefers-reduced-motion`. Préserver les thèmes clair/sombre et l’affichage mobile.
 
