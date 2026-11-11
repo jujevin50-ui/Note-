@@ -16,3 +16,5 @@ html,body{overflow-x:clip}.app{width:100%;max-width:100%}.app .mainc>main{min-wi
 /* No horizontal viewport bar; content panes keep their vertical scrolling. */
 html,body{width:100%;height:100%;overflow-x:hidden}.app aside.side-cols,.app .mainc,.sn,.sn-root-list,.sn-contents{min-width:0;overflow-x:hidden}.app aside.side-cols::before,.app aside.side-cols::after{content:none;display:none}
 html::-webkit-scrollbar:horizontal,body::-webkit-scrollbar:horizontal,.app::-webkit-scrollbar:horizontal,.app .mainc::-webkit-scrollbar:horizontal,.app .mainc>main::-webkit-scrollbar:horizontal,.app aside.side-cols::-webkit-scrollbar:horizontal,.sn ::-webkit-scrollbar:horizontal{display:none;height:0}
+
+.app aside.side-cols{scrollbar-width:none}.app aside.side-cols::-webkit-scrollbar{display:none;width:0;height:0}

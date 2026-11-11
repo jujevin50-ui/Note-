@@ -49,3 +49,5 @@ Interface minimaliste : fond noir uni sans animation d’arrière-plan, surfaces
 Les pages de notes conservent une surface blanche et du texte sombre dans l’habillage noir. Le défilement de la zone principale et du menu reste vertical ; les contenus larges, comme les tableaux, gardent leur défilement local.
 
 Lisibilité du menu : textes de navigation à 15 px (16 px sur mobile), icônes de 21 px et lignes plus hautes. Les barres horizontales du cadre et du menu sont supprimées explicitement ; le défilement vertical reste accessible sur les petits écrans et les tableaux gardent leur défilement local.
+
+Les boutons à trois points du menu gauche sont toujours visibles et alignés à droite, dans une zone distincte du libellé et des initiales. Les barres de défilement de ce panneau sont masquées, avec défilement vertical conservé à la molette, au toucher et au clavier.

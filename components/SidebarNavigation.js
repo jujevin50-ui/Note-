@@ -5,6 +5,8 @@ import './sidebar-navigation.css'
 import useManualSort from './useManualSort'
 import { compareItems } from '../lib/manual-order'
 
+function MoreIcon(){return <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>}
+
 function Symbol({ item, name }) {
   if (item?.icon) return <span className="sn-emoji">{item.icon}</span>
   const type = name || item?.type
@@ -25,10 +27,10 @@ export default function SidebarNavigation({ active, onChange, onCreate, items = 
 
   const needle=query.trim().toLocaleLowerCase('fr')
   const results=needle?items.filter(item=>item.title.toLocaleLowerCase('fr').includes(needle)).sort(compareItems):[]
-  const row=item=><div className="sn-content-row" key={item.id}>
+  const row=item=><div className={'sn-content-row'+(activeItem===item.id?' is-active':'')} key={item.id}>
     <button type="button" {...sortable(item)} className={'sn-item'+(activeItem===item.id?' is-active':'')} aria-current={activeItem===item.id?'page':undefined} onClick={()=>enter(item)} onContextMenu={e=>onOptions?.(e,item)}>
-      <Symbol item={item}/><span className="sn-row-copy"><span>{item.title}</span>{needle&&item.parent_id&&<small>{items.find(parent=>parent.id===item.parent_id)?.title}</small>}</span><ItemPresence itemId={item.id}/>{item.type==='folder'&&<span className="sn-chevron" aria-hidden="true">›</span>}
-    </button><button type="button" className="sn-content-options" aria-label={'Options de '+item.title} onClick={e=>onOptions?.(e,item)}>•••</button>
+      <Symbol item={item}/><span className="sn-row-copy"><span>{item.title}</span>{needle&&item.parent_id&&<small>{items.find(parent=>parent.id===item.parent_id)?.title}</small>}</span><ItemPresence itemId={item.id} compact/>{item.type==='folder'&&<span className="sn-chevron" aria-hidden="true">›</span>}
+    </button><button type="button" className="sn-content-options" aria-label={'Options de '+item.title} aria-haspopup="menu" onClick={e=>onOptions?.(e,item)}><MoreIcon/></button>
   </div>
   return <nav className="sn" aria-label="Navigation principale">
     <div className="sn-top"><span>Mon espace</span>{onClose&&<button type="button" className="sn-close" aria-label="Fermer le menu" onClick={onClose}>×</button>}</div>
@@ -39,7 +41,7 @@ export default function SidebarNavigation({ active, onChange, onCreate, items = 
     <label className="sn-search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="m15 15 5 5"/></svg><input aria-label="Rechercher dans les dossiers" placeholder="Rechercher…" value={query} onChange={e=>setQuery(e.target.value)}/>{query&&<button type="button" aria-label="Effacer la recherche" onClick={()=>setQuery('')}>×</button>}</label>
     {!needle&&<section className="sn-folders" aria-label="Dossiers principaux">
       <div className="sn-section-heading"><span>Dossiers</span><button type="button" aria-label="Nouveau contenu" onClick={onCreate}>＋</button></div>
-      <div className="sn-root-list">{roots.map(item=><div className="sn-content-row" key={item.id}><button type="button" {...sortable(item)} className={'sn-item sn-bubble'+(root?.id===item.id?' is-active':'')} aria-label={item.title} aria-current={root?.id===item.id?'page':undefined} onClick={()=>enter(item)} onContextMenu={e=>onOptions?.(e,item)}><Symbol item={item}/><span>{item.title}</span><ItemPresence itemId={item.id}/></button><button type="button" className="sn-content-options" aria-label={'Options de '+item.title} onClick={e=>onOptions?.(e,item)}>•••</button></div>)}{!roots.length&&<span className="sn-empty">Aucun dossier</span>}</div>
+      <div className="sn-root-list">{roots.map(item=><div className={'sn-content-row'+(root?.id===item.id?' is-active':'')} key={item.id}><button type="button" {...sortable(item)} className={'sn-item sn-bubble'+(root?.id===item.id?' is-active':'')} aria-label={item.title} aria-current={root?.id===item.id?'page':undefined} onClick={()=>enter(item)} onContextMenu={e=>onOptions?.(e,item)}><Symbol item={item}/><span>{item.title}</span><ItemPresence itemId={item.id} compact/></button><button type="button" className="sn-content-options" aria-label={'Options de '+item.title} aria-haspopup="menu" onClick={e=>onOptions?.(e,item)}><MoreIcon/></button></div>)}{!roots.length&&<span className="sn-empty">Aucun dossier</span>}</div>
     </section>}
     {needle&&<section className="sn-panel" aria-label="Résultats de recherche">
       <div className="sn-panel-heading"><span>Recherche</span><span role="status">{results.length}</span></div>

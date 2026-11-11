@@ -11,3 +11,9 @@
 .sn{gap:18px;padding:24px 16px 18px}.sn-top{font-size:16px}.sn .sn-item{font-size:15px;min-height:46px;gap:12px;padding-top:11px;padding-bottom:11px}.sn-item>svg{width:21px;height:21px}.sn-emoji{font-size:21px;flex-basis:21px}.sn-search{min-height:46px;padding:10px 11px}.sn-search input{font-size:15px}.sn-search>svg{width:18px;height:18px}.sn-section-heading,.sn-panel-heading{font-size:13px}.sn-section-heading button{font-size:19px}.sn-content-options{top:11px}.sn-row-copy small,.sn-empty{font-size:12px}.sn .sn-bubble .item-viewer{width:24px;height:24px;flex-basis:24px;font-size:10px}
 @media(max-width:720px){.sn .sn-item{font-size:16px;min-height:48px}.sn-search input{font-size:16px}.sn-content-options{top:2px}}
 @media(max-height:600px){.sn{overflow-y:auto}.sn-folders{flex:0 0 auto;min-height:180px}.sn-root-list{flex:none;max-height:45vh;overflow-y:auto}.sn-panel{flex:0 0 auto}.sn-contents{max-height:40vh}}
+
+/* The options live in the row layout, never over its label or presence badges. */
+.sn .sn-content-row{display:flex;align-items:center;gap:0;border-radius:6px}.sn .sn-content-row:hover{background:var(--hov)}.sn .sn-content-row.is-active{background:var(--sel)}.sn .sn-content-row .sn-item{flex:1;width:0;padding-right:8px;background:transparent}.sn .sn-content-options{position:static;display:grid;place-items:center;flex:0 0 32px;width:32px;height:32px;margin-right:6px;padding:0;opacity:1;line-height:1}.sn .sn-content-options>svg{display:block}.sn .sn-content-options:hover{background:var(--sel);color:var(--fg)}
+.sn,.sn-root-list,.sn-contents{scrollbar-width:none}.sn::-webkit-scrollbar,.sn-root-list::-webkit-scrollbar,.sn-contents::-webkit-scrollbar{display:none;width:0;height:0}
+@media(max-width:720px){.sn .sn-content-options{flex-basis:44px;width:44px;height:44px;margin-right:2px}}
+.sn .sn-content-row .sn-item>.item-presence{position:static;flex:0 0 auto;gap:3px;margin:0}
