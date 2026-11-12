@@ -67,3 +67,5 @@
 .whiteboard-spacing-guides{position:absolute;inset:0;z-index:4;pointer-events:none;overflow:visible}.whiteboard-spacing-guides line{stroke:#ba76d9}.spacing-label-bg{fill:#f5eafb;stroke:none}.spacing-label{fill:#9654b2;font-family:var(--font-sans,system-ui);font-weight:600}
 
 .mindmap-anchor.connected-anchor,.mindmap-anchor.connected-anchor:hover{fill:transparent;stroke:transparent}.mindmap-anchor.connected-anchor:focus-visible{fill:#fff;stroke:#8d9ca7}
+
+.mindmap-export-error{margin:0;padding:8px 18px;color:#b42332;background:#fff0f1;font-size:13px;flex-shrink:0}.mindmap-heading{flex-wrap:wrap}

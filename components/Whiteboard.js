@@ -18,6 +18,7 @@ import { deformLine } from '../lib/line-editing'
 import { connectorSegmentPatch } from '../lib/rounded-connector'
 import { arrowInsertion } from '../lib/arrow-insertion'
 import { snapMapNode, arrowAlignmentBox, alignmentTargets } from '../lib/whiteboard-alignment'
+import { printWhiteboard } from '../lib/whiteboard-pdf'
 import './whiteboard.css'
 
 export default function Whiteboard({id,projectId,user,title}) {
@@ -36,6 +37,7 @@ export function MindMapCanvas({doc,projectId,title='Tableau blanc',status='saved
   const [view,setView]=useState({x:120,y:150,k:1}),[preview,setPreview]=useState(null),[linking,setLinking]=useState(false)
   const [selectedLink,setSelectedLink]=useState(null),[linkPreview,setLinkPreview]=useState(null),[guides,setGuides]=useState([]),[spacing,setSpacing]=useState([]),[navigation,setNavigation]=useState(true)
   const [inspectorTab,setInspectorTab]=useState('style')
+  const [exporting,setExporting]=useState(false),[exportError,setExportError]=useState('')
   const [properties,setProperties]=useState(false),[mapStyle,setMapStyle]=useState(()=>settings.toJSON())
   const [history,setHistory]=useState({undo:false,redo:false})
   const canvas=useRef(null),gesture=useRef(null),undo=useRef(null),initialFit=useRef(false),editors=useRef(new Map())
@@ -270,10 +272,17 @@ export function MindMapCanvas({doc,projectId,title='Tableau blanc',status='saved
     if(['F2','Enter'].includes(event.key)&&active){event.preventDefault();beginEdit(active)}
     if(['Delete','Backspace'].includes(event.key)&&active){event.preventDefault();remove()}
   }
+  const exportPdf=async()=>{
+    if(exporting)return
+    setExporting(true);setExportError('')
+    try{await printWhiteboard(canvas.current,rendered,drawnLinks,title)}catch(error){setExportError(error.message||'Impossible d’exporter le tableau. Réessaie.')}
+    finally{setExporting(false)}
+  }
   const rendered=nodes.map(node=>preview?.id===node.id?{...node,...preview}:node)
   const drawnLinks=resolveArrowGeometries(connections,rendered,mapStyle,linkPreview)
   return <section className={'mindmap'+(navigation?' navigation-mode':'')} aria-label={'Tableau blanc : '+title} onKeyDown={keyboard}>
-    <header className="mindmap-heading"><div><h1 title={title}>{title}</h1><span className={'mindmap-save-status '+status} role="status">{status==='saved'?'Enregistré':status==='error'?'Enregistrement à réessayer':'Enregistrement…'}</span></div>{status==='error'&&<button type="button" onClick={retry}>Réessayer</button>}<button type="button" className="mm-navigation-toggle" title={navigation?'Passer en mode édition':'Passer en mode navigation'} aria-pressed={navigation} onClick={toggleNavigation}>{navigation?'Mode navigation':'Mode édition'}</button></header>
+    <header className="mindmap-heading"><div><h1 title={title}>{title}</h1><span className={'mindmap-save-status '+status} role="status">{status==='saved'?'Enregistré':status==='error'?'Enregistrement à réessayer':'Enregistrement…'}</span></div>{status==='error'&&<button type="button" onClick={retry}>Réessayer</button>}<button type="button" disabled={exporting||(!nodes.length&&!connections.length)} onClick={exportPdf}>{exporting?'Export…':'Exporter en PDF'}</button><button type="button" className="mm-navigation-toggle" title={navigation?'Passer en mode édition':'Passer en mode navigation'} aria-pressed={navigation} onClick={toggleNavigation}>{navigation?'Mode navigation':'Mode édition'}</button></header>
+    {exportError&&<p className="mindmap-export-error" role="alert">{exportError}</p>}
     {!navigation&&<div className="mindmap-toolbar" role="toolbar" aria-label="Outils du tableau blanc">
       <button type="button" className="mm-add-primary" onClick={()=>add()}>＋ Forme</button>
       <span className="mindmap-separator"/><button type="button" title="Ajouter une flèche" onClick={addArrow}><svg aria-hidden="true" width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 16 16 4M5 4h11v11"/></svg> Flèche</button><button type="button" disabled={!active} onClick={()=>beginEdit(active)}>Texte</button>
